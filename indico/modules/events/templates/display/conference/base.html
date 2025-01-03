@@ -32,7 +32,6 @@
                                 {{- format_event_date(event) -}}
                                 {{- event.get_label_markup() -}}
                             </div>
-                            <div class="place">{{ event.venue_name }}</div>
                             <div class="timezone">
                                 {%- trans tz=event.display_tzinfo.zone %}{{ tz }} timezone{% endtrans -%}
                             </div>

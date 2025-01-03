@@ -59,26 +59,26 @@
     <div class="event-list"
          data-show-future-events-url="{{ url_for('.show_future_events', category) }}"
          data-show-past-events-url="{{ url_for('.show_past_events', category) }}">
-        {% if future_event_count %}
-            {% call _hidden_events_block('future-events', category, future_events_by_month, format_event_date,
-                                        is_recent, happening_now, after=future_threshold) %}
-                {% trans count=future_event_count -%}
-                    There is one event in the future.
+        {% if past_event_count %}
+            {% call _hidden_events_block('past-events', category, past_events_by_month, format_event_date,
+                                        is_recent, happening_now, before=past_threshold) %}
+                {% trans count=past_event_count -%}
+                    There is one event in the past.
                 {%- pluralize -%}
-                    There are {{ count }} events in the future.
+                    There are {{ count }} events in the past.
                 {%- endtrans %}
             {% endcall %}
         {% endif %}
         <div>
             {{ event_list_block(events_by_month, format_event_date, is_recent, happening_now) }}
         </div>
-        {% if past_event_count %}
-            {% call _hidden_events_block('past-events', category, past_events_by_month, format_event_date, is_recent,
-                                        happening_now, before=past_threshold, message_first=false) %}
-                {% trans count=past_event_count -%}
-                    There is one event in the past.
+        {% if future_event_count %}
+            {% call _hidden_events_block('future-events', category, future_events_by_month, format_event_date, is_recent,
+                                        happening_now, after=future_threshold, message_first=false) %}
+                {% trans count=future_event_count -%}
+                    There is one event in the future.
                 {%- pluralize -%}
-                    There are {{ count }} events in the past.
+                    There are {{ count }} events in the future.
                 {%- endtrans %}
             {% endcall %}
         {% endif %}

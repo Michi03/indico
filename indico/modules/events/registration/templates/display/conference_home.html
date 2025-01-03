@@ -48,11 +48,7 @@
             <div class="text">
                 <div class="label">
                     {% block form_label_title %}
-                        {%- if is_form_moderated %}
-                            {%- trans %}Application{% endtrans %}
-                        {%- else %}
-                            {%- trans %}Registration{% endtrans %}
-                        {%- endif -%}
+                        {%- trans %}Registration{% endtrans %}
                     {% endblock %}
                 </div>
                 {% if user_registrations %}
@@ -68,11 +64,7 @@
                 {% else %}
                     <div>
                         {% block form_label_description %}
-                            {%- if is_form_moderated %}
-                                {%- trans %}Application for this event is currently open.{% endtrans %}
-                            {%- else %}
-                                {%- trans %}Registration for this event is currently open.{% endtrans %}
-                            {%- endif -%}
+                            {%- trans %}Registration for this event is currently open.{% endtrans %}
                         {% endblock %}
                     </div>
                 {% endif %}
@@ -97,11 +89,7 @@
                     <a href="{{ url_for('event_registration.display_regform_list', event) }}"
                        class="i-button next highlight">
                         {% block register_now_button_text %}
-                            {%- if is_form_moderated %}
-                                {%- trans %}Apply now{% endtrans %}
-                            {%- else %}
-                                {%- trans %}Register now{% endtrans %}
-                            {%- endif -%}
+                            {%- trans %}Register now{% endtrans %}
                         {% endblock %}
                     </a>
                 {% endif %}

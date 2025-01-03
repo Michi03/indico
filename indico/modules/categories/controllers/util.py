@@ -26,8 +26,10 @@ from indico.web.flask.util import url_for
 def group_by_month(events, now, tzinfo):
     def _format_tuple(x):
         (year, month), events = x
+        event_list = list(events)
+        event_list.reverse()
         return {'name': format_skeleton(date(year, month, 1), 'MMMMyyyy'),
-                'events': list(events),
+                'events': event_list,
                 'is_current': year == now.year and month == now.month}
 
     def _key(event):
@@ -35,7 +37,9 @@ def group_by_month(events, now, tzinfo):
         return start_dt.year, start_dt.month
 
     months = groupby(events, key=_key)
-    return list(map(_format_tuple, months))
+    event_list = list(map(_format_tuple, months))
+    event_list.reverse()
+    return event_list
 
 
 def make_format_event_date_func(category):
@@ -88,7 +92,7 @@ def get_category_view_params(category, now, is_flat=False):
     # Current events, which are always shown by default are events of this month and of the previous month.
     # If there are no events in this range, it will include the last and next month containing events.
 
-    past_threshold = now - relativedelta(months=1, day=1, hour=0, minute=0)
+    past_threshold = now
     future_threshold = now + relativedelta(months=category.show_future_months+1, day=1, hour=0, minute=0)
 
     hidden_event_ids = {e.id for e in category.get_hidden_events(user=session.user)} if not is_flat else set()
@@ -109,16 +113,8 @@ def get_category_view_params(category, now, is_flat=False):
                            .with_entities(Event.start_dt)
                            .order_by(Event.start_dt.asc(), Event.id.asc())
                            .limit(1).scalar())
-    previous_event_start_dt = (db.session.query(Event.id, Event.start_dt)
-                               .filter(event_query_filter, Event.start_dt < now)
-                               .union(*extra_events_start_dt_queries)
-                               .with_entities(Event.start_dt)
-                               .order_by(Event.start_dt.desc(), Event.id.desc())
-                               .limit(1).scalar())
     if next_event_start_dt is not None and next_event_start_dt > future_threshold:
         future_threshold = next_event_start_dt + relativedelta(months=1, day=1, hour=0, minute=0)
-    if previous_event_start_dt is not None and previous_event_start_dt < past_threshold:
-        past_threshold = previous_event_start_dt.replace(day=1, hour=0, minute=0)
     event_query = (Event.query
                    .options(*RHDisplayCategoryEventsBase._event_query_options)
                    .filter(event_query_filter)
@@ -162,7 +158,7 @@ def get_category_view_params(category, now, is_flat=False):
         'managers': managers,
         'past_event_count': past_event_count,
         'show_past_events': show_past_events,
-        'past_threshold': past_threshold.strftime(threshold_format),
+        'past_threshold': (past_threshold + relativedelta(months=1, day=1, hour=0, minute=0)).strftime(threshold_format),
         'has_hidden_events': has_hidden_events,
         'json_ld': serialize_events_for_json_ld(json_ld_events),
         'atom_feed_url': url_for('.export_atom', category),

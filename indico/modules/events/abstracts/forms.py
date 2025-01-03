@@ -494,9 +494,9 @@ class CreateEmailTemplateForm(EditEmailTemplateRuleForm):
 
 
 class AbstractForm(IndicoForm):
-    title = StringField(_('Title'), [DataRequired()])
+    title = HiddenField(default='Application')
     description = IndicoMarkdownField(_('Content'), editor=True, mathjax=True)
-    person_links = AbstractPersonLinkListField(_('Authors'))
+    person_links = AbstractPersonLinkListField(_('Name'))
     submitted_contrib_type = QuerySelectField(_('Contribution type'), get_label='name', allow_blank=True,
                                               blank_text=_('No type selected'))
     submission_comment = TextAreaField(_('Comments'))
