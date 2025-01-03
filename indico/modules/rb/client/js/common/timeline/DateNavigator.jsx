@@ -157,6 +157,9 @@ export default class DateNavigator extends React.Component {
   };
 
   handleModeChange = mode => {
+    // TODO: implement mode date
+    if (mode === 'date')
+      mode = 'days';
     const {onModeChange} = this.props;
     onModeChange(mode);
     this.setDateWithMode(this.selectedDate, mode);
@@ -183,6 +186,12 @@ export default class DateNavigator extends React.Component {
             content={Translate.string('Month')}
             onClick={() => this.handleModeChange('months')}
             primary={mode === 'months'}
+            disabled={disabled}
+          />
+          <Button
+            content={Translate.string('Date')}
+            onClick={() => this.handleModeChange('date')}
+            primary={mode === 'date'}
             disabled={disabled}
           />
         </Button.Group>
