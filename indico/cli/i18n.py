@@ -390,8 +390,11 @@ def merge_pot_files(output_file: Path, *input_files: list[Path]):
     click.secho('Done merging pot files!', fg='green', bold=True)
 
 
-# Filter messages-all.po files by removing messages that are not in the given .pot file
+# Note: Nearly the same code exists in hatch_build.py since it needs to be available w/o
+# having the indico package itself installed, e.g. during CI wheel builds. If you make
+# changes here, you most likely need to make the same changes in that file!
 def split_po_by_pot(merged_po_path: Path, pot_path: Path, output_po_path: Path):
+    """Filter messages-all.po files by removing messages that are not in the given .pot file."""
     with merged_po_path.open('rb') as f:
         merged_catalog = read_po(f)
 
@@ -399,11 +402,17 @@ def split_po_by_pot(merged_po_path: Path, pot_path: Path, output_po_path: Path):
         pot_catalog = read_po(f)
 
     merged_catalog.update(pot_catalog, no_fuzzy_matching=True)
+    # For some reason we receive catalogs marked as fuzzy from transifex, and babel skips
+    # those by default, even though they are perfectly fine to use...
+    merged_catalog.fuzzy = False
 
     with output_po_path.open('wb') as f:
         write_po(f, merged_catalog, ignore_obsolete=True, width=DEFAULT_OPTIONS['ExtractMessages']['width'])
 
 
+# Note: Nearly the same code exists in hatch_build.py since it needs to be available w/o
+# having the indico package itself installed, e.g. during CI wheel builds. If you make
+# changes here, you most likely need to make the same changes in that file!
 def split_all_po_files():
     pot_files = [f for f in TRANSLATIONS_DIR.glob('*.pot') if f.name != 'messages-all.pot']
 
@@ -465,9 +474,8 @@ def _indico_command(babel_cmd, python, javascript, react, locale, no_check):
                         err=True)
             sys.exit(1)
     try:
-        # TODO: Re-enable once we actually moved to the merged translation file on transifex
-        # if babel_cmd == 'CompileCatalog':
-        #     split_all_po_files()
+        if babel_cmd == 'CompileCatalog':
+            split_all_po_files()
 
         if python:
             _run_command(babel_cmd, extra=extra)
