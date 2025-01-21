@@ -8,6 +8,7 @@
 import itertools
 
 from sqlalchemy.orm import contains_eager, joinedload, load_only, raiseload, selectinload, subqueryload, undefer
+from sqlalchemy import func, or_
 from werkzeug.exceptions import BadRequest
 
 from indico.core.db import db
@@ -24,6 +25,7 @@ from indico.modules.events.contributions.models.contributions import Contributio
 from indico.modules.events.contributions.models.principals import ContributionPrincipal
 from indico.modules.events.contributions.models.subcontributions import SubContribution
 from indico.modules.events.models.principals import EventPrincipal
+from indico.modules.events.models.persons import EventPerson, EventPersonLink
 from indico.modules.events.notes.models.notes import EventNote, EventNoteRevision
 from indico.modules.events.sessions.models.blocks import SessionBlock
 from indico.modules.events.sessions.models.principals import SessionPrincipal
@@ -33,7 +35,6 @@ from indico.modules.search.result_schemas import (AttachmentResultSchema, Catego
                                                   ContributionResultSchema, EventNoteResultSchema, EventResultSchema)
 from indico.modules.search.schemas import (AttachmentSchema, DetailedCategorySchema, HTMLStrippingContributionSchema,
                                            HTMLStrippingEventNoteSchema, HTMLStrippingEventSchema)
-
 
 def _apply_acl_entry_strategy(rel, principal):
     user_strategy = rel.joinedload('user')
@@ -226,6 +227,13 @@ class InternalSearch(IndicoSearchProvider):
             )
         )
         objs, pagenav = self._paginate(query, page, Event.id, user, admin_override_enabled)
+
+        for person in EventPerson.query.filter(or_(func.lower(EventPerson.first_name) == func.lower(q), func.lower(EventPerson.last_name) == func.lower(q))):
+            links = EventPersonLink.query.filter(EventPersonLink.person_id == person.id)
+            for link in links:
+                event = Event.query.get(link.event_id)
+                if not event.is_deleted and not event.is_unlisted:
+                    objs.append(event)
 
         query = (
             Event.query
