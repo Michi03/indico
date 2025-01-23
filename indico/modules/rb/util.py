@@ -252,14 +252,17 @@ def generate_spreadsheet_from_occurrences(occurrences):
     :param occurrences: The booking occurrences to include in the spreadsheet
     """
     headers = ['Room', 'Booking ID', 'Booked for', 'Reason', 'Occurrence start', 'Occurrence end']
-    rows = [{'Room': occ.reservation.room.full_name,
-             'Booking ID': occ.reservation.id,
-             'Booked for': occ.reservation.booked_for_name,
-             'Reason': occ.reservation.booking_reason,
-             'Occurrence start': occ.start_dt,
-             'Occurrence end': occ.end_dt}
-            for occ in occurrences]
-    return headers, rows
+    bookings = dict()
+    for occ in occurrences:
+        occ_id = occ.reservation.id
+        if occ_id in bookings:
+            if occ.start_dt < bookings[occ_id]['Occurrence start']:
+                bookings[occ_id]['Occurrence start'] = occ.start_dt
+            if occ.end_dt > bookings[occ_id]['Occurrence end']:
+                bookings[occ_id]['Occurrence end'] = occ.end_dt
+        else:
+            bookings[occ_id] = {'Room': occ.reservation.room.full_name, 'Booking ID': occ.reservation.id, 'Booked for': occ.reservation.booked_for_name, 'Reason': occ.reservation.booking_reason, 'Occurrence start': occ.start_dt, 'Occurrence end': occ.end_dt}
+    return headers, list(bookings.values())
 
 
 def _find_first_entry_start_dt(event, day):
