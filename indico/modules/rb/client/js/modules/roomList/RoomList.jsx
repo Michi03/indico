@@ -100,6 +100,18 @@ class RoomList extends React.Component {
     this.clearSelectionMode();
   };
 
+  selectAll = () => {
+    const {results} = this.props;
+    const {selection} = this.state;
+    if(Object.keys(selection).length < results.length){
+      const allRooms = Object.assign({}, ...results.map((room) => ({[room.id]: room})));
+      this.setState({selection: allRooms});
+    }
+    else{
+      this.setState({selection: {}});
+    }
+  };
+
   clearSelectionMode = () => {
     this.setState({selectionMode: null, selection: {}});
   };
@@ -189,6 +201,7 @@ class RoomList extends React.Component {
                             primary
                             circular
                           />
+                          <Button icon="plus" onClick={this.selectAll} circular />
                           <Button icon="cancel" onClick={this.clearSelectionMode} circular />
                         </>
                       ) : (

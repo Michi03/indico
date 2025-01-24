@@ -5,6 +5,7 @@
 # modify it under the terms of the MIT License; see the
 # LICENSE file for more details.
 
+from indico.core import signals
 from indico.core.notifications import email_sender, make_email
 from indico.modules.rb.notifications.reservations import ReservationNotification
 from indico.util.date_time import format_datetime
@@ -49,4 +50,5 @@ def notify_upcoming_occurrences(user, occurrences):
     with user.force_user_locale():
         tpl = get_template_module('rb/emails/reservations/reminders/upcoming_occurrence.html',
                                   occurrences=occurrences, user=user)
+        signals.core.before_notification_send.send('notify-rb-reminder-user', user=user, occurrences=occurrences, template=tpl)
         return make_email(to_list={user.email}, template=tpl, html=True)

@@ -48,8 +48,12 @@
             <div class="text">
                 <div class="label">
                     {% block form_label_title %}
-                        {%- trans %}Registration{% endtrans %}
-                    {% endblock %}
+                        {%- if is_form_moderated %}
+                            {%- trans %}Application{% endtrans %}
+                        {%- else %}
+                            {%- trans %}Registration{% endtrans %}
+                        {%- endif -%}
+		    {% endblock %}
                 </div>
                 {% if user_registrations %}
                     {% if user_registrations < regforms|length %}
@@ -64,8 +68,12 @@
                 {% else %}
                     <div>
                         {% block form_label_description %}
-                            {%- trans %}Registration for this event is currently open.{% endtrans %}
-                        {% endblock %}
+                            {%- if is_form_moderated %}
+                                {%- trans %}Application for this event is currently open.{% endtrans %}
+                            {%- else %}
+                                {%- trans %}Registration for this event is currently open.{% endtrans %}
+                            {%- endif -%}
+			{% endblock %}
                     </div>
                 {% endif %}
             </div>
@@ -89,8 +97,12 @@
                     <a href="{{ url_for('event_registration.display_regform_list', event) }}"
                        class="i-button next highlight">
                         {% block register_now_button_text %}
-                            {%- trans %}Register now{% endtrans %}
-                        {% endblock %}
+                            {%- if is_form_moderated %}
+                                {%- trans %}Apply now{% endtrans %}
+                            {%- else %}
+                                {%- trans %}Register now{% endtrans %}
+                            {%- endif -%}
+			{% endblock %}
                     </a>
                 {% endif %}
             </div>

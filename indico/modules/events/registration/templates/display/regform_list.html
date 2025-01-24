@@ -34,8 +34,13 @@
         <tbody>
             {% for regform in regforms %}
                 {% set button_text -%}
-                    {%- trans %}Register{% endtrans %}
-                {%- endset -%}
+                    {% if regform.moderation_enabled %}
+                        {# i18n: Apply for participation (analogous to 'Register' but 'Apply' is used when the registration form is moderated) #}
+                        {%- trans 'Registration' %}Apply{% endtrans %}
+                    {%- else %}
+                        {%- trans %}Register{% endtrans %}
+                    {%- endif %}
+		{%- endset -%}
                 <tr>
                     <td>
                         {% if event.can_manage(session.user, 'registration') %}
