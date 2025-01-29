@@ -23,6 +23,9 @@ Improvements
 - Make the event export/import util much more flexible to support exporting whole
   category subtrees, add better support for dealing with files, and add various things
   that were not correctly exported before (:pr:`6446`)
+- Add a setting to limit the information room booking users can see for bookings not
+  linked to them or their rooms (:pr:`6704`)
+- Add shortcuts to the past and closest events in a category (:pr:`6710`)
 
 Bugfixes
 ^^^^^^^^
@@ -33,17 +36,21 @@ Bugfixes
 - Ensure the event name is correctly encoded to prevent issues with special characters
   in the share event widget (:pr:`6649`)
 - Fix sending emails if site name contains an ``@`` character (:pr:`6687`)
+- Do not show country field description twice in registration forms (:pr:`6708`)
 
 Accessibility
 ^^^^^^^^^^^^^
 
 - Make field validation error messages more accessible in the registration form
   (:pr:`6324`, thanks :user:`foxbunny`)
+- Implement a new date range picker and use it in the Room Booking module
+  (:pr:`6464`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
-- Nothing so far
+- Remove the `marshmallow-enum` dependency (:issue:`6701`, :pr:`6703`, thanks
+  :user:`federez-tba`)
 
 
 Version 3.3.5
