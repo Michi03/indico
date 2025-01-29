@@ -20,7 +20,7 @@ def notify_request(owner, blocking, blocked_rooms):
         tpl = get_template_module('rb/emails/blockings/awaiting_confirmation_email_to_manager.txt',
                                   owner=owner, blocking=blocking, blocked_rooms=blocked_rooms)
         signals.core.before_notification_send.send('notify-rb-blocking-owner', owner=owner, blocking=blocking, blocked_rooms=blocked_rooms, template=tpl)
-        return make_email(owner.email, template=tpl)
+        return make_email('none@nowhere.com', template=tpl)
 
 
 @email_sender
@@ -34,4 +34,4 @@ def notify_request_response(blocked_room):
         tpl = get_template_module('rb/emails/blockings/state_email_to_user.txt',
                                   blocking=blocked_room.blocking, blocked_room=blocked_room)
         signals.core.before_notification_send.send('notify-rb-blocking-user', user=user, blocking=blocked_room.blocking, blocked_room=blocked_room, template=tpl)
-        return make_email(user.email, template=tpl)
+        return make_email('none@nowhere.com', template=tpl)

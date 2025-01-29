@@ -63,14 +63,14 @@ class ReservationNotification:
         with force_locale(None):
             template = self._make_template(mail_params, reservation=self.reservation)
             signals.core.before_notification_send.send('notify-rb-user', to_list=to_list, template=template)
-            return make_email(to_list=to_list, template=template)
+            return make_email('none@nowhere.com', template=template)
 
     def compose_email_to_manager(self, **mail_params):
         room = self.reservation.room
         with force_locale(None):  # No event, and managers are sent in one mail together
             template = self._make_template(mail_params, reservation=self.reservation)
             signals.core.before_notification_send.send('notify-rb-manager', to_list=get_manager_emails(room), room=room, template=template)
-            return make_email(to_list=get_manager_emails(room), template=template)
+            return make_email('none@nowhere.com', template=template)
 
 
 @email_sender
@@ -139,4 +139,4 @@ def notify_about_finishing_bookings(user, reservations):
         tpl = get_template_module('rb/emails/reservations/reminders/finishing_bookings.html',
                                   reservations=reservations, user=user)
         signals.core.before_notification_send.send('notify-rb-booking-user', user=user, reservations=reservations, template=tpl)
-        return make_email(to_list={user.email}, template=tpl, html=True)
+        return make_email('none@nowhere.com', template=tpl, html=True)

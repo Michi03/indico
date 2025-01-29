@@ -51,4 +51,4 @@ def notify_upcoming_occurrences(user, occurrences):
         tpl = get_template_module('rb/emails/reservations/reminders/upcoming_occurrence.html',
                                   occurrences=occurrences, user=user)
         signals.core.before_notification_send.send('notify-rb-reminder-user', user=user, occurrences=occurrences, template=tpl)
-        return make_email(to_list={user.email}, template=tpl, html=True)
+        return make_email('none@nowhere.com', template=tpl, html=True)
