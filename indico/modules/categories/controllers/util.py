@@ -122,7 +122,7 @@ def get_category_view_params(category, now, is_flat=False):
                    .order_by(Event.start_dt.desc(), Event.id.desc()))
     past_event_query = event_query.filter(Event.start_dt < past_threshold)
     future_event_query = event_query.filter(Event.start_dt >= future_threshold)
-    current_event_query = event_query.filter(Event.start_dt >= past_threshold,
+    current_event_query = event_query.filter(Event.end_dt >= past_threshold,
                                              Event.start_dt < future_threshold)
     events = current_event_query.all()
 
