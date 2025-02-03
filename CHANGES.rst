@@ -26,6 +26,9 @@ Improvements
 - Add a setting to limit the information room booking users can see for bookings not
   linked to them or their rooms (:pr:`6704`)
 - Add shortcuts to the past and closest events in a category (:pr:`6710`)
+- Improve the appearance of the date pickers (:issue:`6719`, :pr:`6720`, thanks :user:`foxbunny`)
+- Add a new setting (:data:`ALLOW_ADMIN_USER_DELETION`) to let administrators permanently
+  delete Indico users from the user management UI (:pr:`6652`, thanks :user:`SegiNyn`)
 
 Bugfixes
 ^^^^^^^^
@@ -37,6 +40,7 @@ Bugfixes
   in the share event widget (:pr:`6649`)
 - Fix sending emails if site name contains an ``@`` character (:pr:`6687`)
 - Do not show country field description twice in registration forms (:pr:`6708`)
+- Do not show "other" document templates from deleted events/categories (:pr:`6711`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -89,8 +93,8 @@ Improvements
   thanks :user:`omegak`)
 - Add email placeholder for the picture associated with a registration (:pr:`6580`, thanks
   :user:`vtran99`)
-- Allow setting placeholders for text fields in receipt templates (:pr:`6587`)
-- Add a new receipt template for Certificates of Attendance (:pr:`6587`)
+- Allow setting placeholders for text fields in document templates (:pr:`6587`)
+- Add a new document template for Certificates of Attendance (:pr:`6587`)
 - Show correct repetition details for bookings repeating every n weeks (:pr:`6592`)
 - Show context (event/contribution title etc.) in the title of the minutes editor (:issue:`6584`,
   :pr:`6591`)
