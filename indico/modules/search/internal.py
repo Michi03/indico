@@ -228,7 +228,7 @@ class InternalSearch(IndicoSearchProvider):
         )
         objs, pagenav = self._paginate(query, page, Event.id, user, admin_override_enabled)
 
-        for person in EventPerson.query.filter(or_(func.lower(EventPerson.first_name) == func.lower(q), func.lower(EventPerson.last_name) == func.lower(q))):
+        for person in EventPerson.query.filter(or_(func.lower(EventPerson.first_name) == func.lower(q), func.lower(EventPerson.last_name) == func.lower(q), func.lower(EventPerson.full_name) == func.lower(q))):
             links = EventPersonLink.query.filter(EventPersonLink.person_id == person.id)
             for link in links:
                 event = Event.query.get(link.event_id)
