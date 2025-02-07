@@ -11,7 +11,6 @@ from babel.dates import get_timezone
 from flask import session
 from marshmallow import ValidationError, fields, post_dump, post_load, validate, validates, validates_schema
 from marshmallow.fields import Boolean, Date, DateTime, Function, Method, Nested, Number, Pluck, String
-from marshmallow_enum import EnumField
 from sqlalchemy import func
 
 from indico.core.config import config
@@ -79,7 +78,7 @@ class AdminRoomSchema(mm.SQLAlchemyAutoSchema):
 class RoomUpdateSchema(RoomSchema):
     owner = Principal()
     acl_entries = PrincipalPermissionList(RoomPrincipal)
-    protection_mode = EnumField(ProtectionMode)
+    protection_mode = fields.Enum(ProtectionMode)
 
     class Meta(RoomSchema.Meta):
         fields = (*RoomSchema.Meta.fields, 'notification_before_days', 'notification_before_days_weekly', 'owner',
@@ -117,7 +116,7 @@ class RoomUpdateArgsSchema(mm.Schema):
     max_advance_days = fields.Int(validate=lambda x: x >= 1, allow_none=True)
     comments = fields.String()
     acl_entries = PrincipalPermissionList(RoomPrincipal)
-    protection_mode = EnumField(ProtectionMode)
+    protection_mode = fields.Enum(ProtectionMode)
 
 
 class RoomEquipmentSchema(mm.SQLAlchemyAutoSchema):
@@ -141,6 +140,13 @@ class ReservationSchema(mm.SQLAlchemyAutoSchema):
         model = Reservation
         fields = ('id', 'booking_reason', 'booked_for_name', 'room_id', 'is_accepted', 'start_dt', 'end_dt',
                   'is_repeating', 'repeat_frequency', 'repeat_interval', 'recurrence_weekdays')
+
+    @post_dump(pass_original=True)
+    def _hide_sensitive_data(self, data, booking, **kwargs):
+        user = session.user if session else None
+        if not booking.can_see_details(user):
+            data['booked_for_name'] = None
+        return data
 
     @post_dump(pass_original=True)
     def _add_missing_weekdays(self, data, booking, **kwargs):
@@ -185,11 +191,11 @@ class ReservationUserEventSchema(mm.Schema):
 
 class ReservationOccurrenceLinkSchema(mm.SQLAlchemyAutoSchema):
     id = Number()
-    type = EnumField(LinkType, attribute='link_type')
+    type = fields.Enum(LinkType, attribute='link_type')
     object = Nested(ReservationLinkedObjectDataSchema,
                     only=('url', 'title', 'event_title', 'event_url', 'start_dt', 'end_dt'))
     start_dt = NaiveDateTime(attribute='reservation_occurrence.start_dt')
-    state = EnumField(ReservationOccurrenceState, attribute='reservation_occurrence.state')
+    state = fields.Enum(ReservationOccurrenceState, attribute='reservation_occurrence.state')
 
     @post_dump(pass_original=True)
     def _hide_restricted_object(self, data, link, **kwargs):
@@ -204,7 +210,7 @@ class ReservationOccurrenceLinkSchema(mm.SQLAlchemyAutoSchema):
 
 class ReservationOccurrenceSchema(mm.SQLAlchemyAutoSchema):
     reservation = Nested(ReservationSchema)
-    state = EnumField(ReservationOccurrenceState)
+    state = fields.Enum(ReservationOccurrenceState)
     start_dt = NaiveDateTime()
     end_dt = NaiveDateTime()
 
@@ -262,7 +268,7 @@ class ReservationDetailsSchema(mm.SQLAlchemyAutoSchema):
     can_edit = Function(lambda booking: booking.can_edit(session.user))
     can_reject = Function(lambda booking: booking.can_reject(session.user))
     permissions = Method('_get_permissions')
-    state = EnumField(ReservationState)
+    state = fields.Enum(ReservationState)
     is_linked_to_objects = Function(lambda booking: bool(booking.links))
     start_dt = NaiveDateTime()
     end_dt = NaiveDateTime()
@@ -284,8 +290,13 @@ class ReservationDetailsSchema(mm.SQLAlchemyAutoSchema):
 
     @post_dump(pass_original=True)
     def _hide_sensitive_data(self, data, booking, **kwargs):
-        if not booking.room.can_manage(session.user):
+        user = session.user if session else None
+        if not booking.room.can_manage(user):
             del data['internal_note']
+        if not booking.can_see_details(user):
+            data['booked_for_user'] = None
+            data['created_by_user'] = None
+            data['edit_logs'] = None
         return data
 
     @post_dump(pass_original=True)
@@ -302,7 +313,7 @@ class ReservationDetailsSchema(mm.SQLAlchemyAutoSchema):
 
 class BlockedRoomSchema(mm.SQLAlchemyAutoSchema):
     room = Nested(RoomSchema, only=('id', 'name', 'sprite_position', 'full_name'))
-    state = EnumField(BlockedRoomState)
+    state = fields.Enum(BlockedRoomState)
 
     class Meta:
         model = BlockedRoom
@@ -398,7 +409,7 @@ class CreateBookingSchema(mm.Schema):
 
     start_dt = fields.DateTime(required=True)
     end_dt = fields.DateTime(required=True)
-    repeat_frequency = EnumField(RepeatFrequency, required=True)
+    repeat_frequency = fields.Enum(RepeatFrequency, required=True)
     repeat_interval = fields.Int(load_default=0, validate=lambda x: x >= 0)
     recurrence_weekdays = fields.List(fields.Str(validate=validate.OneOf(WEEKDAYS)))
     room_id = fields.Int(required=True)
@@ -406,7 +417,7 @@ class CreateBookingSchema(mm.Schema):
     booking_reason = fields.String(data_key='reason', load_default='')
     internal_note = fields.String()
     is_prebooking = fields.Bool(load_default=False)
-    link_type = EnumField(LinkType)
+    link_type = fields.Enum(LinkType)
     link_id = fields.Int()
     link_back = fields.Bool(load_default=False)
     admin_override_enabled = fields.Bool(load_default=False)
@@ -558,10 +569,11 @@ class SettingsSchema(mm.Schema):
     admin_principals = PrincipalList(allow_groups=True)
     authorized_principals = PrincipalList(allow_groups=True)
     managers_edit_rooms = fields.Bool()
+    hide_booking_details = fields.Bool()
     hide_module_if_unauthorized = fields.Bool()
     tileserver_url = fields.String(validate=validate.URL(schemes={'http', 'https'}), allow_none=True)
     booking_limit = fields.Int(validate=not_empty)
-    booking_reason_required = EnumField(BookingReasonRequiredOptions, required=True)
+    booking_reason_required = fields.Enum(BookingReasonRequiredOptions, required=True)
     notifications_enabled = fields.Bool()
     notification_before_days = fields.Int(validate=validate.Range(min=1, max=30))
     notification_before_days_weekly = fields.Int(validate=validate.Range(min=1, max=30))
@@ -649,6 +661,13 @@ class ReservationLegacyAPISchema(ReservationSchema):
         fields = ('id', 'repeat_frequency', 'repeat_interval', 'booked_for_name',
                   'external_details_url', 'booking_reason', 'is_accepted', 'is_cancelled', 'is_rejected',
                   'location_name', 'contact_email')
+
+    @post_dump(pass_original=True)
+    def _hide_sensitive_data(self, data, booking, **kwargs):
+        if not booking.can_see_details(self.context.get('user')):
+            data['booked_for_name'] = None
+            data['contact_email'] = None
+        return data
 
     @post_dump(pass_original=True)
     def _rename_keys(self, data, orig, **kwargs):

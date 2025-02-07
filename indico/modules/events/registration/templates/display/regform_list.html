@@ -35,7 +35,7 @@
             {% for regform in regforms %}
                 {% set button_text -%}
                     {%- trans %}Register{% endtrans %}
-		{%- endset -%}
+		        {%- endset -%}
                 <tr>
                     <td>
                         {% if event.can_manage(session.user, 'registration') %}
