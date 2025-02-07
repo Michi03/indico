@@ -228,7 +228,15 @@ class InternalSearch(IndicoSearchProvider):
         )
         objs, pagenav = self._paginate(query, page, Event.id, user, admin_override_enabled)
 
-        for person in EventPerson.query.filter(or_(func.lower(EventPerson.first_name) == func.lower(q), func.lower(EventPerson.last_name) == func.lower(q), func.lower(EventPerson.full_name) == func.lower(q))):
+        query_string = str(q).lower()
+        persons = list(EventPerson.query.filter(or_(func.lower(EventPerson.first_name) == query_string, func.lower(EventPerson.last_name) == query_string)).all())
+        if ' ' in query_string:
+            name = query_string.split(' ')
+            candidates = EventPerson.query.filter(or_(func.lower(EventPerson.first_name) == name[0], func.lower(EventPerson.last_name) == name[-1]))
+            for person in candidates:
+                if str(person.full_name).lower() == query_string:
+                    persons.append(person)
+        for person in persons:
             links = EventPersonLink.query.filter(EventPersonLink.person_id == person.id)
             for link in links:
                 event = Event.query.get(link.event_id)
