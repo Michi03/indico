@@ -29,6 +29,7 @@ Improvements
 - Improve the appearance of the date pickers (:issue:`6719`, :pr:`6720`, thanks :user:`foxbunny`)
 - Add a new setting (:data:`ALLOW_ADMIN_USER_DELETION`) to let administrators permanently
   delete Indico users from the user management UI (:pr:`6652`, thanks :user:`SegiNyn`)
+- Support ``==text==`` to highlight text in markdown (:issue:`6731`, :pr:`6732`)
 
 Bugfixes
 ^^^^^^^^
@@ -41,6 +42,11 @@ Bugfixes
 - Fix sending emails if site name contains an ``@`` character (:pr:`6687`)
 - Do not show country field description twice in registration forms (:pr:`6708`)
 - Do not show "other" document templates from deleted events/categories (:pr:`6711`)
+- Fix price display of choice fields in registration form (:issue:`6728`, :pr:`6729`)
+- Fix error when creating a new room and setting attributes or equipment during creation
+  (:pr:`6730`)
+- Fix the usage of select list scrollbar causing it to close immediately (:issue:`6735`, 
+  :pr:`6736`, thanks :user:`foxbunny`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -49,6 +55,8 @@ Accessibility
   (:pr:`6324`, thanks :user:`foxbunny`)
 - Implement a new date range picker and use it in the Room Booking module
   (:pr:`6464`, thanks :user:`foxbunny`)
+- Make main section title in the base layout the default bypass blocks target
+  (:pr:`6726`, hanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
