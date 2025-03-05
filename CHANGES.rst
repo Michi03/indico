@@ -43,6 +43,7 @@ Improvements
   instead of ``8`` for new installations (:issue:`6629`, :pr:`6740`, thanks :user:`amCap1712`)
 - Include submitter email in abstract PDF export (:issue:`3631`, :pr:`6748`, thanks
   :user:`amCap1712`)
+- Remove anonymized users from local groups (:pr:`6738`, thanks :user:`SegiNyn`)
 
 Bugfixes
 ^^^^^^^^
@@ -69,6 +70,8 @@ Bugfixes
   :user:`amCap1712`)
 - Do not show default values for purged registration fields (:issue:`5898`, :pr:`6772`,
   thanks :user:`amCap1712`)
+- Do not create empty survey sections during event cloning (:pr:`6774`)
+- Fix inaccurate timezone in the dates of the timetable PDF (:pr:`6786`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -90,6 +93,8 @@ Internal Changes
 
 - Remove the `marshmallow-enum` dependency (:issue:`6701`, :pr:`6703`, thanks
   :user:`federez-tba`)
+- Add new signals during signup email validation and login which can make the
+  process fail with a custom message (:pr:`6759`, thanks :user:`openprojects`)
 
 
 Version 3.3.5
