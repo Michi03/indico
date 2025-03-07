@@ -28,6 +28,7 @@ import html5lib
 import markdown
 import translitcodec
 from bleach.css_sanitizer import CSSSanitizer
+from flask import has_app_context
 from html2text import HTML2Text
 from jinja2.filters import do_striptags
 from lxml import etree, html
@@ -357,7 +358,16 @@ def validate_email_verbose(email, *, check_dns=True):
              ``'undeliverable'`` depending on whether the email address has
              syntax errors or dns validation failed.
     """
-    testing = 'PYTEST_CURRENT_TEST' in os.environ
+    from indico.core.config import config
+
+    # allow `@*.test` during tests, and also `@example.com` in debug mode, since during development
+    # it's very convenient to use example.com instead of a domain that really exists.
+    # we do not set `test_environment` unconditionally during debug mode so it's still possible to
+    # use other RFC2606 domain names like example.{net,org} to get a failing deliverability check.
+    testing = (
+        'PYTEST_CURRENT_TEST' in os.environ or
+        (has_app_context() and config.DEBUG and email.endswith('@example.com'))
+    )
     try:
         email_validator.validate_email(email, check_deliverability=check_dns, test_environment=testing)
     except email_validator.EmailUndeliverableError:

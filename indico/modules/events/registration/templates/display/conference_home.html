@@ -53,7 +53,7 @@
                         {%- else %}
                             {%- trans %}Registration{% endtrans %}
                         {%- endif -%}
-		            {% endblock %}
+                    {% endblock %}
                 </div>
                 {% if user_registrations %}
                     {% if user_registrations < regforms|length %}
@@ -73,7 +73,7 @@
                             {%- else %}
                                 {%- trans %}Registration for this event is currently open.{% endtrans %}
                             {%- endif -%}
-			            {% endblock %}
+                        {% endblock %}
                     </div>
                 {% endif %}
             </div>
@@ -102,7 +102,7 @@
                             {%- else %}
                                 {%- trans %}Register now{% endtrans %}
                             {%- endif -%}
-			            {% endblock %}
+                        {% endblock %}
                     </a>
                 {% endif %}
             </div>

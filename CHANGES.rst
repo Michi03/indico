@@ -29,7 +29,21 @@ Improvements
 - Improve the appearance of the date pickers (:issue:`6719`, :pr:`6720`, thanks :user:`foxbunny`)
 - Add a new setting (:data:`ALLOW_ADMIN_USER_DELETION`) to let administrators permanently
   delete Indico users from the user management UI (:pr:`6652`, thanks :user:`SegiNyn`)
-- Support ``==text==`` to highlight text in markdown (:issue:`6731`, :pr:`6732`)
+- Support ``==text==`` to highlight text in markdown (:issue:`6731`, :pr:`6732, 6767`)
+- Add an event setting to allow enforcing search before entering a person manually to
+  a persons list in abstracts and contributions (:pr:`6689`)
+- Allow users to login using their email address (:pr:`6522`, thanks :user:`SegiNyn`)
+- Do not "inline" the full participant list in conference events using a meeting-style
+  timetable and link to the conference participant list instead (:pr:`6753`)
+- Add new setting :data:`LOCAL_USERNAMES` to disable usernames for logging in and only
+  use the email address (:pr:`6751`)
+- Tell search engines to not index events marked as "invisible" (:pr:`6762`, thanks
+  :user:`openprojects`)
+- Make the minimum length of local account passwords configurable, and default to ``15``
+  instead of ``8`` for new installations (:issue:`6629`, :pr:`6740`, thanks :user:`amCap1712`)
+- Include submitter email in abstract PDF export (:issue:`3631`, :pr:`6748`, thanks
+  :user:`amCap1712`)
+- Remove anonymized users from local groups (:pr:`6738`, thanks :user:`SegiNyn`)
 
 Bugfixes
 ^^^^^^^^
@@ -45,8 +59,19 @@ Bugfixes
 - Fix price display of choice fields in registration form (:issue:`6728`, :pr:`6729`)
 - Fix error when creating a new room and setting attributes or equipment during creation
   (:pr:`6730`)
-- Fix the usage of select list scrollbar causing it to close immediately (:issue:`6735`, 
+- Fix the usage of select list scrollbar causing it to close immediately (:issue:`6735`,
   :pr:`6736`, thanks :user:`foxbunny`)
+- Trigger event creation notification emails when cloning events (:pr:`6744`)
+- Fix image uploading not working when editing an existing note without having permissions
+  to manage materials on the event level (:pr:`6760`)
+- Do not redirect to the ToS acceptance page when impersonating a user (:pr:`6770`)
+- Fix display issues after reacting to a favorite category suggestion (:pr:`6771`)
+- Include event labels in dashboard ICS export (:issue:`5886, 6372`, :pr:`6769`, thanks
+  :user:`amCap1712`)
+- Do not show default values for purged registration fields (:issue:`5898`, :pr:`6772`,
+  thanks :user:`amCap1712`)
+- Do not create empty survey sections during event cloning (:pr:`6774`)
+- Fix inaccurate timezone in the dates of the timetable PDF (:pr:`6786`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -56,13 +81,20 @@ Accessibility
 - Implement a new date range picker and use it in the Room Booking module
   (:pr:`6464`, thanks :user:`foxbunny`)
 - Make main section title in the base layout the default bypass blocks target
-  (:pr:`6726`, hanks :user:`foxbunny`)
+  (:pr:`6726`, thanks :user:`foxbunny`)
+- Improve places selection accessibility in SingleChoiceInput
+  (:pr:`6763`, thanks :user:`foxbunny`)
+- Improve places selection accessibility in MultiChoiceInput
+  (:pr:`6764`, thanks :user:`foxbunny`)
+- Improve BooleanInput accessibility (:pr:`6756`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
 - Remove the `marshmallow-enum` dependency (:issue:`6701`, :pr:`6703`, thanks
   :user:`federez-tba`)
+- Add new signals during signup email validation and login which can make the
+  process fail with a custom message (:pr:`6759`, thanks :user:`openprojects`)
 
 
 Version 3.3.5

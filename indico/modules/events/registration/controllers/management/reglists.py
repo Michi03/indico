@@ -25,7 +25,7 @@ from indico.core import signals
 from indico.core.cache import make_scoped_cache
 from indico.core.config import config
 from indico.core.db import db
-from indico.core.errors import NoReportError
+from indico.core.errors import IndicoError, NoReportError
 from indico.core.notifications import make_email, send_email
 from indico.legacy.pdfinterface.conference import RegistrantsListToBookPDF, RegistrantsListToPDF
 from indico.modules.categories.models.categories import Category
@@ -41,7 +41,8 @@ from indico.modules.events.registration.badges import (RegistrantsListToBadgesPD
 from indico.modules.events.registration.controllers import (CheckEmailMixin, RegistrationEditMixin,
                                                             UploadRegistrationFileMixin, UploadRegistrationPictureMixin)
 from indico.modules.events.registration.controllers.management import (RHManageRegFormBase, RHManageRegFormsBase,
-                                                                       RHManageRegistrationBase)
+                                                                       RHManageRegistrationBase,
+                                                                       RHManageRegistrationFieldActionBase)
 from indico.modules.events.registration.forms import (BadgeSettingsForm, CreateMultipleRegistrationsForm,
                                                       EmailRegistrantsForm, ImportRegistrationsForm, PublishReceiptForm,
                                                       RegistrationBasePriceForm,
@@ -655,7 +656,7 @@ class RHRegistrationTogglePayment(RHManageRegistrationBase):
         return jsonify_data(html=_render_registration_details(self.registration))
 
 
-class RHRegistrationUploadFile(UploadRegistrationFileMixin, RHManageRegFormBase):
+class RHRegistrationUploadFile(UploadRegistrationFileMixin, RHManageRegistrationFieldActionBase):
     """Upload a file from a registration form."""
 
 
@@ -703,7 +704,12 @@ class RHRegistrationReset(RHManageRegistrationBase):
     """Reset a registration back to a non-approved status."""
 
     def _process(self):
-        self.registration.reset_state()
+        if self.registration.state == RegistrationState.pending:
+            raise NoReportError.wrap_exc(BadRequest(_('The registration cannot be reset in its current state.')))
+        try:
+            self.registration.reset_state()
+        except IndicoError as exc:
+            raise NoReportError.wrap_exc(exc)
         logger.info('Registration %r was reset by %r', self.registration, session.user)
         return jsonify_data(html=_render_registration_details(self.registration))
 

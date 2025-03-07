@@ -12,6 +12,7 @@ import re
 import bcrypt
 import requests
 
+from indico.core.config import config
 from indico.util.i18n import _
 
 
@@ -150,12 +151,12 @@ def check_password_pwned(password, *, fast=False):
     return sha[5:] in hashes
 
 
-def validate_secure_password(context, password, *, username='', fast=False):
+def validate_secure_password(context, password, *, username='', emails=frozenset(), fast=False):
     """Check if a password is considered secure.
 
     A password is considered secure if it:
 
-    - is at least 8 characters long
+    - is at least :data:`LOCAL_PASSWORD_MIN_LENGTH` characters long
     - does not contain the username unless the username is <5 chars and the password is >16 chars long
     - does not contain the strings 'indico' (or common variations)
     - is not in the pwned password list
@@ -163,6 +164,7 @@ def validate_secure_password(context, password, *, username='', fast=False):
     :param context: A string indicating the context where the password is used
     :param password: The plaintext password
     :param username: The corresponding username (may be empty if not applicable)
+    :param emails: A set of email addresses (that may not be in the password)
     :param fast: Whether the check should finish quickly, even if that may
                  indicate not being able to check the password against the list
                  of pwned passwords. This should be used during interactive requests
@@ -183,14 +185,17 @@ def validate_secure_password(context, password, *, username='', fast=False):
                                     as_list=True):
         return errors[0]
 
-    if len(password) < 8:
-        return _('Passwords must be at least 8 characters long.')
+    if len(password) < config.LOCAL_PASSWORD_MIN_LENGTH:
+        return _('Passwords must be at least {} characters long.').format(config.LOCAL_PASSWORD_MIN_LENGTH)
 
     if re.search(r'[i1|]nd[1i|]c[o0]', password.lower()):
         return _('Passwords may not contain the word "indico" or variations.')
 
     if len(username) >= 5 and len(password) <= 16 and username.lower() in password.lower():
         return _('Passwords may not contain your username.')
+
+    if any(x in password for x in emails):
+        return _('Passwords may not contain your email address.')
 
     if check_password_pwned(password, fast=fast):
         return _('This password has been seen in previous data breaches.')
