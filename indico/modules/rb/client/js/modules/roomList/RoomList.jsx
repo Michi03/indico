@@ -232,7 +232,6 @@ class RoomList extends React.Component {
                             primary
                             circular
                           />
-                          <Button icon="plus" onClick={this.selectAll} circular />
                           <Button icon="cancel" onClick={this.clearSelectionMode} circular />
                         </>
                       ) : (
