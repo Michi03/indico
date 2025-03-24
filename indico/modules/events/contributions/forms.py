@@ -27,9 +27,10 @@ from indico.util.i18n import _
 from indico.web.flask.util import url_for
 from indico.web.forms.base import IndicoForm, generated_data
 from indico.web.forms.fields import (HiddenFieldList, IndicoDateTimeField, IndicoEnumSelectField, IndicoLocationField,
-                                     IndicoProtectionField, IndicoTagListField)
+                                     IndicoMarkdownField, IndicoProtectionField)
 from indico.web.forms.fields.datetime import IndicoDurationField
 from indico.web.forms.fields.principals import PermissionsField
+from indico.web.forms.fields.simple import validate_keywords_field
 from indico.web.forms.validators import DateTimeRange, HiddenUnless, MaxDuration
 from indico.web.forms.widgets import SwitchWidget
 
@@ -37,7 +38,7 @@ from indico.web.forms.widgets import SwitchWidget
 class ContributionForm(IndicoForm):
     _submitter_editable_fields = ('title', 'description', 'person_link_data')
     title = StringField(_('Title'), [DataRequired()])
-    description = TextAreaField(_('Description'))
+    description = IndicoMarkdownField(_('Description'), editor=True, mathjax=True)
     start_dt = IndicoDateTimeField(_('Start date'),
                                    [DataRequired(),
                                     DateTimeRange(earliest=lambda form, field: form._get_earliest_start_dt(),
@@ -49,7 +50,7 @@ class ContributionForm(IndicoForm):
     type = QuerySelectField(_('Type'), get_label='name', allow_blank=True, blank_text=_('No type selected'))
     person_link_data = ContributionPersonLinkListField(_('People'))
     location_data = IndicoLocationField(_('Location'))
-    keywords = IndicoTagListField(_('Keywords'))
+    # The 'keywords' field is dynamically added when creating the form.
     references = ReferencesField(_('External IDs'), reference_class=ContributionReference,
                                  description=_('Manage external resources for this contribution'))
     board_number = StringField(_('Board Number'))
@@ -103,6 +104,9 @@ class ContributionForm(IndicoForm):
             if end_dt > self.event.end_dt:
                 raise ValidationError(_('With the current duration the contribution exceeds the event end date'))
 
+    def validate_keywords(self, field):
+        validate_keywords_field('contribution', field)
+
     @property
     def custom_field_names(self):
         return tuple(field_name for field_name in self._fields if field_name.startswith('custom_'))
@@ -128,7 +132,7 @@ class ContributionProtectionForm(IndicoForm):
 class SubContributionForm(IndicoForm):
     _submitter_editable_fields = ('title', 'description', 'speakers')
     title = StringField(_('Title'), [DataRequired()])
-    description = TextAreaField(_('Description'))
+    description = IndicoMarkdownField(_('Description'), editor=True, mathjax=True)
     duration = IndicoDurationField(_('Duration'), [DataRequired(), MaxDuration(timedelta(hours=24))],
                                    default=timedelta(minutes=20))
     speakers = SubContributionPersonLinkListField(_('Speakers'), allow_submitters=False, allow_authors=False,

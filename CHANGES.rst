@@ -14,6 +14,7 @@ Security fixes
   sandbox escape vulnerability (:cve:`2025-27516`).
 
 .. note::
+
     Since document templates can only be managed by Indico admins (unless granted to
     specific other trusted users as well), the impact of this vulnerability is considered
     low to medium, as it would require a malicious admin to abuse this e.g. to to read
@@ -49,7 +50,7 @@ Improvements
 - Do not "inline" the full participant list in conference events using a meeting-style
   timetable and link to the conference participant list instead (:pr:`6753`)
 - Add new setting :data:`LOCAL_USERNAMES` to disable usernames for logging in and only
-  use the email address (:pr:`6751`)
+  use the email address (:pr:`6751`, :pr:`6810`)
 - Tell search engines to not index events marked as "invisible" (:pr:`6762`, thanks
   :user:`openprojects`)
 - Make the minimum length of local account passwords configurable, and default to ``15``
@@ -59,6 +60,24 @@ Improvements
 - Remove anonymized users from local groups (:pr:`6738`, thanks :user:`SegiNyn`)
 - Add ACLs for room booking locations which can grant privileges on the location itself
   and/or all its rooms (:pr:`6566`, thanks :user:`SegiNyn`)
+- Support alternative names in predefined affiliations and make its search more powerful
+  (:pr:`6758`)
+- Add setting to disallow entering custom affiliations when predefined affiliations are used
+  (:pr:`6809`)
+- Log changes to event payment methods (:pr:`6739`)
+- Add button to select all rooms for exporting in the room list (:pr:`6773`, thanks
+  :user:`Michi03`)
+- Include abstract details in comment notification email subject (:issue:`6449`, :pr:`6782`,
+  thanks :user:`amCap1712`)
+- Use markdown editor field in survey questionnaire setup (:pr:`6783`, thanks :user:`amCap1712`)
+- Use markdown editor field for contribution description (:issue:`6723`, :pr:`6749`, thanks
+  :user:`amCap1712`)
+- Allow resetting registrations back to pending in bulk (:issue:`5954`, :pr:`6784`, thanks
+  :user:`amCap1712`)
+- Allow to configure a restrictive set of allowed contribution keywords (:pr:`6778`, thanks
+  :user:`tomako, unconventionaldotdev`)
+- Add a log for user actions, similar to that in events and categories (:pr:`6779`, thanks
+  :user:`tomako`)
 
 Bugfixes
 ^^^^^^^^
@@ -83,10 +102,13 @@ Bugfixes
 - Fix display issues after reacting to a favorite category suggestion (:pr:`6771`)
 - Include event labels in dashboard ICS export (:issue:`5886, 6372`, :pr:`6769`, thanks
   :user:`amCap1712`)
-- Do not show default values for purged registration fields (:issue:`5898`, :pr:`6772`,
+- Do not show default values for purged registration fields (:issue:`5898`, :pr:`6772, 6781`,
   thanks :user:`amCap1712`)
 - Do not create empty survey sections during event cloning (:pr:`6774`)
 - Fix inaccurate timezone in the dates of the timetable PDF (:pr:`6786`)
+- Fix error with accommodation fields that have the "no accommodation" option disabled
+  (:pr:`6812`)
+- Reset token-based links for correct user when done by an admin (:pr:`6814`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -102,6 +124,8 @@ Accessibility
 - Improve places selection accessibility in MultiChoiceInput
   (:pr:`6764`, thanks :user:`foxbunny`)
 - Improve BooleanInput accessibility (:pr:`6756`, thanks :user:`foxbunny`)
+- Improve keyboard navigation order within the category list page
+  (:pr:`6776`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
@@ -187,6 +211,8 @@ Bugfixes
 - Use locale-aware price formatting in registration form fields (:pr:`6586`)
 - Handle badge designer items exceeding the canvas boundaries more gracefully (:pr:`6603`,
   thanks :user:`SegiNyn`)
+- Fix tips not correctly positioning when contents are changed (:pr:`6797`, thanks
+  :user:`foxbunny`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -560,7 +586,7 @@ Improvements
 - Add a legend to the category calendar, allowing to filter events either by category, venue,
   room or keywords (:issue:`6105, 6106, 6128, 6148, 6149, 6127`, :pr:`6110, 6158, 6183`,
   thanks :user:`Moliholy, unconventionaldotdev`)
-- Allow to configure a restrictive set of allowed keywords (:issue:`6127`, :pr:`6183`,
+- Allow to configure a restrictive set of allowed event keywords (:issue:`6127`, :pr:`6183`,
   thanks :user:`Moliholy, unconventionaldotdev`).
 - Add week and day views in the category calendar and improve navigation controls
   (:issue:`6108, 6129, 6107`, :pr:`6110`, thanks :user:`Moliholy, unconventionaldotdev`).
