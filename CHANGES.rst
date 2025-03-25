@@ -2,10 +2,36 @@ Changelog
 =========
 
 
-Version 3.3.6
+Version 3.3.7
 -------------
 
 *Unreleased*
+
+Improvements
+^^^^^^^^^^^^
+
+- Nothing so far :(
+
+Bugfixes
+^^^^^^^^
+
+- Nothing so far :)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Nothing so far
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Nothing so far
+
+
+Version 3.3.6
+-------------
+
+*Released on March 24, 2025*
 
 Security fixes
 ^^^^^^^^^^^^^^
@@ -76,8 +102,8 @@ Improvements
   :user:`amCap1712`)
 - Allow to configure a restrictive set of allowed contribution keywords (:pr:`6778`, thanks
   :user:`tomako, unconventionaldotdev`)
-- Add a log for user actions, similar to that in events and categories (:pr:`6779`, thanks
-  :user:`tomako`)
+- Add a log for user actions, similar to that in events and categories (:pr:`6779`, :pr:`6813`,
+  thanks :user:`tomako`)
 
 Bugfixes
 ^^^^^^^^
