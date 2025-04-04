@@ -14,7 +14,6 @@ from contextlib import contextmanager
 from io import BytesIO
 from operator import attrgetter
 
-from babel.numbers import format_currency
 from flask import flash, jsonify, redirect, render_template, request, session
 from pypdf import PdfWriter
 from sqlalchemy.orm import joinedload, subqueryload
@@ -63,7 +62,7 @@ from indico.modules.events.util import ZipGeneratorMixin
 from indico.modules.logs import LogKind
 from indico.modules.logs.util import make_diff_log
 from indico.modules.receipts.models.files import ReceiptFile
-from indico.util.date_time import now_utc, relativedelta
+from indico.util.date_time import format_currency, now_utc, relativedelta
 from indico.util.fs import secure_filename
 from indico.util.i18n import _, ngettext
 from indico.util.marshmallow import Principal
@@ -834,6 +833,17 @@ class RHRegistrationsReject(RHRegistrationsActionBase):
             flash(_('The selected registrations were successfully rejected.'), 'success')
             return jsonify_data(**self.list_generator.render_list())
         return jsonify_form(form, disabled_until_change=False, submit=_('Reject'), message=message)
+
+
+class RHRegistrationsReset(RHRegistrationsActionBase):
+    """Reset selected registration from registration list."""
+
+    def _process(self):
+        for registration in self.registrations:
+            registration.reset_state()
+        db.session.flush()
+        flash(_('The selected registrations were successfully reset.'), 'success')
+        return jsonify_data(**self.list_generator.render_list())
 
 
 class RHRegistrationsBasePrice(RHRegistrationsActionBase):

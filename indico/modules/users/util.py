@@ -24,16 +24,21 @@ from indico.core.auth import multipass
 from indico.core.db import db
 from indico.core.db.sqlalchemy.custom.unaccent import unaccent_match
 from indico.core.db.sqlalchemy.principals import PrincipalMixin, PrincipalPermissionsMixin, PrincipalType
+from indico.core.db.sqlalchemy.searchable import fts_matches
 from indico.core.db.sqlalchemy.util.queries import escape_like
 from indico.modules.categories import Category
 from indico.modules.categories.models.principals import CategoryPrincipal
 from indico.modules.events import Event
+from indico.modules.logs.models.entries import LogKind, UserLogRealm
+from indico.modules.logs.util import make_diff_log
 from indico.modules.users import User, logger
+from indico.modules.users.models.affiliations import Affiliation
 from indico.modules.users.models.emails import UserEmail
 from indico.modules.users.models.favorites import favorite_user_table
 from indico.modules.users.models.suggestions import SuggestedCategory
 from indico.modules.users.models.users import ProfilePictureSource, UserTitle
-from indico.util.caching import memoize_request
+from indico.util.caching import memoize_redis, memoize_request
+from indico.util.countries import get_countries_regex, get_country_reverse
 from indico.util.date_time import now_utc
 from indico.util.event import truncate_path
 from indico.util.fs import secure_filename
@@ -461,6 +466,7 @@ def anonymize_user(user):
 
     user.event_roles.clear()
     user.category_roles.clear()
+    user.log_entries.delete()
     user.suggested_categories.order_by(None).delete()
 
     # Unlink registrations + persons (those hold personal data and are linked by email which no longer matches)
@@ -579,3 +585,71 @@ def get_mastodon_server_name(url):
     return {
         'name': data['title'],
     }
+
+
+def _match_search(q, exact=False, prefix=False):
+    if exact:
+        match_str = f'|||{q}|||'
+    elif prefix:
+        match_str = f'|||{q}'
+    else:
+        match_str = q
+    return unaccent_match(Affiliation.searchable_names, match_str, exact=False)
+
+
+def _weighted_score(*params):
+    return sum(db.cast(param, db.Integer) * weight for param, weight in params)
+
+
+@memoize_redis(3600, versioned=True)
+def search_affiliations(q):
+    exact_match = _match_search(q, exact=True)
+    score = _weighted_score((exact_match, 150), (_match_search(q, prefix=True), 60), (_match_search(q), 20))
+    countries = set(get_countries_regex().findall(q))
+    for country in countries:
+        q = q.replace(country, '')
+        if (country_code := get_country_reverse(country, case_sensitive=False)):
+            score += _weighted_score((Affiliation.country_code.ilike(country_code), 50))
+    for word in q.split():
+        score += _weighted_score((unaccent_match(Affiliation.city, word, exact=False), 20),
+                                    (_match_search(word, exact=True), 40),
+                                    (_match_search(word, prefix=True), 30),
+                                    (_match_search(word), 10),
+                                    (Affiliation.popularity, 1))
+    q_filter = fts_matches(Affiliation.searchable_names, q)
+    return (
+        Affiliation.query
+        .filter(~Affiliation.is_deleted, q_filter)
+        .order_by(
+            score.desc(),
+            db.func.indico.indico_unaccent(db.func.lower(Affiliation.name)),
+        )
+        .limit(20)
+        .all()
+    )
+
+
+def log_user_update(user, changes, *, from_sync=False):
+    log_fields = {
+        '_title': 'Title',
+        'synced_fields': 'Synced fields',
+        'first_name': {'title': 'First name', 'type': 'string'},
+        'last_name': {'title': 'Last name', 'type': 'string'},
+        'address': 'Address',
+        'phone': {'title': 'Phone', 'type': 'string'},
+        'affiliation': {'title': 'Affiliation', 'type': 'string'},
+        'affiliation_link': {
+            'title': 'Affiliation link',
+            'type': 'number',
+            'convert': lambda changes: [x.id if x else None for x in changes]
+        },
+    }
+    if len(changes) == 1:
+        what = log_fields[list(changes)[0]]
+        if isinstance(what, dict):
+            what = what['title']
+    else:
+        what = 'Data'
+    log_msg = f'{what} synchronized' if from_sync else f'{what} updated'
+    user.log(UserLogRealm.user, LogKind.change, 'Profile', log_msg, None if from_sync else session.user,
+             data={'Changes': make_diff_log(changes, log_fields)})

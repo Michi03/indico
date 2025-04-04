@@ -6,6 +6,7 @@
 // LICENSE file for more details.
 
 import {toOptionalDate} from 'indico/utils/date';
+import {domReady} from 'indico/utils/domstate';
 
 function toKebabCase(propertyName) {
   return propertyName.replace(/[^A-Z][A-Z]/g, s => `${s[0]}-${s[1].toLowerCase()}`).toLowerCase();
@@ -20,6 +21,20 @@ export default class CustomElementBase extends HTMLElement {
     // through React.
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(element, value);
   };
+
+  static define(tagName, subclass) {
+    console.assert(
+      Object.prototype.isPrototypeOf.call(CustomElementBase.prototype, subclass.prototype),
+      'Must extends CustomElementBase'
+    );
+    customElements.define(tagName, subclass);
+  }
+
+  static defineWhenDomReady(tagName, subclass) {
+    domReady.then(() => {
+      this.define(tagName, subclass);
+    });
+  }
 
   /**
    * Specification of attributes that will be used in the
@@ -155,7 +170,7 @@ export default class CustomElementBase extends HTMLElement {
     throw Error('Custom element must implement a setup() method');
   }
 
-  disconnectedCallbasck() {
+  disconnectedCallback() {
     this.dispatchEvent(new Event('x-disconnect'));
   }
 
