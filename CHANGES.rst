@@ -19,6 +19,7 @@ Improvements
 - Show moderated rooms as "mine" and enable "bookings in my rooms" etc. for room
   moderators (:pr:`6823`)
 - Use the new date picker in more places (:issue:`6662`, :pr:`6832`)
+- Log conference menu changes (:pr:`6851`, thanks :user:`openprojects`)
 
 Bugfixes
 ^^^^^^^^
@@ -27,6 +28,10 @@ Bugfixes
 - Do not log logins rejected by a plugin as errors (:pr:`6834`, thanks :user:`omegak`)
 - Do not trigger notifications for withdrawn service requests when deleting past events
   (:issue:`6700`, :pr:`6754`, thanks :user:`bhngupta`)
+- Fix date picker on category calendar view (:issue:`6849`, :pr:`6850`)
+- Fix scheduling existing contributions not working in rare cirucmstances (:pr:`6853`)
+- Convert author/speaker email addresses to lowercase during input and use the lowercase
+  version for deduplication (:pr:`6855`)
 
 Accessibility
 ^^^^^^^^^^^^^
