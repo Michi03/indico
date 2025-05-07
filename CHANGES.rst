@@ -20,6 +20,8 @@ Improvements
   moderators (:pr:`6823`)
 - Use the new date picker in more places (:issue:`6662`, :pr:`6832`)
 - Log conference menu changes (:pr:`6851`, thanks :user:`openprojects`)
+- Add duration and date/time placeholders when sending emails for contributions
+  (:pr:`6860`)
 
 Bugfixes
 ^^^^^^^^
@@ -32,6 +34,10 @@ Bugfixes
 - Fix scheduling existing contributions not working in rare cirucmstances (:pr:`6853`)
 - Convert author/speaker email addresses to lowercase during input and use the lowercase
   version for deduplication (:pr:`6855`)
+- Fix error when removing the title of an event person (:pr:`6859`)
+- Fix participant visibility being set to "nobody" when a registration was modifified
+  (:pr:`6863`)
+- Fix error when editing a room while no custom attributes have been defined (:pr:`6840`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -41,7 +47,9 @@ Accessibility
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
-- Nothing so far
+- Expose cloning details such as object mappings in the ``event.cloned`` signal (:pr:`6858`)
+- Expose cloning details in the ``contribution.created`` and ``subcontribution.created``
+  signals (:pr:`6858`)
 
 
 Version 3.3.6
