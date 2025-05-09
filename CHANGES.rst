@@ -10,12 +10,34 @@ Version 3.3.7
 Improvements
 ^^^^^^^^^^^^
 
-- Nothing so far :(
+- Add a new :data:`ALLOWED_LANGUAGES` setting to ``indico.conf`` to restrict which
+  languages can be used (:pr:`6818`, thanks :user:`openprojects`)
+- Set reasonable maximum lengths on signup form fields (:pr:`6724`)
+- Preserve the selected day when switching between room booking calendar view modes
+  (:pr:`6817`)
+- Notify room moderators about new pending bookings in their rooms (:pr:`6823`)
+- Show moderated rooms as "mine" and enable "bookings in my rooms" etc. for room
+  moderators (:pr:`6823`)
+- Use the new date picker in more places (:issue:`6662`, :pr:`6832`)
+- Log conference menu changes (:pr:`6851`, thanks :user:`openprojects`)
+- Add duration and date/time placeholders when sending emails for contributions
+  (:pr:`6860`)
 
 Bugfixes
 ^^^^^^^^
 
-- Nothing so far :)
+- Fix inconsistent page numbering in PDF timetable (:issue:`6824`, :pr:`6827`)
+- Do not log logins rejected by a plugin as errors (:pr:`6834`, thanks :user:`omegak`)
+- Do not trigger notifications for withdrawn service requests when deleting past events
+  (:issue:`6700`, :pr:`6754`, thanks :user:`bhngupta`)
+- Fix date picker on category calendar view (:issue:`6849`, :pr:`6850`)
+- Fix scheduling existing contributions not working in rare cirucmstances (:pr:`6853`)
+- Convert author/speaker email addresses to lowercase during input and use the lowercase
+  version for deduplication (:pr:`6855`)
+- Fix error when removing the title of an event person (:pr:`6859`)
+- Fix participant visibility being set to "nobody" when a registration was modifified
+  (:pr:`6863`)
+- Fix error when editing a room while no custom attributes have been defined (:pr:`6840`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -25,7 +47,9 @@ Accessibility
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
-- Nothing so far
+- Expose cloning details such as object mappings in the ``event.cloned`` signal (:pr:`6858`)
+- Expose cloning details in the ``contribution.created`` and ``subcontribution.created``
+  signals (:pr:`6858`)
 
 
 Version 3.3.6
