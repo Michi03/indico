@@ -31,6 +31,7 @@ Improvements
 - Log user merges to user log (:issue:`6882`, :pr:`6920`)
 - Allow re-sending emails from their log entries (:issue:`6805`, :pr:`6909`,
   thanks :user:`duartegalvao, unconventionaldotdev`)
+- Allow adding/removing favorite users from search results (:pr:`6950`)
 
 Bugfixes
 ^^^^^^^^
@@ -60,6 +61,7 @@ Bugfixes
   :pr:`6922`)
 - Fix error when searching in user logs (:issue:`6933`, :pr:`6936`)
 - Fix room booking prompt during event creation not showing up (:pr:`6941`)
+- Fix AM/PM indicator based on event language in PDF timetable (:pr:`6888`)
 
 Accessibility
 ^^^^^^^^^^^^^
