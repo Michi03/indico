@@ -22,6 +22,16 @@ Improvements
 - Log conference menu changes (:pr:`6851`, thanks :user:`openprojects`)
 - Add duration and date/time placeholders when sending emails for contributions
   (:pr:`6860`)
+- Use :data:`STATIC_SITE_STORAGE` for the temporary file from a material package
+  (:pr:`6898`)
+- Implement conditional fields in registration forms (:issue:`1227`, :pr:`6678`,
+  thanks :user:`Moliholy, omegak, unconventionaldotdev`)
+- Log user-specific ACL changes to user log (:pr:`6841`, thanks :user:`tomako`)
+- Include language settings when cloning an event (:issue:`6871`, :pr:`6929`)
+- Log user merges to user log (:issue:`6882`, :pr:`6920`)
+- Allow re-sending emails from their log entries (:issue:`6805`, :pr:`6909`,
+  thanks :user:`duartegalvao, unconventionaldotdev`)
+- Allow adding/removing favorite users from search results (:pr:`6950`)
 
 Bugfixes
 ^^^^^^^^
@@ -38,6 +48,20 @@ Bugfixes
 - Fix participant visibility being set to "nobody" when a registration was modifified
   (:pr:`6863`)
 - Fix error when editing a room while no custom attributes have been defined (:pr:`6840`)
+- Allow the browser to perform spellchecking in the HTML/WYSIWYG minutes editor (:pr:`6890`)
+- Fix downdown/combobox issues on iOS Safari devices (:issue:`6830`, :pr:`6839`, thanks
+  :user:`foxbunny`)
+- Fix font rendering issue in event titles with some cyrillic characters (:issue:`6673`,
+  :pr:`6881`, thanks :user:`Fedor204`)
+- Include registration tags in event export (:pr:`6896`)
+- Fix some messages not being translated due to a missing context (:pr:`6910`)
+- Fix datetime handling in excel exports (:issue:`6806`, :pr:`6887`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Fix date range picker not working in some languages (e.g. Japanese) (:issue:`6921`,
+  :pr:`6922`)
+- Fix error when searching in user logs (:issue:`6933`, :pr:`6936`)
+- Fix room booking prompt during event creation not showing up (:pr:`6941`)
+- Fix AM/PM indicator based on event language in PDF timetable (:pr:`6888`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -50,6 +74,10 @@ Internal Changes
 - Expose cloning details such as object mappings in the ``event.cloned`` signal (:pr:`6858`)
 - Expose cloning details in the ``contribution.created`` and ``subcontribution.created``
   signals (:pr:`6858`)
+- Add the id and color of registration tags on the Checkin API endpoint for registation
+  data (:pr:`6874`, thanks :user:`duartegalvao`)
+- Allow disabling arbitrary dates in date picker / calendar controls (:pr:`6905`, thanks
+  :user:`foxbunny`)
 
 
 Version 3.3.6
