@@ -276,6 +276,8 @@ def check_registration_email(regform, email, registration=None, management=False
         as_list=True)
     if extra_checks:
         return min(extra_checks, key=lambda x: ['error', 'warning', 'ok'].index(x['status']))
+    if user and user != session.user and not management and not config.ALLOW_PUBLIC_USER_SEARCH:
+        return {'status': 'error', 'conflict': 'email-other-user-restricted'}
     if registration is not None:
         if email_registration and email_registration != registration:
             return {'status': 'error', 'conflict': 'email-already-registered'}
@@ -603,8 +605,10 @@ def generate_spreadsheet_from_registrations(registrations, regform_items, static
                     registration_dict[key] = dt
                 else:
                     registration_dict[key] = dt.date()
+            elif item.id in data:
+                registration_dict[key] = item.field_impl.render_spreadsheet_data(data[item.id])
             else:
-                registration_dict[key] = data[item.id].friendly_data if item.id in data else ''
+                registration_dict[key] = ''
         for name, (title, fn) in special_item_mapping.items():
             if name not in static_items:
                 continue
@@ -1008,7 +1012,7 @@ def snapshot_registration_data(registration):
             data[field.html_field_name] = {'price': regdata.price, 'data': regdata.data,
                                            'storage_file_id': regdata.storage_file_id,
                                            'is_file_field': field.field_impl.is_file_field,
-                                           'friendly_data': regdata.friendly_data}
+                                           'friendly_data': field.field_impl.get_snapshot_data(regdata)}
     return data
 
 
