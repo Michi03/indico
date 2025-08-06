@@ -303,7 +303,7 @@ class Registration(db.Model):
         order_by='RegistrationTag.title',
         backref=db.backref(
             'registrations',
-            lazy=False
+            lazy=True
         )
     )
     #: The serial number assigned to the Apple Wallet pass
@@ -904,10 +904,6 @@ class RegistrationData(StoredFileMixin, db.Model):
     @property
     def price(self):
         return self.field_data.field.calculate_price(self)
-
-    @property
-    def summary_data(self):
-        return {'data': self.friendly_data, 'price': self.price}
 
     @property
     def user_data(self):

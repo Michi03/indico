@@ -2,10 +2,55 @@ Changelog
 =========
 
 
-Version 3.3.7
+Version 3.3.8
 -------------
 
 *Unreleased*
+
+Improvements
+^^^^^^^^^^^^
+
+- Nothing so far :(
+
+Bugfixes
+^^^^^^^^
+
+- Nothing so far :)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Nothing so far
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Nothing so far
+
+
+Version 3.3.7
+-------------
+
+*Released on July 14, 2025*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Prevent dumping basic user details (name, affiliation and email) in bulk using the
+  user id (:cve:`2025-53640`)
+
+.. note::
+
+    With Indico being a tool that is primarily used for academic events, where it is
+    expected behavior that you can look users up by name and email and use the email
+    address as a common way of identifying someone (as names are not unique, often not
+    even combined with someone's affiliation), we only classify this as "medium"
+    severity. Looking up *some* users is normal, but obviously being able to look up
+    *all* of them at once, is not something that's intended.
+
+    In case you want to lock down user search much more strongly, please have a look
+    at the :data:`ALLOW_PUBLIC_USER_SEARCH` setting which has been added in this release
+    as well.
 
 Improvements
 ^^^^^^^^^^^^
@@ -32,6 +77,21 @@ Improvements
 - Allow re-sending emails from their log entries (:issue:`6805`, :pr:`6909`,
   thanks :user:`duartegalvao, unconventionaldotdev`)
 - Allow adding/removing favorite users from search results (:pr:`6950`)
+- Make text overflow behavior in badge designer configurable (:pr:`6944`, thanks
+  :user:`SegiNyn`)
+- Clone registration tags when cloning registration forms and preserve registration
+  tags when cloning registrations (:issue:`6820`, :pr:`6964`)
+- Allow restricting reminder recipients by registration form and tags (:pr:`6877`,
+  thanks :user:`tomako, unconventionaldotdev`)
+- Searching existing Indico users can be restricted to managers by setting
+  :data:`ALLOW_PUBLIC_USER_SEARCH` to ``False``. This also limits the verbosity of email
+  status checks while registering for events and disallows registering on behalf
+  of another Indico user (:pr:`6960`)
+- Allow linking existing booking to an event even if there's no exact date/time overlap,
+  and do not show a large number of unrelated bookings (:issue:`6568`, :issue:`6811`,
+  :pr:`6846`, thanks :user:`Moliholy, unconventionaldotdev`)
+- Add a log for global admin actions, similar to that in events, categories and users
+  (:pr:`6868`, thanks :user:`tomako`)
 
 Bugfixes
 ^^^^^^^^
@@ -63,11 +123,6 @@ Bugfixes
 - Fix room booking prompt during event creation not showing up (:pr:`6941`)
 - Fix AM/PM indicator based on event language in PDF timetable (:pr:`6888`)
 
-Accessibility
-^^^^^^^^^^^^^
-
-- Nothing so far
-
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
@@ -78,6 +133,8 @@ Internal Changes
   data (:pr:`6874`, thanks :user:`duartegalvao`)
 - Allow disabling arbitrary dates in date picker / calendar controls (:pr:`6905`, thanks
   :user:`foxbunny`)
+- Support custom data rendering logic in custom registration form fields (:pr:`6967`)
+- Support custom columns and filters in mangement registrant list (:pr:`6968`)
 
 
 Version 3.3.6
