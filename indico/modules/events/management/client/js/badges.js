@@ -5,6 +5,8 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
+/* eslint-disable import/unambiguous */
+
 (function(global) {
   global.setupBadgePrinting = function setupBadgePrinting(templates) {
     const $template = $('#template');
@@ -30,9 +32,7 @@
       } else {
         $("#page_layout option[value='foldable']").prop('disabled', true);
         if ($('#page_layout :selected').val() === 'foldable') {
-          $('#page_layout :selected')
-            .next()
-            .prop('selected', true);
+          $('#page_layout :selected').next().prop('selected', true);
         }
       }
     }
@@ -56,7 +56,7 @@
       .change();
     $pageSize
       .add($pageOrientation)
-      .on('change', function() {
+      .on('change', () => {
         toggleFoldableOption(
           templates[parseInt($template.val(), 10)],
           $pageSize.val(),

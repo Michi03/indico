@@ -5,6 +5,12 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
+/* global ajaxDialog, build_url, confirmPrompt, handleAjaxError, handleFlashes, alertPopup */
+
+import _ from 'lodash';
+
+import {$T} from 'indico/utils/i18n';
+
 (function(global) {
   const HISTORY_API_SUPPORTED = !!history.pushState;
 
@@ -13,17 +19,11 @@
       // ignore if it comes from inside the action panel
       return;
     }
-    $(this)
-      .toggleClass('collapsed')
-      .next('.sub-tree')
-      .find('td > div')
-      .slideToggle(150);
+    $(this).toggleClass('collapsed').next('.sub-tree').find('td > div').slideToggle(150);
   }
 
-  $(document).ready(function() {
-    $('.attachments > .i-dropdown')
-      .parent()
-      .dropdown();
+  $(document).ready(() => {
+    $('.attachments > .i-dropdown').parent().dropdown();
     if (!$('html').data('static-site')) {
       setupAttachmentPreview();
     }
@@ -41,8 +41,8 @@
     });
   });
 
-  global.setupAttachmentPreview = function setupAttachmentPreview() {
-    const attachment = $('.js-preview-dialog');
+  function setupAttachmentPreview() {
+    const previewDialog = $('.js-preview-dialog');
     const pageURL = location.href.replace(/#.*$/, '');
 
     // Previewer not supported on mobile browsers
@@ -51,7 +51,7 @@
     }
 
     $(window)
-      .on('hashchange', function(e, initial) {
+      .on('hashchange', (e, initial) => {
         if (location.hash.indexOf('#preview:') !== 0) {
           $('.attachment-preview-dialog').trigger('ajaxDialog:close', [true]);
         } else {
@@ -67,8 +67,8 @@
       })
       .triggerHandler('hashchange', [true]);
 
-    attachment.on('click', function(e) {
-      if (e.which != 1 || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) {
+    previewDialog.on('click', function(e) {
+      if (e.which !== 1 || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) {
         // ignore middle clicks and modifier-clicks - people should be able to open
         // an attachment in a new tab/window skipping the previewer, even if they use
         // a weird mouse with less than three buttons.
@@ -115,25 +115,25 @@
           dialog.prev('.ui-widget-overlay').addClass('attachment-preview-overlay');
           popup.canvas
             .find('.attachment-preview-content-wrapper, .js-close-preview')
-            .on('click', function() {
+            .on('click', () => {
               popup.canvas.trigger('ajaxDialog:close');
             });
           popup.canvas.find('.attachment-download').on('click', function() {
             const $this = $(this);
             const href = $this.attr('href');
             $this.attr('href', build_url(href, {from_preview: '1', download: '1'}));
-            _.defer(function() {
+            _.defer(() => {
               $this.attr('href', href);
             });
           });
           popup.canvas
             .find('.attachment-preview-content, .attachment-preview-top-bar')
-            .on('click', function(e) {
+            .on('click', e => {
               e.stopPropagation();
             });
           $('body')
             .add(dialog)
-            .on('keydown.attachmentPreview', function(e) {
+            .on('keydown.attachmentPreview', e => {
               if (e.which === $.ui.keyCode.ESCAPE) {
                 popup.canvas.trigger('ajaxDialog:close');
               }
@@ -141,24 +141,24 @@
           $('html, body').addClass('prevent-scrolling');
           // for some reason the dialog is hidden when its position
           // gets updated so we explicitly show it.
-          _.defer(function() {
+          _.defer(() => {
             dialog.show();
           });
         },
         onLoadError(xhr) {
           const hash = location.hash;
           clearHash();
-          if (xhr.status == 404) {
+          if (xhr.status === 404) {
             alertPopup($T.gettext('This file no longer exists. Please reload the page.'));
             return false;
-          } else if (xhr.status != 403) {
+          } else if (xhr.status !== 403) {
             return;
           }
           if (Indico.User && Indico.User.id !== undefined) {
             alertPopup($T('You are not authorized to access this file.'), $T('Access Denied'));
           } else {
             const msg = $T('This file is protected. You will be redirected to the login page.');
-            confirmPrompt(msg, $T('Access Denied')).then(function() {
+            confirmPrompt(msg, $T('Access Denied')).then(() => {
               location.href = build_url(Indico.Urls.Login, {next: location.href + hash});
             });
           }
@@ -166,7 +166,7 @@
         },
       });
     }
-  };
+  }
 
   global.setupAttachmentTreeView = function setupAttachmentTreeView() {
     $('.attachments-box').on('click', '.tree .expandable', toggleFolder);
@@ -220,12 +220,7 @@
       });
   };
 
-  global.openAttachmentManager = function openAttachmentManager(
-    itemLocator,
-    title,
-    reloadOnChange,
-    trigger
-  ) {
+  function openAttachmentManager(itemLocator, title, reloadOnChange, trigger) {
     reloadOnChange = reloadOnChange === undefined ? true : reloadOnChange;
     ajaxDialog({
       trigger,
@@ -241,7 +236,7 @@
         }
       },
     });
-  };
+  }
 
   global.reloadManagementAttachmentInfoColumn = function reloadManagementAttachmentInfoColumn(
     itemLocator,
@@ -280,7 +275,7 @@
         inheritedProtection.toggle(!protectionField.prop('checked'));
       }
     });
-    _.defer(function() {
+    _.defer(() => {
       folderField.triggerHandler('change');
     });
   };

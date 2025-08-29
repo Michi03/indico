@@ -74,6 +74,7 @@ DEFAULTS = {
     'LOGIN_LOGO_URL': None,
     'LOGO_URL': None,
     'LOG_DIR': '/opt/indico/log',
+    'MATERIAL_PACKAGE_RATE_LIMIT': '3 per 30 minutes, 3 per day',
     'MAX_DATA_EXPORT_SIZE': 10 * 1024,  # 10GB
     'MAX_UPLOAD_FILES_TOTAL_SIZE': 0,
     'MAX_UPLOAD_FILE_SIZE': 0,
@@ -89,6 +90,7 @@ DEFAULTS = {
     'SENTRY_DSN': None,
     'SENTRY_LOGGING_LEVEL': 'WARNING',
     'SESSION_LIFETIME': 86400 * 31,
+    'SESSION_MAX_LIFETIME': None,
     'SIGNUP_CAPTCHA': True,
     'SIGNUP_RATE_LIMIT': '2 per hour; 5 per day',
     'SMTP_ALLOWED_SENDERS': set(),

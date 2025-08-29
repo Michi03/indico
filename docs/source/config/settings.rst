@@ -787,6 +787,16 @@ Security
 
     Default: ``86400 * 31``
 
+.. data:: SESSION_MAX_LIFETIME
+
+    The duration (in seconds) after which a session always expires. If set to
+    ``None``, only the :data:`SESSION_LIFETIME` is used and the session can be
+    renewed indefinitely as long as there is activity before its expiry.
+    This setting is ignored if a custom Multipass provider specifies its own
+    maximum lifetime via the ``session_expiry`` entry in the ``multipass_data``.
+
+    Default: ``None``
+
 
 Storage
 -------
@@ -845,6 +855,22 @@ Storage
     archive. The default size is 10 GB.
 
     Default: ``10 * 1024``
+
+.. data:: MATERIAL_PACKAGE_RATE_LIMIT
+
+    Applies a rate limit to public endpoints that build material packages.
+
+    Rate limiting is applied by IP address.
+
+    The default allows 3 packages per 30 minutes, and an additional 3 once per day
+    in case someone builds separate packages e.g. for sessions. Setting the rate limit
+    to ``None`` disables it.
+
+    Depending on how limited your storage space is, especially in relation to the amount
+    of materials (slides etc.) in your events, you may want to go for an even stricter
+    rate limit.
+
+    Default: ``'3 per 30 minutes, 3 per day'``
 
 
 System

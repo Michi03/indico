@@ -10,22 +10,49 @@ Version 3.3.8
 Improvements
 ^^^^^^^^^^^^
 
-- Nothing so far :(
+- Add a CAPTCHA and rate limiting to the material package endpoint, and an event
+  setting to restrict who can generate one (defaults to managers only) (:pr:`6996`)
+- Add support for custom event reminders with freely chosen subject and body, and
+  allow rich-text for the custom message in standard reminders (:pr:`6989`, thanks
+  :user:`tomako, unconventionaldotdev`)
+- Allow specifying a maximum session lifetime via :data:`SESSION_MAX_LIFETIME`
+  beyond which it cannot be refreshed by activity (:pr:`7030`)
+- Make displaying corresponding author email addresses in the Book of Abstracts
+  opt-in (:pr:`7002`, thanks :user:`adamjenkins`)
+- Allow selecting which invitees to remind on the invitations list (:issue:`6804`,
+  :pr:`6918`, thanks :user:`duartegalvao, unconventionaldotdev`)
 
 Bugfixes
 ^^^^^^^^
 
-- Nothing so far :)
+- Fix missing spacing between toolbar button groups (:pr:`6981`)
+- Fix error with certain registration form field types if the badge text overflow
+  behavior was set to "resize" (:pr:`6993`)
+- Fix not being able to update a registration if an accommocation field was added
+  after registering and the user already paid for the registration (:pr:`7000`)
+- Fix registration form field type selector not being fully visible on smaller
+  screen widths (:issue:`7012`, :pr:`7013`)
+- Fix user search not working for admins in room booking module with no rooms defined
+  (:issue:`7016`, :pr:`7017`, thanks :user:`behackl`)
 
 Accessibility
 ^^^^^^^^^^^^^
 
-- Nothing so far
+- Use proper heading hierarchy (H3 instead of H4) for date headings on category event
+  list pages (:pr:`7038`, thanks :user:`foxbunny`)
+- Add accessible labels to extra slots dropdown fields in registration forms (:pr:`7039`,
+  thanks :user:`foxbunny`)
+- Use proper semantic heading elements for registration form section titles (:pr:`7040`,
+  thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
-- Nothing so far
+- Remove broken support for custom multipass providers setting a maximum session
+  lifetime; use :data:`SESSION_MAX_LIFETIME` instead (:pr:`7030`)
+- Use `Biome <https://biomejs.dev/>`__ to format JS/JSX, TS/TSX, JSON and CSS (:pr:`7042`)
+- Add the env var ``INDICO_TEST_USE_DOCKER``, which allows for tests to be run on
+  a PostgreSQL server running in a container
 
 
 Version 3.3.7

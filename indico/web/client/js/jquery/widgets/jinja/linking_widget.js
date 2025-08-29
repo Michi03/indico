@@ -5,9 +5,9 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
-(function(global) {
-  'use strict';
+/* eslint-disable import/unambiguous */
 
+(function(global) {
   global.setupLinkingWidget = function setupLinkingWidget(options) {
     options = $.extend(
       true,
@@ -18,21 +18,18 @@
     );
 
     function updateDropdownState() {
-      var $this = $(this);
+      const $this = $(this);
       if ($this.prop('checked')) {
         $this
           .closest('.i-radio')
           .siblings('.i-radio')
           .find('.i-linking-dropdown select')
           .prop('disabled', true);
-        $this
-          .siblings('.i-linking-dropdown')
-          .find('select')
-          .prop('disabled', false);
+        $this.siblings('.i-linking-dropdown').find('select').prop('disabled', false);
       }
     }
 
-    var field = $('#' + options.fieldId);
+    const field = $(`#${options.fieldId}`);
     field
       .find('.i-linking > .i-linking-dropdown > select > option[value=""]')
       .prop('disabled', true);

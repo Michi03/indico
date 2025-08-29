@@ -137,7 +137,7 @@ import {camelizeKeys} from 'indico/utils/case';
       listingMessage.toggleClass('hidden', JSON.parse($listingField.val()));
     });
 
-    options.protectionModeFields.on('change', function() {
+    options.protectionModeFields.on('change', () => {
       updateProtectionMessage();
     });
 
@@ -191,9 +191,7 @@ import {camelizeKeys} from 'indico/utils/case';
     function hideAvailability(resetCheckbox) {
       if ($currentMessage) {
         if (resetCheckbox) {
-          $('#availability-messages')
-            .find("input[id^='create']")
-            .prop('checked', false);
+          $('#availability-messages').find("input[id^='create']").prop('checked', false);
           $createBooking.val('false');
         }
         $currentMessage.hide();
@@ -299,7 +297,7 @@ import {camelizeKeys} from 'indico/utils/case';
         updateAvailability();
       });
 
-      $('#event-creation-start_dt-timestorage').on('change', function() {
+      $('#event-creation-start_dt-timestorage').on('change', () => {
         const startDate = $('#event-creation-start_dt-datestorage').val();
         const startTime = $('#event-creation-start_dt-timestorage').val();
         startDt = moment(`${startDate} ${startTime}`);

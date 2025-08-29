@@ -140,7 +140,7 @@ import {SeriesManagement} from './SeriesManagement';
       '#event-action-menu-actions button:not(.js-dropdown)',
       '#event-action-menu-actions a:not(.disabled)',
     ];
-    $(selectors.join(', ')).on('click', function() {
+    $(selectors.join(', ')).on('click', () => {
       $('#event-action-menu-actions-target').qbubble('hide');
     });
   };
@@ -212,9 +212,7 @@ import {SeriesManagement} from './SeriesManagement';
       '.js-event-person-list .js-requires-selected-row'
     );
     if ($('.js-event-person-list').closest('.ui-dialog').length) {
-      $('.js-event-person-list [data-toggle=dropdown]')
-        .closest('.toolbar')
-        .dropdown();
+      $('.js-event-person-list [data-toggle=dropdown]').closest('.toolbar').dropdown();
     }
     $('.js-event-person-list [data-filter]').on('click', refreshPersonFilters);
 
@@ -258,7 +256,7 @@ import {SeriesManagement} from './SeriesManagement';
           html.append(role);
           if ($this.is('.js-count-label')) {
             const list = $('<ul>', {class: 'qbubble-item-list'});
-            const items = _.values($this.data('items')).sort(function(a, b) {
+            const items = _.values($this.data('items')).sort((a, b) => {
               return natSortCompare(a.title.toLowerCase(), b.title.toLowerCase());
             });
 
@@ -286,7 +284,7 @@ import {SeriesManagement} from './SeriesManagement';
     });
 
     if (options.hasNoAccountFilter) {
-      $('.js-event-person-list [data-filter]:not(#filter-no-account)').on('change', function() {
+      $('.js-event-person-list [data-filter]:not(#filter-no-account)').on('change', () => {
         $('#filter-no-account').prop('checked', false);
         refreshPersonFilters();
         applySearchFilters();
@@ -304,14 +302,11 @@ import {SeriesManagement} from './SeriesManagement';
     }
 
     if (options.hasNoRegistrationFilter) {
-      $('.js-event-person-list [data-filter]:not(#filter-no-registration)').on(
-        'change',
-        function() {
-          $('#filter-no-registration').prop('checked', false);
-          refreshPersonFilters();
-          applySearchFilters();
-        }
-      );
+      $('.js-event-person-list [data-filter]:not(#filter-no-registration)').on('change', () => {
+        $('#filter-no-registration').prop('checked', false);
+        refreshPersonFilters();
+        applySearchFilters();
+      });
       $('#filter-no-registration').on('change', function() {
         if (this.checked) {
           $('.js-event-person-list [data-filter]:checked:not(#filter-no-registration)').prop(
@@ -325,14 +320,11 @@ import {SeriesManagement} from './SeriesManagement';
     }
 
     if (options.hasNoBuiltinRolesFilter) {
-      $('.js-event-person-list [data-filter]:not(#filter-no-builtin-roles)').on(
-        'change',
-        function() {
-          $('#filter-no-builtin-roles').prop('checked', false);
-          refreshPersonFilters();
-          applySearchFilters();
-        }
-      );
+      $('.js-event-person-list [data-filter]:not(#filter-no-builtin-roles)').on('change', () => {
+        $('#filter-no-builtin-roles').prop('checked', false);
+        refreshPersonFilters();
+        applySearchFilters();
+      });
       $('#filter-no-builtin-roles').on('change', function() {
         if (this.checked) {
           $('.js-event-person-list [data-filter]:checked:not(#filter-no-builtin-roles)').prop(
@@ -355,7 +347,7 @@ import {SeriesManagement} from './SeriesManagement';
     });
 
     // Reset role filters
-    $personFilters.find('.js-reset-role-filter').on('click', function() {
+    $personFilters.find('.js-reset-role-filter').on('click', () => {
       $('.js-event-person-list [data-filter]').each(function() {
         const $this = $(this);
         $this.prop('checked', false);
@@ -367,7 +359,7 @@ import {SeriesManagement} from './SeriesManagement';
     });
 
     // Allows to click in the whole list item area to enable/disable role filters
-    $personFilters.find('li label').on('click', function(evt) {
+    $personFilters.find('li label').on('click', evt => {
       evt.preventDefault();
     });
     $personFilters.find('li').on('click', function() {
@@ -394,9 +386,7 @@ import {SeriesManagement} from './SeriesManagement';
 
   global.handleSelectedRowHighlight = function handleSelectedRowHighlight(trigger) {
     const $obj = $('table.i-table input.select-row').on('change', function() {
-      $(this)
-        .closest('tr')
-        .toggleClass('selected', this.checked);
+      $(this).closest('tr').toggleClass('selected', this.checked);
     });
 
     if (trigger) {
