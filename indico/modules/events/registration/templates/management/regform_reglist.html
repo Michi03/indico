@@ -157,7 +157,7 @@
                                 <a href="#" class="icon-checkmark js-requires-selected-row disabled js-modify-status"
                                    data-href="{{ url_for('.registrations_approve', regform) }}"
                                    data-method="POST"
-                                   data-confirm="{% trans %}Do you really want to approve the selected registrations? This will trigger a notification email for each registrant.{% endtrans %}">
+                                   data-confirm="{% trans %}Do you really want to approve the selected registrations?{% endtrans %} {% if regform.state_notifications_enabled %}{% trans %}This will trigger a notification email for each registrant.{% endtrans %}{% endif %}">
                                     {%- trans %}Approve registrations{% endtrans -%}
                                 </a>
                             </li>
