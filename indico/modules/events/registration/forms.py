@@ -71,9 +71,8 @@ def _generate_preview_link(text, input_selector, state, url, title):
 class RegistrationFormEditForm(IndicoForm):
     _price_fields = ('currency', 'base_price')
     _registrant_notification_fields = ('notification_sender_address', 'message_pending', 'message_unpaid',
-                                       'message_complete', 'attach_ical')
-    _organizer_notification_fields = ('organizer_notifications_enabled', 'organizer_notification_recipients',
-                                      'state_notifications_enabled')
+                                       'message_complete', 'attach_ical', 'state_notifications_enabled')
+    _organizer_notification_fields = ('organizer_notifications_enabled', 'organizer_notification_recipients')
     _special_fields = _price_fields + _registrant_notification_fields + _organizer_notification_fields
 
     title = StringField(_('Title'), [DataRequired()], description=_('The title of the registration form'))
@@ -120,7 +119,7 @@ class RegistrationFormEditForm(IndicoForm):
         description=_('Attach an iCalendar file to the mail sent once a registration is complete')
     )
     state_notifications_enabled = BooleanField(
-        _('Enabled'),
+        _('Approval'),
         widget=SwitchWidget(),
         description=_('Enable e-mail notifications about the state of the registrations'),
     )
