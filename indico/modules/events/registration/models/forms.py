@@ -225,6 +225,13 @@ class RegistrationForm(db.Model):
         nullable=False,
         default=False
     )
+    #: Whether notifications are sent if a registration's state changes
+    state_notifications_enabled = db.Column(
+        'update_notifications_enabled',
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
     #: Whether the organizer notifications for this event are enabled
     organizer_notifications_enabled = db.Column(
         'manager_notifications_enabled',
