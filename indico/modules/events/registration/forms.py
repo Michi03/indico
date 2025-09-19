@@ -118,6 +118,11 @@ class RegistrationFormEditForm(IndicoForm):
         widget=SwitchWidget(),
         description=_('Attach an iCalendar file to the mail sent once a registration is complete')
     )
+    state_notifications_enabled = BooleanField(
+        _('Enabled'),
+        widget=SwitchWidget(),
+        description=_('Enable e-mail notifications about the state of the registrations'),
+    )
     organizer_notifications_enabled = BooleanField(
         _('Enabled'),
         widget=SwitchWidget(),
