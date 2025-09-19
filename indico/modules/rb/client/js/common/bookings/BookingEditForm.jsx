@@ -122,10 +122,7 @@ class BookingEditForm extends React.Component {
       },
     } = this.props;
 
-    const today = moment()
-      .locale('en')
-      .format('ddd')
-      .toLowerCase();
+    const today = moment().locale('en').format('ddd').toLowerCase();
 
     if (
       ((recurrence.type === 'every' && recurrence.interval === 'week') || force) &&
@@ -370,6 +367,7 @@ class BookingEditForm extends React.Component {
                   name="user"
                   favoriteUsersController={favoriteUsersController}
                   disabled={submitSucceeded}
+                  withExternalUsers
                   required
                 />
               )}

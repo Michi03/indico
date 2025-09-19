@@ -18,15 +18,17 @@ from indico.modules.legal import legal_settings
 from indico.modules.rb import rb_cache, rb_settings
 from indico.modules.rb.controllers import RHRoomBookingBase
 from indico.modules.rb.models.equipment import EquipmentType
+from indico.modules.rb.models.locations import Location
 from indico.modules.rb.models.map_areas import MapArea
 from indico.modules.rb.models.reservation_occurrences import ReservationOccurrence
 from indico.modules.rb.models.reservations import Reservation
 from indico.modules.rb.models.rooms import Room
 from indico.modules.rb.schemas import EquipmentTypeSchema, SettingsSchema, map_areas_schema, rb_user_schema
-from indico.modules.rb.util import build_rooms_spritesheet
+from indico.modules.rb.util import build_rooms_spritesheet, rb_is_admin
 from indico.util.caching import memoize_redis
 from indico.util.i18n import get_all_locales
 from indico.util.string import sanitize_html
+from indico.util.user import make_user_search_token
 from indico.web.flask.util import send_file, url_for
 
 
@@ -72,6 +74,18 @@ class RHUserInfo(RHRoomBookingBase):
         data = rb_user_schema.dump(session.user)
         data['language'] = session.lang
         data['momentLanguage'] = session.moment_lang
+        # we assume room booking users are always a restricted/trusted audience who should be
+        # able to search for users. hence, we give them a search token straight away instead of
+        # linking it to an explicit access check to a room.
+        # the only exception here is that if there are no rooms and the requesting user is not
+        # an admin, then we don't issue a token to avoid giving users an easy way to get a token
+        # in case of a poorly configured indico instance that has room booking enabled but never
+        # configured (and thus likely neither any rooms nor an ACL on who can access the module)
+        data['search_token'] = (
+            make_user_search_token()
+            if rb_is_admin(session.user) or Room.query.filter(~Room.is_deleted).has_rows()
+            else None
+        )
         return jsonify(data)
 
 
@@ -128,7 +142,13 @@ class RHEquipmentTypes(RHRoomBookingBase):
         return jsonify(self._get_equipment_types())
 
 
-class RHPermissionTypes(RHRoomBookingBase):
+class RHRoomPermissionTypes(RHRoomBookingBase):
     def _process(self):
         permissions, tree, default = get_permissions_info(Room)
+        return jsonify(permissions=permissions, tree=tree, default=default)
+
+
+class RHLocationPermissionTypes(RHRoomBookingBase):
+    def _process(self):
+        permissions, tree, default = get_permissions_info(Location)
         return jsonify(permissions=permissions, tree=tree, default=default)

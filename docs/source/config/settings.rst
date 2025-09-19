@@ -34,6 +34,14 @@ Authentication
 
     Default: ``True``
 
+.. data:: LOCAL_USERNAMES
+
+    This setting controls whether local Indico accounts have usernames
+    for logging in. If disabled, only the email address is used as the
+    "username", otherwise both can be used.
+
+    Default: ``True``
+
 .. data:: LOCAL_GROUPS
 
     This setting controls whether local Indico groups are available.
@@ -54,6 +62,21 @@ Authentication
     are enabled.
 
     Default: ``True``
+
+.. data:: LOCAL_PASSWORD_MIN_LENGTH
+
+    This setting controls the minimum number of characters required for a
+    local account password.
+
+    Outside debug mode, this cannot be set to a value less than ``8``, which
+    is considered the bare minimum for a (somewhat) secure password.
+
+    The default value is ``8`` to avoid suddenly changing it for existing
+    installations which would require users to change their password at the
+    next login. Any new installation has a default of ``15``, which is the
+    recommendation from the NIST standard.
+
+    Default: ``8``
 
 .. data:: LOCAL_MODERATION
 
@@ -367,6 +390,20 @@ Customization
     will effectively hide the language altogether.
 
     Default: ``{}``
+
+.. data:: ALLOWED_LANGUAGES
+
+    A set of allowed language names. This can be useful if only specific languages
+    should be available in your Indico instance, instead of all languages for which
+    Indico provides translations.
+
+    For example, if you want to display only English and Spanish you can use:
+
+    .. code-block:: python
+
+        ALLOWED_LANGUAGES = {'en_GB', 'es_ES'}
+
+    Default: ``None``
 
 .. data:: CHECKIN_APP_URL
 
@@ -708,6 +745,26 @@ Logging
 Security
 --------
 
+.. data:: ALLOW_PUBLIC_USER_SEARCH
+
+    If disabled, users without management permissions cannot search for
+    existing Indico users. This affects places such as abstract submission,
+    material ACLs and the verbosity of the email status check (whether the
+    registration will be linked to an Indico account) while registering for
+    an event.
+
+    It is recommended to disable this setting in case you run a public instance
+    with strong privacy requirements that weigh heavier than the convenience
+    of being able to search Indico users.
+
+    Note that this setting is only effective if event creation is properly
+    restricted since otherwise any user can just create an event where they
+    then have management permissions and thus the ability to search for users.
+    This also means that unlisted events must be disabled or restricted to
+    trusted users.
+
+    Default: ``True``
+
 .. data:: SECRET_KEY
 
     The secret key used to sign tokens in URLs.  It must be kept secret
@@ -729,6 +786,16 @@ Security
     browser is closed.
 
     Default: ``86400 * 31``
+
+.. data:: SESSION_MAX_LIFETIME
+
+    The duration (in seconds) after which a session always expires. If set to
+    ``None``, only the :data:`SESSION_LIFETIME` is used and the session can be
+    renewed indefinitely as long as there is activity before its expiry.
+    This setting is ignored if a custom Multipass provider specifies its own
+    maximum lifetime via the ``session_expiry`` entry in the ``multipass_data``.
+
+    Default: ``None``
 
 
 Storage
@@ -769,8 +836,10 @@ Storage
 .. data:: STATIC_SITE_STORAGE
 
     The name of the storage backend used to store "offline copies" of
-    events.  Files are written to this backend when generating an offline
-    copy and deleted after a certain amount of time.
+    events and material packages.  Files are written to this backend when generating
+    an offline copy and deleted after a certain amount of time.  When someone requests
+    a material package for an event, it is also written to this backend, and deleted
+    about a day later.
 
     If not set, the :data:`ATTACHMENT_STORAGE` backend is used.
 
@@ -786,6 +855,22 @@ Storage
     archive. The default size is 10 GB.
 
     Default: ``10 * 1024``
+
+.. data:: MATERIAL_PACKAGE_RATE_LIMIT
+
+    Applies a rate limit to public endpoints that build material packages.
+
+    Rate limiting is applied by IP address.
+
+    The default allows 3 packages per 30 minutes, and an additional 3 once per day
+    in case someone builds separate packages e.g. for sessions. Setting the rate limit
+    to ``None`` disables it.
+
+    Depending on how limited your storage space is, especially in relation to the amount
+    of materials (slides etc.) in your events, you may want to go for an even stricter
+    rate limit.
+
+    Default: ``'3 per 30 minutes, 3 per day'``
 
 
 System

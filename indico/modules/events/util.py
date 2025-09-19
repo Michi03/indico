@@ -311,8 +311,11 @@ class ListGeneratorBase:
 
     def _get_filters_from_request(self):
         """Get the new filters after the filter form is submitted."""
+        def _get(item, name):
+            return item.get(name) if isinstance(item, dict) else getattr(item, name, None)
+
         def get_selected_options(item_id, item):
-            if item.get('filter_choices') or item.get('type') == 'bool':
+            if _get(item, 'filter_choices') or _get('type', 'bool'):
                 return [x if x != 'None' else None for x in request.form.getlist(f'field_{item_id}')]
 
         filters = deepcopy(self.default_list_config['filters'])
@@ -552,10 +555,14 @@ def register_location_change(entry):
 
 
 def serialize_event_for_ical(event):
+    title = event.title
+    if event.label:
+        title += f' [{event.label.title}]'
+
     return {
         '_fossil': 'conferenceMetadata',
         'id': event.id,
-        'title': event.title,
+        'title': title,
         'description': event.description,
         'startDate': event.start_dt,
         'endDate': event.end_dt,

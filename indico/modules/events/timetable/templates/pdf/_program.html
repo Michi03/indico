@@ -2,7 +2,7 @@
     {% for day, entries in days.items() %}
         <div class="day pagebreak program-{{loop.index}} {{ 'pagebreak-children' if config.new_page_per_session else '' }}" id="day-{{ loop.index }}">
             <div class="day-title">
-                <h2>{{ day|format_skeleton('EEEEdMMMM', timezone=event.tzinfo) }}</h2>
+                <h2>{{ day|format_skeleton('EEEEdMMMM') }}</h2>
             </div>
             {% for entry in entries %}
                 {% set show_children_location = program_config.show_children_location[entry.id] %}
@@ -113,7 +113,7 @@
                     <div class="contrib-heading">
                         {% if not sess.is_poster %}
                             <span class="timebox inherited-bg-color inherited-txt-color">
-                                {{ format_interval(child.start_dt.astimezone(child.event.tzinfo), child.end_dt.astimezone(child.event.tzinfo), format='HHmm') }}
+                                {{ format_interval(child.start_dt.astimezone(child.event.tzinfo), child.end_dt.astimezone(child.event.tzinfo), format='short') }}
                                 {% if config.show_length_contribs %}
                                     ({{ (child.end_dt - child.start_dt)|format_human_timedelta(narrow=True) }})
                                 {% endif %}
@@ -151,11 +151,14 @@
     {% endif %}
 
     {% if show_location %}
-        <p>
-            <b>{% trans %}Location{% endtrans %}</b>
-            <br>
-            {{ _render_place(contrib) }}
-        </p>
+        {% set loc = _render_place(contrib)|trim %}
+        {% if loc %}
+            <p>
+                <b>{% trans %}Location{% endtrans %}</b>
+                <br>
+                {{ loc }}
+            </p>
+        {% endif %}
     {% endif %}
     {% if config.show_abstract and (not contrib.session.is_poster or config.show_poster_abstract) and contrib.description %}
         <div class="description">
@@ -228,10 +231,13 @@
             </b>
         </p>
         {% if program_config.show_siblings_location %}
-            <p>
-                <b>{% trans %}Location{% endtrans %}:</b>
-                {{ _render_place(entry) }}
-            </p>
+            {% set loc = _render_place(entry)|trim %}
+            {% if loc %}
+                <p>
+                    <b>{% trans %}Location{% endtrans %}:</b>
+                    {{ loc }}
+                </p>
+            {% endif %}
         {% endif %}
         {% set people = object.person_links if type == 'SESSION_BLOCK' else object.speakers %}
         {% if type != 'BREAK' and people %}
@@ -259,9 +265,9 @@
 {% macro _render_block_date(entry, day, print_date_close_to_sessions) %}
     {% if print_date_close_to_sessions %}
         <p class="session-block-date">
-            <b>{{ day|format_skeleton('EEEEdMMMM', timezone=entry.event.tzinfo) }}</b>
+            <b>{{ day|format_skeleton('EEEEdMMMM') }}</b>
             <span class="timebox">
-                {{ format_interval(entry.start_dt.astimezone(entry.event.tzinfo), entry.end_dt.astimezone(entry.event.tzinfo), format='HHmm') }}
+                {{ format_interval(entry.start_dt.astimezone(entry.event.tzinfo), entry.end_dt.astimezone(entry.event.tzinfo), format='short') }}
             </span>
         </p>
     {% endif %}
@@ -272,7 +278,7 @@
 {% macro _render_place(entry) %}
     {# Entry argument could be both an entry or a data object attached to an entry #}
     {% set entry = entry.object or entry %}
-    {{ [entry.venue_name, entry.room_name, entry.address] | select | join(', ') }}
+    {{ [entry.venue_name, entry.room_name, entry.address] | select | join(', ') | trim }}
 {% endmacro %}
 
 {% macro _render_names(people, show_title=false, show_affiliation=false) %}

@@ -349,21 +349,29 @@ def create_booking_for_event(room_id, event):
         return None
 
 
-def get_active_bookings(limit, start_dt, last_reservation_id=None, **filters):
-    criteria = [ReservationOccurrence.start_dt > start_dt]
+def get_active_bookings(limit, start_dt, end_dt=None, last_reservation_id=None, **filters):
+    if end_dt:
+        criteria = [db_dates_overlap(ReservationOccurrence, 'start_dt', start_dt, 'end_dt', end_dt, inclusive=True)]
+    else:
+        criteria = [ReservationOccurrence.start_dt > start_dt]
     if last_reservation_id is not None:
         criteria.append(db.and_(db.cast(ReservationOccurrence.start_dt, db.Date) >= start_dt,
                                 ReservationOccurrence.reservation_id > last_reservation_id))
 
-    query = (_bookings_query(filters, noload_room=True)
+    hide_booking_details = rb_settings.get('hide_booking_details')
+    query = (_bookings_query(filters, noload_room=(not hide_booking_details), load_room_acl=hide_booking_details)
              .filter(db.or_(*criteria))
              .order_by(ReservationOccurrence.start_dt,
                        ReservationOccurrence.reservation_id,
-                       db.func.indico.natsort(Room.full_name))
-             .limit(limit))
+                       db.func.indico.natsort(Room.full_name)))
 
-    total = with_total_rows(query)[1]
-    rows_left = total - limit if total > limit else total
+    if limit is not None:
+        query = query.limit(limit)
+        total = with_total_rows(query)[1]
+        rows_left = total - limit if total > limit else total
+    else:
+        total = query.count()
+        rows_left = 0
     return group_by_occurrence_date(query, sort_by=lambda obj: (obj.start_dt, obj.reservation_id)), rows_left
 
 

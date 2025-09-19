@@ -88,10 +88,11 @@ def _inject_event_header(event, **kwargs):
     if event.has_feature('registration'):
         displayed_regforms, user_registrations = get_event_regforms_registrations(event, session.user,
                                                                                   include_scheduled=False)
-        # A participant could appear more than once in the list in case he register to multiple registration form.
+        # A participant could appear more than once in the list in case they register to multiple registration form.
         # This is deemed very unlikely in the case of meetings and lectures and thus not worth the extra complexity.
         return render_template(
             'events/registration/display/event_header.html',
+            event=event,
             regforms=displayed_regforms,
             user_registrations=user_registrations,
             published_registrations=event.get_published_registrations(session.user),
@@ -225,9 +226,10 @@ def _get_management_permissions(sender, **kwargs):
 
 @signals.event_management.get_cloners.connect
 def _get_registration_cloners(sender, **kwargs):
-    from indico.modules.events.registration.clone import RegistrationCloner, RegistrationFormCloner
-    yield RegistrationFormCloner
-    yield RegistrationCloner
+    from indico.modules.events.registration import clone
+    yield clone.RegistrationTagCloner
+    yield clone.RegistrationFormCloner
+    yield clone.RegistrationCloner
 
 
 class RegistrationFeature(EventFeature):

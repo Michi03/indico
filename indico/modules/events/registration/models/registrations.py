@@ -12,28 +12,26 @@ from decimal import Decimal
 from email.mime.image import MIMEImage
 from uuid import uuid4
 
-from babel.numbers import format_currency
 from flask import has_request_context, request, session
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.event import listens_for
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import column_property, mapper
-from werkzeug.exceptions import BadRequest
 
 from indico.core import signals
 from indico.core.config import config
 from indico.core.db import db
 from indico.core.db.sqlalchemy import PyIntEnum, UTCDateTime
 from indico.core.db.sqlalchemy.util.queries import increment_and_get
-from indico.core.errors import NoReportError
+from indico.core.errors import IndicoError
 from indico.core.storage import StoredFileMixin
 from indico.modules.events.payment.models.transactions import TransactionStatus
 from indico.modules.events.registration.models.items import PersonalDataType
 from indico.modules.events.registration.wallets.apple import AppleWalletManager
 from indico.modules.events.registration.wallets.google import GoogleWalletManager
 from indico.modules.users.models.users import format_display_full_name
-from indico.util.date_time import now_utc
+from indico.util.date_time import format_currency, now_utc
 from indico.util.decorators import classproperty
 from indico.util.enum import RichIntEnum
 from indico.util.fs import secure_filename
@@ -302,9 +300,10 @@ class Registration(db.Model):
         secondary=registrations_tags_table,
         passive_deletes=True,
         collection_class=set,
+        order_by='RegistrationTag.title',
         backref=db.backref(
             'registrations',
-            lazy=False
+            lazy=True
         )
     )
     #: The serial number assigned to the Apple Wallet pass
@@ -419,6 +418,10 @@ class Registration(db.Model):
             loc['token'] = self.uuid
         return loc
 
+    def is_field_shown(self, field):
+        from indico.modules.events.registration.util import is_conditional_field_shown
+        return is_conditional_field_shown(field, self.data_by_field, is_db_data=True)
+
     @locator.uuid
     def locator(self):
         """A locator that uses uuid instead of id."""
@@ -520,12 +523,12 @@ class Registration(db.Model):
         price_adjustment = self.price_adjustment or Decimal(0)
         return (base_price + price_adjustment + calc_price).max(0)
 
-    @property
-    def summary_data(self):
+    def get_summary_data(self, *, hide_empty=False):
         """Export registration data nested in sections and fields."""
 
         def _fill_from_regform():
-            for section in self.registration_form.sections:
+            sections = self.sections_with_answered_fields if hide_empty else self.registration_form.sections
+            for section in sections:
                 if not section.is_visible:
                     continue
                 summary[section] = {}
@@ -661,10 +664,7 @@ class Registration(db.Model):
         return picture_attachements
 
     def _render_price(self, price):
-        locale = 'en_GB'
-        if has_request_context():
-            locale = session.lang or 'en_GB'
-        return format_currency(price, self.currency, locale=locale)
+        return format_currency(price, self.currency)
 
     def render_price(self):
         return self._render_price(self.price)
@@ -755,14 +755,11 @@ class Registration(db.Model):
         if self.state != initial_state:
             signals.event.registration_state_updated.send(self, previous_state=initial_state)
 
-    def reset_state(self, *, silent=False):
+    def reset_state(self):
         """Reset the state of the registration back to pending."""
-        initial_state = self.state
         if self.has_conflict():
-            if silent:
-                return False
-            raise NoReportError(_('Cannot reset this registration since there is another valid registration for the '
-                                  'same user or email.'))
+            raise IndicoError(_('Cannot reset this registration since there is another valid registration for the '
+                                'same user or email.'))
         if self.state in (RegistrationState.complete, RegistrationState.unpaid):
             self.update_state(approved=False)
         elif self.state == RegistrationState.rejected:
@@ -770,13 +767,9 @@ class Registration(db.Model):
             self.update_state(rejected=False)
         elif self.state == RegistrationState.withdrawn:
             self.update_state(withdrawn=False)
-            signals.event.registration_state_updated.send(self, previous_state=initial_state)
-        elif silent:
-            return False
-        else:
-            raise BadRequest(_('The registration cannot be reset in its current state.'))
+        elif self.state != RegistrationState.pending:
+            raise ValueError(f'Cannot reset registration state from {self.state.name}')
         self.checked_in = False
-        return True
 
     def has_conflict(self):
         """Check if there are other valid registrations for the same user.
@@ -913,10 +906,6 @@ class RegistrationData(StoredFileMixin, db.Model):
         return self.field_data.field.calculate_price(self)
 
     @property
-    def summary_data(self):
-        return {'data': self.friendly_data, 'price': self.price}
-
-    @property
     def user_data(self):
         from indico.modules.events.registration.fields.simple import KEEP_EXISTING_FILE_UUID
         if self.field_data.field.field_impl.is_file_field:
@@ -954,7 +943,7 @@ class RegistrationData(StoredFileMixin, db.Model):
         return config.ATTACHMENT_STORAGE, path
 
     def _render_price(self, price):
-        return format_currency(price, self.registration.currency, locale=(session.lang or 'en_GB'))
+        return format_currency(price, self.registration.currency)
 
     def render_price(self):
         return self._render_price(self.price)

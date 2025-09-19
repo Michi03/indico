@@ -19,7 +19,7 @@ import {$T} from 'indico/utils/i18n';
 
     function handleRegListRowSelection() {
       $('table.i-table input.select-row')
-        .on('change', function() {
+        .on('change', () => {
           $('.regform-download-attachments').toggleClass(
             'disabled',
             !$('.list input:checkbox:checked[data-has-files=true]').length
@@ -27,7 +27,7 @@ import {$T} from 'indico/utils/i18n';
         })
         .trigger('change');
       $('table.i-table input.select-row')
-        .on('change', function() {
+        .on('change', () => {
           $('.regform-download-documents').toggleClass(
             'disabled',
             !$('.list input:checkbox:checked[data-has-documents=true]').length
@@ -63,7 +63,7 @@ import {$T} from 'indico/utils/i18n';
           selectedRows.length
         )
         .format(selectedRows.length);
-      confirmPrompt(msg).then(function() {
+      confirmPrompt(msg).then(() => {
         $.ajax({
           url: $this.data('href'),
           method: $this.data('method'),
@@ -111,6 +111,7 @@ import {$T} from 'indico/utils/i18n';
         withExternalUsers: true,
         single: true,
         alwaysConfirm: true,
+        searchToken: document.querySelector('.js-add-user').dataset.searchToken,
       });
       if (user) {
         const url = $('.js-add-user').data('href');

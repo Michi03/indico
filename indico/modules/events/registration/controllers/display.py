@@ -21,7 +21,8 @@ from indico.modules.events.registration import registration_settings
 from indico.modules.events.registration.controllers import (CheckEmailMixin, RegistrationEditMixin,
                                                             RegistrationFormMixin, UploadRegistrationFileMixin,
                                                             UploadRegistrationPictureMixin)
-from indico.modules.events.registration.models.form_fields import RegistrationFormFieldData, RegistrationFormItem
+from indico.modules.events.registration.models.form_fields import (RegistrationFormField, RegistrationFormFieldData,
+                                                                   RegistrationFormItem)
 from indico.modules.events.registration.models.forms import RegistrationForm
 from indico.modules.events.registration.models.invitations import InvitationState, RegistrationInvitation
 from indico.modules.events.registration.models.items import PersonalDataType
@@ -29,7 +30,8 @@ from indico.modules.events.registration.models.registrations import Registration
 from indico.modules.events.registration.notifications import notify_registration_state_update
 from indico.modules.events.registration.util import (create_registration, generate_ticket,
                                                      get_event_regforms_registrations, get_flat_section_submission_data,
-                                                     get_initial_form_values, get_user_data, make_registration_schema)
+                                                     get_initial_form_values, get_user_data, load_registration_schema,
+                                                     make_registration_schema)
 from indico.modules.events.registration.views import (WPDisplayRegistrationFormConference,
                                                       WPDisplayRegistrationFormSimpleEvent,
                                                       WPDisplayRegistrationParticipantList)
@@ -38,7 +40,7 @@ from indico.modules.users.util import send_avatar, send_default_avatar
 from indico.util.fs import secure_filename
 from indico.util.i18n import _
 from indico.util.marshmallow import UUIDString
-from indico.web.args import parser, use_kwargs
+from indico.web.args import use_kwargs
 from indico.web.flask.util import send_file, url_for
 from indico.web.util import ExpectedError
 
@@ -92,6 +94,26 @@ class RHRegistrationFormBase(RegistrationFormMixin, RHRegistrationFormDisplayBas
 
     def _check_restricted_event_access(self):
         return self.regform.in_event_acls.filter_by(event_id=self.event.id).has_rows()
+
+
+class RHRegistrationFormFieldActionBase(RHRegistrationFormBase):
+    """Base class for a specific registration field in the public part of the registration form."""
+
+    normalize_url_spec = {
+        'locators': {
+            lambda self: self.field
+        },
+        'skipped_args': {'section_id'}
+    }
+
+    def _process_args(self):
+        RHRegistrationFormBase._process_args(self)
+        self.field = (RegistrationFormField.query
+                      .filter(RegistrationFormField.id == request.view_args['field_id'],
+                              RegistrationFormField.registration_form == self.regform,
+                              RegistrationFormField.is_enabled,
+                              ~RegistrationFormField.is_deleted)
+                      .one())
 
 
 class RHRegistrationFormRegistrationBase(RHRegistrationFormBase):
@@ -378,8 +400,8 @@ class RHRegistrationForm(InvitationMixin, RHRegistrationFormRegistrationBase):
         if not self._can_register():
             raise ExpectedError(_('You cannot register for this event'))
 
-        schema = make_registration_schema(self.regform, captcha_required=self._captcha_required)()
-        form_data = parser.parse(schema)
+        schema_cls = make_registration_schema(self.regform, captcha_required=self._captcha_required)
+        form_data = load_registration_schema(self.regform, schema_cls)
         registration = create_registration(self.regform, form_data, self.invitation)
         invalidate_captcha()
         return jsonify({'redirect': url_for('.display_regform', registration.locator.registrant)})
@@ -404,7 +426,7 @@ class RHRegistrationForm(InvitationMixin, RHRegistrationFormRegistrationBase):
                                                captcha_settings=get_captcha_settings())
 
 
-class RHUploadRegistrationFile(UploadRegistrationFileMixin, InvitationMixin, RHRegistrationFormBase):
+class RHUploadRegistrationFile(UploadRegistrationFileMixin, InvitationMixin, RHRegistrationFormFieldActionBase):
     """Upload a file from a registration form."""
 
     ALLOW_PROTECTED_EVENT = True
@@ -413,14 +435,14 @@ class RHUploadRegistrationFile(UploadRegistrationFileMixin, InvitationMixin, RHR
         'token': UUIDString(load_default=None),
     }, location='query')
     def _process_args(self, token):
-        RHRegistrationFormBase._process_args(self)
+        RHRegistrationFormFieldActionBase._process_args(self)
         InvitationMixin._process_args(self)
         self.existing_registration = self.regform.get_registration(uuid=token) if token else None
 
     def _check_access(self):
         if not self.existing_registration:
             try:
-                RHRegistrationFormBase._check_access(self)
+                RHRegistrationFormFieldActionBase._check_access(self)
             except ForbiddenPrivateRegistrationForm:
                 if not self.invitation:
                     raise
@@ -563,9 +585,13 @@ class RHRegistrationAvatar(RHDisplayEventBase):
                                      ~Registration.is_deleted,
                                      ~RegistrationForm.is_deleted)
                              .join(Registration.registration_form)
-                             .options(load_only('id', 'registration_form_id', 'first_name', 'last_name'),
+                             .options(load_only('id', 'registration_form_id', 'is_deleted', 'first_name', 'last_name',
+                                                'state', 'participant_hidden', 'consent_to_publish'),
                                       lazyload('*'),
-                                      joinedload('registration_form').load_only('id', 'event_id'),
+                                      joinedload('registration_form').load_only('id', 'event_id', 'is_deleted',
+                                                                                'publish_registrations_duration',
+                                                                                'publish_registrations_public',
+                                                                                'publish_registrations_participants'),
                                       joinedload('user').load_only('id', 'first_name', 'last_name', 'title',
                                                                    'picture_source', 'picture_metadata', 'picture'))
                              .one())

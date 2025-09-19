@@ -15,6 +15,7 @@ import updateRoomAttributesURL from 'indico-url:rb.admin_update_room_attributes'
 import updateRoomAvailabilityURL from 'indico-url:rb.admin_update_room_availability';
 import updateRoomEquipmentURL from 'indico-url:rb.admin_update_room_equipment';
 import roomNotificationDefaultsURL from 'indico-url:rb.notification_settings';
+import roomPermissionInfoURL from 'indico-url:rb.room_permission_types';
 
 import arrayMutators from 'final-form-arrays';
 import _ from 'lodash';
@@ -47,7 +48,7 @@ import './RoomEditModal.module.scss';
 
 function RoomEditModal({roomId, locationId, onClose, afterCreation}) {
   const favoriteUsersController = useFavoriteUsers();
-  const [permissionManager, permissionInfo] = usePermissionInfo();
+  const [permissionManager, permissionInfo] = usePermissionInfo(roomPermissionInfoURL());
   const equipmentTypes = useSelector(getAllEquipmentTypes);
   const dispatch = useDispatch();
 
@@ -202,6 +203,7 @@ function RoomEditModal({roomId, locationId, onClose, afterCreation}) {
 
   const handleSubmit = async (data, form) => {
     const changedValues = getChangedValues(data, form);
+    const isAttributesDirty = form.getFieldState('attributes')?.dirty;
     const {
       attributes,
       bookable_hours: bookableHours,
@@ -218,20 +220,18 @@ function RoomEditModal({roomId, locationId, onClose, afterCreation}) {
       } else if (!_.isEmpty(basicDetails)) {
         await indicoAxios.patch(roomURL({room_id: roomId}), basicDetails);
       }
+      const roomIdArgs = {room_id: isNewRoom ? response.data.id : roomId};
       if (availableEquipment) {
-        await indicoAxios.post(updateRoomEquipmentURL({room_id: roomId}), {
+        await indicoAxios.post(updateRoomEquipmentURL(roomIdArgs), {
           available_equipment: availableEquipment,
         });
       }
-      if (attributes) {
-        await indicoAxios.post(updateRoomAttributesURL({room_id: roomId}), {attributes});
+      if (isAttributesDirty) {
+        await indicoAxios.post(updateRoomAttributesURL(roomIdArgs), {attributes: attributes || []});
       }
       if (bookableHours || nonbookablePeriods) {
         const availability = {bookableHours, nonbookablePeriods};
-        await indicoAxios.post(
-          updateRoomAvailabilityURL({room_id: isNewRoom ? response.data.id : roomId}),
-          snakifyKeys(availability)
-        );
+        await indicoAxios.post(updateRoomAvailabilityURL(roomIdArgs), snakifyKeys(availability));
       }
       // reload room so the form gets new initialValues
       if (!isNewRoom) {

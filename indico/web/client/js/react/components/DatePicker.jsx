@@ -15,9 +15,7 @@ import {Param, Translate} from 'indico/react/i18n';
 import {formatDate, ISO_FORMAT} from 'indico/utils/date_format';
 import {fromISOLocalDate} from 'indico/utils/date_parser';
 
-import 'indico/custom_elements/ind_date_picker';
-
-const INVALID = '__invalid__';
+export const INVALID = '__invalid__';
 
 export default function DatePicker({
   onChange,
@@ -26,6 +24,7 @@ export default function DatePicker({
   invalidValue = INVALID,
   min,
   max,
+  filter,
   ...inputProps
 }) {
   function handleDateChange(evt) {
@@ -49,12 +48,17 @@ export default function DatePicker({
         {...inputProps}
         placeholder={format}
       />
-      <button type="button" disabled={inputProps.disabled} aria-haspopup="dialog">
+      <button
+        type="button"
+        disabled={inputProps.disabled}
+        aria-haspopup="dialog"
+        data-calendar-trigger
+      >
         <Translate as="span">Open a calendar</Translate>
       </button>
 
       <DatePickerCalendar>
-        <DatePickerGrid />
+        <DatePickerGrid filter={filter} />
       </DatePickerCalendar>
 
       <span className="date-format" data-format>
@@ -73,6 +77,7 @@ DatePicker.propTypes = {
   invalidValue: PropTypes.any,
   min: PropTypes.string,
   max: PropTypes.string,
+  filter: PropTypes.func,
 };
 
 DatePicker.defaultProps = {
@@ -80,6 +85,7 @@ DatePicker.defaultProps = {
   format: undefined,
   min: undefined,
   max: undefined,
+  filter: undefined,
 };
 
 /** Like DatePicker, but using a range-like value */

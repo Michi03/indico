@@ -9,6 +9,7 @@ from collections import namedtuple
 from io import BytesIO
 from operator import attrgetter
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 from dateutil.relativedelta import relativedelta
 from flask import flash, jsonify, redirect, render_template, request, session
@@ -16,7 +17,6 @@ from itsdangerous import BadSignature
 from markupsafe import Markup, escape
 from marshmallow import fields
 from PIL import Image
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, load_only, subqueryload
 from sqlalchemy.orm.exc import StaleDataError
 from webargs import validate
@@ -38,7 +38,10 @@ from indico.modules.auth.util import register_user
 from indico.modules.categories import Category
 from indico.modules.core.settings import social_settings
 from indico.modules.events import Event
+from indico.modules.events.contributions.models.contributions import Contribution
+from indico.modules.events.sessions.models.sessions import Session
 from indico.modules.events.util import serialize_event_for_ical
+from indico.modules.logs.models.entries import AppLogEntry, AppLogRealm, LogKind, UserLogRealm
 from indico.modules.users import User, logger, user_management_settings
 from indico.modules.users.export_schemas import DataExportRequestSchema
 from indico.modules.users.forms import (AdminAccountRegistrationForm, AdminsForm, AdminUserSettingsForm, MergeForm,
@@ -47,23 +50,24 @@ from indico.modules.users.models.affiliations import Affiliation
 from indico.modules.users.models.emails import UserEmail
 from indico.modules.users.models.export import DataExportOptions, DataExportRequestState
 from indico.modules.users.models.users import ProfilePictureSource, UserTitle
-from indico.modules.users.operations import create_user
+from indico.modules.users.operations import create_user, delete_or_anonymize_user
 from indico.modules.users.schemas import (AffiliationSchema, BasicCategorySchema, FavoriteEventSchema,
                                           UserPersonalDataSchema)
-from indico.modules.users.util import (anonymize_user, get_avatar_url_from_name, get_gravatar_for_user,
-                                       get_linked_events, get_mastodon_server_name, get_related_categories,
-                                       get_suggested_categories, get_unlisted_events, get_user_by_email,
-                                       get_user_titles, merge_users, search_users, send_avatar, serialize_user,
+from indico.modules.users.util import (get_avatar_url_from_name, get_gravatar_for_user, get_linked_events,
+                                       get_mastodon_server_name, get_related_categories, get_suggested_categories,
+                                       get_unlisted_events, get_user_by_email, get_user_titles, log_user_update,
+                                       merge_users, search_affiliations, search_users, send_avatar, serialize_user,
                                        set_user_avatar)
 from indico.modules.users.views import (WPUser, WPUserDashboard, WPUserDataExport, WPUserFavorites, WPUserPersonalData,
                                         WPUserProfilePic, WPUsersAdmin)
 from indico.util.date_time import now_utc
 from indico.util.i18n import _, force_locale
 from indico.util.images import square
-from indico.util.marshmallow import HumanizedDate, Principal, validate_with_message
+from indico.util.marshmallow import HumanizedDate, ModelField, Principal, validate_with_message
 from indico.util.signals import values_from_signal
 from indico.util.signing import static_secure_serializer
 from indico.util.string import make_unique_token, remove_accents
+from indico.util.user import make_user_search_token, validate_search_token
 from indico.web.args import use_args, use_kwargs
 from indico.web.flask.templating import get_template_module
 from indico.web.flask.util import send_file, url_for
@@ -237,11 +241,13 @@ class RHPersonalData(RHUserBase):
         if self.user.affiliation_link:
             current_affiliation = AffiliationSchema().dump(self.user.affiliation_link)
         has_predefined_affiliations = Affiliation.query.filter(~Affiliation.is_deleted).has_rows()
+        allow_custom_affiliations = not user_management_settings.get('only_predefined_affiliations')
         return WPUserPersonalData.render_template('personal_data.html', 'personal_data', user=self.user,
                                                   titles=titles, user_values=user_values, locked_fields=locked_fields,
                                                   locked_field_message=multipass.locked_field_message,
                                                   current_affiliation=current_affiliation,
                                                   has_predefined_affiliations=has_predefined_affiliations,
+                                                  allow_custom_affiliations=allow_custom_affiliations,
                                                   allow_deletion=config.ALLOW_ADMIN_USER_DELETION)
 
 
@@ -287,9 +293,9 @@ class RHPersonalDataUpdate(RHUserBase):
     allow_system_user = True
 
     @use_args(UserPersonalDataSchema, partial=True)
-    def _process(self, changes):
-        logger.info('Profile of user %r updated by %r: %r', self.user, session.user, changes)
-        synced_fields = set(changes.pop('synced_fields', self.user.synced_fields))
+    def _process(self, updates):
+        logger.info('Profile of user %r updated by %r: %r', self.user, session.user, updates)
+        synced_fields = set(updates.pop('synced_fields', self.user.synced_fields))
         if not session.user.is_admin:
             synced_fields |= multipass.locked_fields & self.user.synced_fields
         syncable_fields = {k for k, v in self.user.synced_values.items()
@@ -297,11 +303,19 @@ class RHPersonalDataUpdate(RHUserBase):
         # we set this first so these fields are skipped below and only
         # get updated in synchronize_data which will flash a message
         # informing the user about the changes made by the sync
+        old_synced_fields = self.user.synced_fields
         self.user.synced_fields = synced_fields & syncable_fields
-        for key, value in changes.items():
-            if key not in self.user.synced_fields:
+        changes = {}
+        if old_synced_fields != self.user.synced_fields:
+            changes['synced_fields'] = (old_synced_fields, self.user.synced_fields)
+        for key, value in updates.items():
+            old = getattr(self.user, key)
+            if key not in self.user.synced_fields and old != value:
+                changes[key] = (old, value)
                 setattr(self.user, key, value)
-        self.user.synchronize_data(refresh=True)
+        changes.update(self.user.synchronize_data(refresh=True))
+        if changes:
+            log_user_update(self.user, changes)
         flash(_('Your personal data was successfully updated.'), 'success')
         return '', 204
 
@@ -309,18 +323,7 @@ class RHPersonalDataUpdate(RHUserBase):
 class RHSearchAffiliations(RH):
     @use_kwargs({'q': fields.String(load_default='')}, location='query')
     def _process(self, q):
-        exact_match = db.func.lower(Affiliation.name) == q.lower()
-        q_filter = Affiliation.name.ilike(f'%{q}%') if len(q) > 2 else exact_match
-        res = (
-            Affiliation.query
-            .filter(~Affiliation.is_deleted, q_filter)
-            .order_by(
-                exact_match.desc(),
-                db.func.lower(Affiliation.name).startswith(q.lower()).desc(),
-                db.func.lower(Affiliation.name)
-            )
-            .limit(20)
-            .all())
+        res = search_affiliations(q)
         return AffiliationSchema(many=True).jsonify(res)
 
 
@@ -386,6 +389,7 @@ class RHSaveProfilePicture(RHUserBase):
             self.user.picture = None
             self.user.picture_metadata = None
             logger.info('Profile picture of user %s removed by %s', self.user, session.user)
+            self.user.log(UserLogRealm.user, LogKind.negative, 'Profile', 'Picture removed', session.user)
             return '', 204
 
         if source == ProfilePictureSource.custom:
@@ -410,6 +414,8 @@ class RHSaveProfilePicture(RHUserBase):
             set_user_avatar(self.user, content, source.name, lastmod)
 
         logger.info('Profile picture of user %s updated by %s', self.user, session.user)
+        self.user.log(UserLogRealm.user, LogKind.change, 'Profile', 'Picture updated', session.user,
+                      data={'Source': source.name.title()})
         return '', 204
 
 
@@ -476,18 +482,19 @@ class RHUserFavorites(RHUserBase):
 
 
 class RHUserFavoritesAPI(RHUserBase):
-    def _process_args(self):
+    @use_kwargs({
+        'fav_user': Principal(load_default=None, data_key='identifier')
+    }, location='view_args')
+    def _process_args(self, fav_user):
         RHUserBase._process_args(self)
-        self.fav_user = (
-            User.get_or_404(request.view_args['fav_user_id']) if 'fav_user_id' in request.view_args else None
-        )
+        self.fav_user = fav_user
 
     def _process_GET(self):
-        return jsonify(sorted(u.id for u in self.user.favorite_users))
+        return jsonify(sorted(u.identifier for u in self.user.favorite_users))
 
     def _process_PUT(self):
         self.user.favorite_users.add(self.fav_user)
-        return jsonify(self.user.id), 201
+        return jsonify(self.user.identifier), 201
 
     def _process_DELETE(self):
         self.user.favorite_users.discard(self.fav_user)
@@ -587,6 +594,8 @@ class RHUserEmails(RHUserBase):
         form = UserEmailsForm()
         if form.validate_on_submit():
             self._send_confirmation(form.email.data)
+            self.user.log(UserLogRealm.user, LogKind.other, 'Profile', 'Validating new secondary email',
+                          session.user, data={'Email': form.email.data})
             flash(_('We have sent an email to {email}. Please click the link in that email within 24 hours to '
                     'confirm your new email address.').format(email=form.email.data), 'success')
             return redirect(url_for('.user_emails'))
@@ -634,6 +643,8 @@ class RHUserEmailsVerify(RHUserBase):
                 existing.is_pending = False
 
             self.user.secondary_emails.add(data['email'])
+            self.user.log(UserLogRealm.user, LogKind.positive, 'Profile', 'Secondary email added', session.user,
+                          data={'Email': data['email']})
             signals.users.email_added.send(self.user, email=data['email'], silent=False)
             flash(_('The email address {email} has been added to your account.').format(email=data['email']), 'success')
         return redirect(url_for('.user_emails'))
@@ -644,6 +655,8 @@ class RHUserEmailsDelete(RHUserBase):
         email = request.view_args['email']
         if email in self.user.secondary_emails:
             self.user.secondary_emails.remove(email)
+            self.user.log(UserLogRealm.user, LogKind.negative, 'Profile', 'Secondary email removed', session.user,
+                          data={'Email': email})
         return jsonify(success=True)
 
 
@@ -653,7 +666,10 @@ class RHUserEmailsSetPrimary(RHUserBase):
 
         email = request.form['email']
         if email in self.user.secondary_emails:
+            old = self.user.email
             self.user.make_email_primary(email)
+            self.user.log(UserLogRealm.user, LogKind.change, 'Profile', 'Primary email updated',
+                          session.user, data={'Old': old, 'New': email})
             db.session.commit()
             if self.user.picture_source in (ProfilePictureSource.gravatar, ProfilePictureSource.identicon):
                 update_gravatars.delay(self.user)
@@ -679,10 +695,20 @@ class RHAdmins(RHAdminBase):
             removed = admins - form.admins.data
             for user in added:
                 user.is_admin = True
+                AppLogEntry.log(AppLogRealm.admin, LogKind.positive, 'Admins',
+                                f'Admin privileges granted to {user.full_name}',
+                                session.user, data={'IP': request.remote_addr, 'User ID': user.id})
+                user.log(UserLogRealm.management, LogKind.positive, 'Admins', 'Admin privileges granted', session.user,
+                         data={'IP': request.remote_addr})
                 logger.warning('Admin rights granted to %r by %r [%s]', user, session.user, request.remote_addr)
                 flash(_('Admin added: {name} ({email})').format(name=user.name, email=user.email), 'success')
             for user in removed:
                 user.is_admin = False
+                AppLogEntry.log(AppLogRealm.admin, LogKind.negative, 'Admins',
+                                f'Admin privileges revoked from {user.full_name}',
+                                session.user, data={'IP': request.remote_addr, 'User ID': user.id})
+                user.log(UserLogRealm.management, LogKind.negative, 'Admins', 'Admin privileges revoked', session.user,
+                         data={'IP': request.remote_addr})
                 logger.warning('Admin rights revoked from %r by %r [%s]', user, session.user, request.remote_addr)
                 flash(_('Admin removed: {name} ({email})').format(name=user.name, email=user.email), 'success')
             return redirect(url_for('.admins'))
@@ -759,7 +785,8 @@ class RHUsersAdminCreate(RHAdminBase):
         if form.validate_on_submit():
             data = form.data
             if data.pop('create_identity', False):
-                identity = Identity(provider='indico', identifier=data.pop('username'), password=data.pop('password'))
+                identifier = data.pop('username') if config.LOCAL_USERNAMES else str(uuid4())
+                identity = Identity(provider='indico', identifier=identifier, password=data.pop('password'))
             else:
                 identity = None
                 data.pop('username', None)
@@ -886,8 +913,8 @@ class RHRejectRegistrationRequest(RHRegistrationRequestBase):
 
 
 class UserSearchResultSchema(mm.SQLAlchemyAutoSchema):
-    affiliation_id = fields.Integer(attribute='_affiliation.affiliation_id')
-    affiliation_meta = fields.Nested(AffiliationSchema, attribute='_affiliation.affiliation_link')
+    affiliation_id = fields.Integer(attribute='affiliation_link.id')
+    affiliation_meta = fields.Nested(AffiliationSchema, attribute='affiliation_link')
     title = fields.Enum(UserTitle, attribute='_title')
 
     class Meta:
@@ -899,8 +926,51 @@ class UserSearchResultSchema(mm.SQLAlchemyAutoSchema):
 search_result_schema = UserSearchResultSchema()
 
 
+class RHUserSearchToken(RHProtected):
+    """Create a token that allows searching users."""
+
+    @use_kwargs({
+        'category': ModelField(Category, filter_deleted=True, load_default=None, data_key='category_id'),
+        'event': ModelField(Event, filter_deleted=True, load_default=None, data_key='event_id'),
+        'contribution': ModelField(Contribution, filter_deleted=True, load_default=None, data_key='contribution_id'),
+        'session': ModelField(Session, filter_deleted=True, load_default=None, data_key='session_id'),
+    }, location='query')
+    def _process_args(self, category, event, contribution, session):
+        self.category = category
+        self.event = event
+        self.contribution = contribution
+        self.session = session
+
+    def _check_access(self):
+        RHProtected._check_access(self)
+        # XXX for now we do not give admins a token "for free", since this would make spotting bugs
+        # where no context is passed much harder. of course any of the access checks below will still
+        # be short-circuited for an admin, so calling this endpoint with `category_id=0` would always
+        # work for an admin
+        if self.category and self.category.can_create_events(session.user):
+            return
+        elif self.event and self.event.can_manage(session.user):
+            return
+        elif self.contribution and self.contribution.can_manage(session.user):
+            return
+        elif self.session and self.session.can_manage(session.user):
+            return
+        else:
+            raise Forbidden('Not authorized to search users')
+
+    def _process(self):
+        return jsonify(token=make_user_search_token())
+
+
 class RHUserSearch(RHProtected):
     """Search for users based on given criteria."""
+
+    @use_kwargs({
+        'token': fields.String(load_default=''),
+    }, location='query')
+    def _check_access(self, token):
+        RHProtected._check_access(self)
+        validate_search_token(token, session.user)
 
     def _serialize_pending_user(self, entry):
         first_name = entry.data.get('first_name') or ''
@@ -1003,19 +1073,21 @@ class RHUserBlock(RHUserBase):
         if self.user == session.user:
             raise Forbidden(_('You cannot block yourself'))
         self.user.is_blocked = True
+        self.user.log(UserLogRealm.management, LogKind.negative, 'User', 'User blocked', session.user)
         logger.info('User %s blocked %s', session.user, self.user)
         flash(_('{name} has been blocked.').format(name=self.user.name), 'success')
         return jsonify(success=True)
 
     def _process_DELETE(self):
         self.user.is_blocked = False
+        self.user.log(UserLogRealm.management, LogKind.positive, 'User', 'User unblocked', session.user)
         logger.info('User %s unblocked %s', session.user, self.user)
         flash(_('{name} has been unblocked.').format(name=self.user.name), 'success')
         return jsonify(success=True)
 
 
 class RHUserDelete(RHUserBase):
-    """Delete a user.
+    """Delete or anonymize a user.
 
     Deletes the user, and all their associated data. If it is not possible to delete the user, it will
     instead fallback to anonymizing the user.
@@ -1032,19 +1104,9 @@ class RHUserDelete(RHUserBase):
 
     def _process(self):
         user_name = self.user.name
-        user_repr = repr(self.user)
-        signals.users.db_deleted.send(self.user, flushed=False)
-        try:
-            db.session.delete(self.user)
-            db.session.flush()
-        except IntegrityError as exc:
-            db.session.rollback()
-            logger.info('User %r could not be deleted %s', self.user, str(exc))
-            anonymize_user(self.user)
-            logger.info('User %r anonymized %s', session.user, user_repr)
-            flash(_('{user_name} has been anonymized.').format(user_name=user_name), 'success')
-        else:
-            signals.users.db_deleted.send(self.user, flushed=True)
-            logger.info('User %r deleted %s', session.user, user_repr)
+        delete_or_anonymize_user(self.user)
+        if self.user not in db.session:
             flash(_('{user_name} has been deleted.').format(user_name=user_name), 'success')
+        else:
+            flash(_('{user_name} has been anonymized.').format(user_name=user_name), 'success')
         return '', 204

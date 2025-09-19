@@ -25,7 +25,7 @@ from indico.modules.rb.models.blockings import Blocking
 from indico.modules.rb.models.equipment import EquipmentType
 from indico.modules.rb.models.locations import Location
 from indico.modules.rb.models.map_areas import MapArea
-from indico.modules.rb.models.principals import RoomPrincipal
+from indico.modules.rb.models.principals import LocationPrincipal, RoomPrincipal
 from indico.modules.rb.models.reservation_edit_logs import ReservationEditLog
 from indico.modules.rb.models.reservation_occurrences import (ReservationOccurrence, ReservationOccurrenceLink,
                                                               ReservationOccurrenceState)
@@ -156,14 +156,6 @@ class ReservationSchema(mm.SQLAlchemyAutoSchema):
         return data
 
 
-class ReservationSchemaWithOwnership(ReservationSchema):
-    booked_for_self = Function(lambda r: session.user and r.booked_for_id == session.user.id)
-    booked_by_self = Function(lambda r: session.user and r.created_by_id == session.user.id)
-
-    class Meta(ReservationSchema.Meta):
-        fields = (*ReservationSchema.Meta.fields, 'booked_for_self', 'booked_by_self')
-
-
 class ReservationLinkedObjectDataSchema(mm.Schema):
     id = Number()
     title = Method('_get_title')
@@ -217,10 +209,6 @@ class ReservationOccurrenceSchema(mm.SQLAlchemyAutoSchema):
     class Meta:
         model = ReservationOccurrence
         fields = ('start_dt', 'end_dt', 'is_valid', 'reservation', 'rejection_reason', 'state', 'link_id')
-
-
-class ReservationOccurrenceSchemaWithOwnership(ReservationOccurrenceSchema):
-    reservation = Nested(ReservationSchemaWithOwnership)
 
 
 class ReservationOccurrenceSchemaWithPermissions(ReservationOccurrenceSchema):
@@ -384,23 +372,36 @@ class LocationsSchema(mm.SQLAlchemyAutoSchema):
 
 
 class AdminLocationsSchema(mm.SQLAlchemyAutoSchema):
-    can_delete = Function(lambda loc: not loc.rooms)
+    can_delete = Function(lambda loc: loc.can_delete(session.user) and not loc.rooms)
+    acl_entries = PrincipalPermissionList(LocationPrincipal)
+    can_edit = Function(lambda loc: loc.can_manage(session.user))
 
     class Meta:
         model = Location
-        fields = ('id', 'name', 'can_delete', 'map_url_template', 'room_name_format')
+        fields = ('id', 'name', 'can_edit', 'can_delete', 'map_url_template', 'room_name_format', 'acl_entries')
 
 
 class RBUserSchema(UserSchema):
     has_owned_rooms = mm.Method('has_managed_rooms')
+    has_moderated_rooms = mm.Method('_has_moderated_rooms')
     is_rb_admin = mm.Function(lambda user: rb_is_admin(user))
+    is_rb_location_manager = mm.Method('has_managed_locations')
 
     class Meta:
-        fields = (*UserSchema.Meta.fields, 'has_owned_rooms', 'is_admin', 'is_rb_admin', 'identifier', 'full_name')
+        fields = (*UserSchema.Meta.fields, 'has_owned_rooms', 'has_moderated_rooms', 'is_admin', 'is_rb_admin',
+                  'is_rb_location_manager', 'identifier', 'full_name')
 
     def has_managed_rooms(self, user):
         from indico.modules.rb.operations.rooms import has_managed_rooms
         return has_managed_rooms(user)
+
+    def _has_moderated_rooms(self, user):
+        from indico.modules.rb.operations.rooms import has_managed_rooms
+        return has_managed_rooms(user, permission='moderate', explicit=True)
+
+    def has_managed_locations(self, user):
+        from indico.modules.rb.operations.locations import has_managed_locations
+        return has_managed_locations(user)
 
 
 class CreateBookingSchema(mm.Schema):
@@ -491,6 +492,7 @@ class LocationArgs(mm.Schema):
     name = fields.String(required=True)
     room_name_format = fields.String(required=True)
     map_url_template = fields.URL(schemes={'http', 'https'}, allow_none=True, load_default='')
+    acl_entries = PrincipalPermissionList(LocationPrincipal)
 
     @validates('name')
     def _check_name_unique(self, name, **kwargs):
@@ -604,7 +606,6 @@ room_update_schema = RoomUpdateSchema()
 room_equipment_schema = RoomEquipmentSchema()
 map_areas_schema = MapAreaSchema(many=True)
 reservation_occurrences_schema = ReservationOccurrenceSchema(many=True)
-reservation_occurrences_schema_with_ownership = ReservationOccurrenceSchemaWithOwnership(many=True)
 reservation_occurrences_schema_with_permissions = ReservationOccurrenceSchemaWithPermissions(many=True)
 concurrent_pre_bookings_schema = ReservationConcurrentOccurrenceSchema(many=True)
 reservation_schema = ReservationSchema()

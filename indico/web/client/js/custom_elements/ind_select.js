@@ -13,7 +13,7 @@ import * as positioning from 'indico/utils/positioning';
 
 import './ind_select.scss';
 
-customElements.define(
+CustomElementBase.define(
   'ind-select',
   class extends CustomElementBase {
     static formAssociated = true;
@@ -54,7 +54,7 @@ customElements.define(
       const noOptionFoundMessage = listbox.querySelector('.no-option');
       const clear = this.querySelector('button[value=clear]');
       const id = `x-select-${this.constructor.lastId++}`;
-      const defaultCaption = caption.textContent;
+      const defaultCaption = caption.innerHTML;
       const internals = this.attachInternals();
 
       // Prepare the initial state
@@ -158,16 +158,27 @@ customElements.define(
         }
       });
 
-      listbox.addEventListener('pointerdown', evt => {
-        // Instead of click we use pointerdown
-        // to intercept focusout that fires before
-        // click, closing the dialog and making the
-        // target option unavailable before selection.
+      indSelect.addEventListener(
+        'pointerdown',
+        () => {
+          clearTimeout(indSelect._clearImmediateCloseFlagTimer);
+          indSelect._noImmediateClose = true;
+          indSelect._clearImmediateCloseFlagTimer = setTimeout(() => {
+            delete indSelect._noImmediateClose;
+          }, 500);
+        },
+        {passive: true}
+      );
+
+      listbox.addEventListener('click', evt => {
         const $option = evt.target.closest('[role=option]');
-        if ($option) {
-          selectOption($option);
-          dispatchChange();
+        if (!$option) {
+          return;
         }
+        delete indSelect._noImmediateClose;
+        selectOption($option);
+        toggleListbox(false);
+        dispatchChange();
       });
 
       clear?.addEventListener('click', () => {
@@ -189,7 +200,13 @@ customElements.define(
       // Internal functions
 
       function toggleListbox(shouldOpen = !indSelect.open) {
+        // Special case: request to close, but closing blocked
+        if (!shouldOpen && indSelect._noImmediateClose) {
+          return;
+        }
+
         indSelect.open = shouldOpen;
+
         if (shouldOpen) {
           dialog.show();
           positioning.position(listbox, indSelect, positioning.dropdownPositionStrategy, fit => {
@@ -212,7 +229,7 @@ customElements.define(
             option.hidden = false;
             numMatches++;
           } else {
-            const label = getOptionLabel(option).toLowerCase();
+            const label = getOptionLabelText(option).toLowerCase();
             option.hidden = !_.deburr(label).includes(_.deburr(keyword));
             numMatches += Number(!option.hidden);
             if (label === keyword && !option.hasAttribute('aria-disabled')) {
@@ -265,15 +282,14 @@ customElements.define(
         $option.setAttribute('aria-selected', true);
         filter.setAttribute('aria-activedescendant', $option.id);
         indSelect.setAttribute('aria-activedescendant', $option.id);
-        const optionLabel = getOptionLabel($option);
-        caption.textContent = optionLabel;
-        filter.placeholder = optionLabel;
+        caption.innerHTML = $option.innerHTML;
+        filter.placeholder = getOptionLabelText($option);
         setValue($option.dataset.value);
       }
 
       function clearValue() {
         unmarkSelectedOption();
-        caption.textContent = defaultCaption;
+        caption.innerHTML = defaultCaption;
         filter.placeholder = '';
         setValue('');
       }
@@ -302,7 +318,7 @@ customElements.define(
         indSelect.dispatchEvent(new Event('change', {bubbles: true}));
       }
 
-      function getOptionLabel($option) {
+      function getOptionLabelText($option) {
         return (
           $option.querySelector('[data-label]')?.textContent ??
           $option.getAttribute('aria-label') ??

@@ -18,6 +18,7 @@ from indico.modules.events.cloning import get_event_cloners
 from indico.modules.events.management.settings import privacy_settings
 from indico.modules.events.models.events import Event
 from indico.modules.events.models.legacy_mapping import LegacyEventMapping
+from indico.modules.events.settings import event_language_settings
 from indico.modules.logs import EventLogRealm
 from indico.util.i18n import _, ngettext
 from indico.util.string import is_legacy_id
@@ -145,7 +146,7 @@ def _sidemenu_items(sender, **kwargs):
                            section='customization')
         yield SideMenuItem('event_labels', _('Event Labels'), url_for('events.event_labels'),
                            section='customization')
-        yield SideMenuItem('event_keywords', _('Event Keywords'), url_for('events.event_keywords'),
+        yield SideMenuItem('allowed_keywords', _('Allowed Keywords'), url_for('events.allowed_keywords'),
                            section='customization')
         yield SideMenuItem('unlisted_events', _('Unlisted events'), url_for('events.unlisted_events'),
                            section='customization')
@@ -210,3 +211,4 @@ def _event_cloned(old_event, new_event, **kwargs):
     new_event.contact_title = old_event.contact_title
     new_event.contact_emails = old_event.contact_emails
     new_event.contact_phones = old_event.contact_phones
+    event_language_settings.set_multi(new_event, event_language_settings.get_all(old_event, no_defaults=True))

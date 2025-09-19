@@ -7,6 +7,7 @@
 
 import re
 import time
+from email.mime.base import MIMEBase
 from functools import wraps
 from types import GeneratorType
 
@@ -38,7 +39,7 @@ def email_sender(fn):
     return wrapper
 
 
-def send_email(email, event=None, module=None, user=None, log_metadata=None):
+def send_email(email, event=None, module=None, user=None, log_metadata=None, log_summary=None):
     """Send an email created by :func:`make_email`.
 
     When called while inside a RH, the email will be queued and only
@@ -55,14 +56,14 @@ def send_email(email, event=None, module=None, user=None, log_metadata=None):
     fn = send_email_task.delay if config.SMTP_USE_CELERY else do_send_email
     # we log the email immediately (as pending).  if we don't commit,
     # the log message will simply be thrown away later
-    log_entry = _log_email(email, event, module, user, log_metadata)
+    log_entry = _log_email(email, event, module, user, log_metadata, log_summary)
     if 'email_queue' in g:
         g.email_queue.append((fn, email, log_entry))
     else:
         fn(email, log_entry)
 
 
-def _log_email(email, event, module, user, meta=None):
+def _log_email(email, event, module, user, meta=None, summary=None):
     from indico.modules.logs import EventLogRealm, LogKind
     if not event:
         return None
@@ -77,8 +78,13 @@ def _log_email(email, event, module, user, meta=None):
         'body': email['body'].strip(),
         'state': 'pending',
         'sent_dt': None,
+        'alternatives': email['alternatives'],
+        'attachments': sorted(
+            a.get_filename('unnamed') if isinstance(a, MIMEBase) else a[0]
+            for a in email['attachments']
+        ),
     }
-    return event.log(EventLogRealm.emails, LogKind.other, module or 'Unknown', log_data['subject'],
+    return event.log(EventLogRealm.emails, LogKind.other, module or 'Unknown', summary or log_data['subject'],
                      user, type_='email', data=log_data, meta=meta)
 
 
@@ -123,7 +129,7 @@ def flush_email_queue():
 
 @make_interceptable
 def make_email(to_list=None, cc_list=None, bcc_list=None, *, sender_address=None, reply_address=None, attachments=None,
-               subject=None, body=None, template=None, html=False):
+               subject=None, body=None, template=None, html=False, alternatives=None):
     """Create an email.
 
     The preferred way to specify the email content is using the
@@ -150,6 +156,8 @@ def make_email(to_list=None, cc_list=None, bcc_list=None, *, sender_address=None
     :param template: A template module containing ``get_subject`` and
                      ``get_body`` macros.
     :param html: ``True`` if the email body is HTML
+    :param alternatives: List of ``(content, mimetype)`` tuples of alternative
+                         representations of the message
     """
     from indico.core.emails import get_actual_sender_address
     if template is not None and (subject is not None or body is not None):
@@ -182,4 +190,5 @@ def make_email(to_list=None, cc_list=None, bcc_list=None, *, sender_address=None
         'subject': subject.strip(),
         'body': body.strip(),
         'html': html,
+        'alternatives': alternatives,
     }

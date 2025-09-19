@@ -5,7 +5,7 @@
 # modify it under the terms of the MIT License; see the
 # LICENSE file for more details.
 
-from datetime import datetime
+from datetime import timedelta
 
 from flask import redirect, request, session
 from flask_multipass import MultipassException
@@ -21,6 +21,8 @@ from indico.modules.auth.models.identities import Identity
 from indico.modules.auth.models.registration_requests import RegistrationRequest
 from indico.modules.auth.util import save_identity_info
 from indico.modules.users import User
+from indico.modules.users.util import log_user_update
+from indico.util.date_time import now_utc
 from indico.util.i18n import _
 from indico.web.flask.util import url_for
 from indico.web.menu import SideMenuItem
@@ -32,12 +34,6 @@ logger = Logger.get('auth')
 @multipass.identity_handler
 def process_identity(identity_info):
     logger.info('Received identity info: %s', identity_info)
-
-    if (multipass_data := identity_info.multipass_data) and (session_expiry := multipass_data.get('session_expiry')):
-        if not isinstance(session_expiry, datetime):
-            raise ValueError('Session expiry must be a datetime object')
-        session.hard_expiry = session_expiry
-
     identity = Identity.query.filter_by(provider=identity_info.provider.name,
                                         identifier=identity_info.identifier).first()
     if identity is None:
@@ -103,12 +99,15 @@ def login_user(user, identity=None, admin_impersonation=False):
     session.set_session_user(user)
     session.lang = user.settings.get('lang')
     if not admin_impersonation:
+        if config.SESSION_MAX_LIFETIME:
+            session.hard_expiry = now_utc() + timedelta(seconds=config.SESSION_MAX_LIFETIME)
         if identity:
             identity.register_login(request.remote_addr)
             session['login_identity'] = identity.id
         else:
             session.pop('login_identity', None)
-        user.synchronize_data()
+        if changes := user.synchronize_data():
+            log_user_update(user, changes, from_sync=True)
     signals.users.logged_in.send(user, identity=identity, admin_impersonation=admin_impersonation)
 
 

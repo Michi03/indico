@@ -169,9 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const styleObject = $this[0].style;
           const postData = {session_id: newSession ? newSession.id : null};
 
-          return patchObject($this.data('href'), $this.data('method'), postData).then(function(
-            data
-          ) {
+          return patchObject($this.data('href'), $this.data('method'), postData).then(data => {
             const label = newSession ? newSession.title : $T.gettext('No session');
             $this.find('.label').text(label);
 
@@ -199,10 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   .gettext("'{0}' has been unscheduled due to the session change.")
                   .format(row.data('title')),
                 $T.gettext('Undo successful! Timetable entry and session have been restored.'),
-                function() {
-                  return patchObject(timetableRESTURL, 'POST', data.undo_unschedule).then(function(
-                    data
-                  ) {
+                () => {
+                  return patchObject(timetableRESTURL, 'POST', data.undo_unschedule).then(data => {
                     oldLabelHtml
                       .filter('.label')
                       // eslint-disable-next-line prefer-template
@@ -255,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const $this = $(this);
           const postData = {track_id: newTrack ? newTrack.id : null};
 
-          return patchObject($this.data('href'), $this.data('method'), postData).then(function() {
+          return patchObject($this.data('href'), $this.data('method'), postData).then(() => {
             const label = newTrack ? newTrack.title : $T.gettext('No track');
             $this.find('.label').text(label);
           });
@@ -312,9 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
       placeholder: '#filter-placeholder',
     };
 
-    $('.list [data-toggle=dropdown]')
-      .closest('.toolbar')
-      .dropdown();
+    $('.list [data-toggle=dropdown]').closest('.toolbar').dropdown();
     setupTableSorter('#contribution-list .tablesorter');
     setupSessionPicker(options.createSessionURL, options.timetableRESTURL);
     setupTrackPicker(options.createTrackURL);
@@ -325,13 +319,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const applySearchFilters = setupListGenerator(filterConfig);
 
     $('#contribution-list')
-      .on('indico:htmlUpdated', function() {
+      .on('indico:htmlUpdated', () => {
         setupTableSorter('#contribution-list .tablesorter');
         setupStartDateQBubbles();
         setupDurationQBubbles();
         _.defer(applySearchFilters);
       })
-      .on('attachments:updated', function(evt) {
+      .on('attachments:updated', evt => {
         const target = $(evt.target);
         reloadManagementAttachmentInfoColumn(target.data('locator'), target.closest('td'));
       });
@@ -339,17 +333,13 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const $this = $(this);
       if (!$this.hasClass('disabled')) {
-        $('#contribution-list form')
-          .attr('action', $this.data('href'))
-          .submit();
+        $('#contribution-list form').attr('action', $this.data('href')).submit();
       }
     });
   };
 
   global.setupSubContributionList = function setupSubContributionList() {
-    $('#subcontribution-list [data-toggle=dropdown]')
-      .closest('.toolbar')
-      .dropdown();
+    $('#subcontribution-list [data-toggle=dropdown]').closest('.toolbar').dropdown();
     setupTableSorter('#subcontribution-list .tablesorter');
     enableIfChecked(
       '#subcontribution-list',

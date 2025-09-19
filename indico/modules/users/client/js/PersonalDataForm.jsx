@@ -26,6 +26,7 @@ import {
   getChangedValues,
   handleSubmitError,
   parsers as p,
+  validators as v,
 } from 'indico/react/forms';
 import {Translate, Param} from 'indico/react/i18n';
 import {indicoAxios} from 'indico/utils/axios';
@@ -40,6 +41,7 @@ function PersonalDataForm({
   lockedFields,
   lockedFieldMessage,
   hasPredefinedAffiliations,
+  allowCustomAffiliations,
 }) {
   const userIdArgs = userId !== null ? {user_id: userId} : {};
 
@@ -92,6 +94,7 @@ function PersonalDataForm({
                 syncedValues={syncedValues}
                 lockedFields={lockedFields}
                 lockedFieldMessage={lockedFieldMessage}
+                validate={v.maxLength(250)}
               />
               <SyncedFinalInput
                 name="last_name"
@@ -100,6 +103,7 @@ function PersonalDataForm({
                 syncedValues={syncedValues}
                 lockedFields={lockedFields}
                 lockedFieldMessage={lockedFieldMessage}
+                validate={v.maxLength(250)}
               />
             </Form.Group>
             {hasPredefinedAffiliations ? (
@@ -110,6 +114,7 @@ function PersonalDataForm({
                 syncedValues={syncedValues}
                 lockedFields={lockedFields}
                 lockedFieldMessage={lockedFieldMessage}
+                allowCustomAffiliations={allowCustomAffiliations}
               />
             ) : (
               <SyncedFinalInput
@@ -118,6 +123,7 @@ function PersonalDataForm({
                 syncedValues={syncedValues}
                 lockedFields={lockedFields}
                 lockedFieldMessage={lockedFieldMessage}
+                validate={value => value !== undefined && v.maxLength(250)(value)}
               />
             )}
             <SyncedFinalTextArea
@@ -126,6 +132,7 @@ function PersonalDataForm({
               syncedValues={syncedValues}
               lockedFields={lockedFields}
               lockedFieldMessage={lockedFieldMessage}
+              validate={v.maxLength(500)}
             />
             <SyncedFinalInput
               name="phone"
@@ -133,6 +140,7 @@ function PersonalDataForm({
               syncedValues={syncedValues}
               lockedFields={lockedFields}
               lockedFieldMessage={lockedFieldMessage}
+              validate={v.maxLength(100)}
             />
             <SyncedFinalInput
               name="email"
@@ -178,6 +186,7 @@ PersonalDataForm.propTypes = {
   lockedFields: PropTypes.arrayOf(PropTypes.string).isRequired,
   lockedFieldMessage: PropTypes.string.isRequired,
   hasPredefinedAffiliations: PropTypes.bool.isRequired,
+  allowCustomAffiliations: PropTypes.bool.isRequired,
 };
 
 PersonalDataForm.defaultProps = {
@@ -193,7 +202,8 @@ window.setupPersonalDataForm = function setupPersonalDataForm(
   syncedValues,
   lockedFields,
   lockedFieldMessage,
-  hasPredefinedAffiliations
+  hasPredefinedAffiliations,
+  allowCustomAffiliations
 ) {
   document.addEventListener('DOMContentLoaded', () => {
     ReactDOM.render(
@@ -206,6 +216,7 @@ window.setupPersonalDataForm = function setupPersonalDataForm(
         lockedFields={lockedFields}
         lockedFieldMessage={lockedFieldMessage}
         hasPredefinedAffiliations={hasPredefinedAffiliations}
+        allowCustomAffiliations={allowCustomAffiliations}
       />,
       document.querySelector('#personal-details-form-container')
     );

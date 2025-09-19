@@ -7,8 +7,6 @@
 
 from uuid import UUID, uuid4
 
-from babel.numbers import format_currency
-from flask import session
 from sqlalchemy import orm, select
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID as pg_UUID  # noqa: N811
@@ -26,7 +24,7 @@ from indico.modules.events.registration.models.form_fields import RegistrationFo
 from indico.modules.events.registration.models.registrations import (PublishRegistrationsMode, Registration,
                                                                      RegistrationState)
 from indico.util.caching import memoize_request
-from indico.util.date_time import now_utc
+from indico.util.date_time import format_currency, now_utc
 from indico.util.enum import RichIntEnum
 from indico.util.i18n import L_
 from indico.util.locators import locator_property
@@ -377,6 +375,7 @@ class RegistrationForm(db.Model):
     # - in_event_acls (EventPrincipal.registration_form)
     # - in_menu_entry_acls (MenuEntryPrincipal.registration_form)
     # - in_session_acls (SessionPrincipal.registration_form)
+    # - reminders (EventReminder.forms)
 
     def __contains__(self, user):
         if user is None:
@@ -397,6 +396,15 @@ class RegistrationForm(db.Model):
     @property
     def identifier(self):
         return f'RegistrationForm:{self.id}'
+
+    @property
+    def persistent_identifier(self):
+        """A persistent version of this object's identifier.
+
+        This is currently identical to the regular identifier, since it does not
+        contain any signatures or similar data that could change.
+        """
+        return self.identifier
 
     @hybrid_property
     def participant_list_disabled(self):
@@ -596,7 +604,7 @@ class RegistrationForm(db.Model):
         return self.ticket_apple_wallet and self.is_apple_wallet_configured
 
     def render_base_price(self):
-        return format_currency(self.base_price, self.currency, locale=session.lang or 'en_GB')
+        return format_currency(self.base_price, self.currency)
 
     def get_personal_data_field_id(self, personal_data_type):
         """Return the field id corresponding to the personal data field with the given name."""

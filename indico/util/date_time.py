@@ -18,6 +18,7 @@ from babel.dates import format_interval as _format_interval
 from babel.dates import format_time as _format_time
 from babel.dates import format_timedelta as _format_timedelta
 from babel.dates import get_timezone, match_skeleton
+from babel.numbers import format_currency as _format_currency
 from babel.numbers import format_number as _format_number
 from dateutil.relativedelta import relativedelta as _relativedelta
 from dateutil.rrule import DAILY, FR, MO, TH, TU, WE, rrule
@@ -148,6 +149,9 @@ def format_interval(start_dt, end_dt, format='yMd', locale=None):
     if not locale:
         locale = get_current_locale()
 
+    if format == 'short':
+        format = 'hm' if 'a' in locale.time_formats['short'].pattern else 'Hm'
+
     return _format_interval(start_dt, end_dt, format, locale=locale)
 
 
@@ -205,7 +209,7 @@ def format_skeleton(dt, skeleton, locale=None, timezone=None):
     return _format_datetime(dt, format=format, locale=locale, tzinfo=timezone)
 
 
-def format_human_timedelta(delta, granularity='seconds', narrow=False):
+def format_human_timedelta(delta, granularity='seconds', narrow=False, *, weeks=False):
     """Format a timedelta in a human-readable way.
 
     :param delta: the timedelta to format
@@ -214,26 +218,36 @@ def format_human_timedelta(delta, granularity='seconds', narrow=False):
                         the output will never contain seconds unless
                         the whole timedelta spans less than a minute.
                         Accepted values are 'seconds', 'minutes',
-                        'hours' and 'days'.
+                        'hours', 'days' and 'weeks'.
     :param narrow: if true, only the short unit names will be used
+    :param weeks: if true, weeks are used
     """
-    field_order = ('days', 'hours', 'minutes', 'seconds')
+    field_order = ('weeks', 'days', 'hours', 'minutes', 'seconds') if weeks else ('days', 'hours', 'minutes', 'seconds')
     long_names = {
         'seconds': lambda n: ngettext('{0} second', '{0} seconds', n).format(n),
         'minutes': lambda n: ngettext('{0} minute', '{0} minutes', n).format(n),
         'hours': lambda n: ngettext('{0} hour', '{0} hours', n).format(n),
         'days': lambda n: ngettext('{0} day', '{0} days', n).format(n),
+        'weeks': lambda n: ngettext('{0} week', '{0} weeks', n).format(n),
     }
     short_names = {
+        # i18n: Shorthand form for the number of seconds
         'seconds': lambda n: ngettext('{0}s', '{0}s', n).format(n),
+        # i18n: Shorthand form for the number of minutes
         'minutes': lambda n: ngettext('{0}m', '{0}m', n).format(n),
+        # i18n: Shorthand form for the number of hours
         'hours': lambda n: ngettext('{0}h', '{0}h', n).format(n),
+        # i18n: Shorthand form for the number of days
         'days': lambda n: ngettext('{0}d', '{0}d', n).format(n),
+        # i18n: Shorthand form for the number of weeks
+        'weeks': lambda n: ngettext('{0}w', '{0}w', n).format(n),
     }
     if narrow:
         long_names = short_names
     values = dict.fromkeys(field_order, 0)
     values['seconds'] = delta.total_seconds()
+    if weeks:
+        values['weeks'], values['seconds'] = divmod(values['seconds'], 7*86400)
     values['days'], values['seconds'] = divmod(values['seconds'], 86400)
     values['hours'], values['seconds'] = divmod(values['seconds'], 3600)
     values['minutes'], values['seconds'] = divmod(values['seconds'], 60)
@@ -301,33 +315,50 @@ def _format_pretty_datetime(dt, locale, tzinfo, formats):
     return _format_datetime(dt, fmt, tzinfo, locale)
 
 
-def format_pretty_date(dt, locale=None, tzinfo=None):
+def format_pretty_date(dt, locale=None, tzinfo=None, *, capitalize=True):
     """Format a date in a pretty way using relative units if possible.
 
     :param dt: a date or datetime object. if a date is provided, its
                time is assumed to be midnight
     :param locale: the locale to use for formatting
     :param tzinfo: the timezone to use
+    :param capitalize: if the return string should be capitalized
     """
     if not isinstance(dt, datetime):
         dt = datetime.combine(dt, dt_time())
-    return _format_pretty_datetime(dt, locale, tzinfo, {
-        # i18n: keep the single quotes around the string
-        'last_day': _("'Yesterday'"),
-        # i18n: keep the single quotes around the string
-        'same_day': _("'Today'"),
-        # i18n: keep the single quotes around the string
-        'next_day': _("'Tomorrow'"),
-        # i18n: keep the single quotes around the string, and only translate the "Last".
-        # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
-        'last_week': _("'Last' EEEE"),
-        # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
-        'next_week': _('EEEE'),
-        'other': '{date_fmt}'
-    })
+    if capitalize:
+        return _format_pretty_datetime(dt, locale, tzinfo, {
+            # i18n: keep the single quotes around the string
+            'last_day': _("'Yesterday'"),
+            # i18n: keep the single quotes around the string
+            'same_day': _("'Today'"),
+            # i18n: keep the single quotes around the string
+            'next_day': _("'Tomorrow'"),
+            # i18n: keep the single quotes around the string, and only translate the "Last".
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'last_week': _("'Last' EEEE"),
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'next_week': _('EEEE'),
+            'other': '{date_fmt}'
+        })
+    else:
+        return _format_pretty_datetime(dt, locale, tzinfo, {
+            # i18n: keep the single quotes around the string
+            'last_day': _("'yesterday'"),
+            # i18n: keep the single quotes around the string
+            'same_day': _("'today'"),
+            # i18n: keep the single quotes around the string
+            'next_day': _("'tomorrow'"),
+            # i18n: keep the single quotes around the string, and only translate the "Last".
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'last_week': _("'last' EEEE"),
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'next_week': _('EEEE'),
+            'other': '{date_fmt}'
+        })
 
 
-def format_pretty_datetime(dt, locale=None, tzinfo=None):
+def format_pretty_datetime(dt, locale=None, tzinfo=None, *, capitalize=True):
     """
     Format a datetime in a pretty way using relative units for the
     date if possible.
@@ -335,29 +366,54 @@ def format_pretty_datetime(dt, locale=None, tzinfo=None):
     :param dt: a datetime object
     :param locale: the locale to use for formatting
     :param tzinfo: the timezone to use
+    :param capitalize: if the return string should be capitalized
     """
-    return _format_pretty_datetime(dt, locale, tzinfo, {
-        # i18n: keep the single quotes around the strings, and only translate the text inside
-        'last_day': _("'Yesterday' 'at' {time_fmt}"),
-        # i18n: keep the single quotes around the strings, and only translate the text inside
-        'same_day': _("'Today' 'at' {time_fmt}"),
-        # i18n: keep the single quotes around the strings, and only translate the text inside
-        'next_day': _("'Tomorrow' 'at' {time_fmt}"),
-        # i18n: keep the single quotes around the strings, and only translate the text inside.
-        # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
-        'last_week': _("'Last' EEEE 'at' {time_fmt}"),
-        # i18n: keep the single quotes around the string, and only translate the text inside.
-        # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
-        'next_week': _("EEEE 'at' {time_fmt}"),
-        # i18n: keep the single quotes around the string, and only translate the text inside
-        'other': _("{date_fmt} 'at' {time_fmt}")
-    })
+    if capitalize:
+        return _format_pretty_datetime(dt, locale, tzinfo, {
+            # i18n: keep the single quotes around the strings, and only translate the text inside
+            'last_day': _("'Yesterday' 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the strings, and only translate the text inside
+            'same_day': _("'Today' 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the strings, and only translate the text inside
+            'next_day': _("'Tomorrow' 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the strings, and only translate the text inside.
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'last_week': _("'Last' EEEE 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the string, and only translate the text inside.
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'next_week': _("EEEE 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the string, and only translate the text inside
+            'other': _("{date_fmt} 'at' {time_fmt}")
+        })
+    else:
+        return _format_pretty_datetime(dt, locale, tzinfo, {
+            # i18n: keep the single quotes around the strings, and only translate the text inside
+            'last_day': _("'yesterday' 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the strings, and only translate the text inside
+            'same_day': _("'today' 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the strings, and only translate the text inside
+            'next_day': _("'tomorrow' 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the strings, and only translate the text inside.
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'last_week': _("'last' EEEE 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the string, and only translate the text inside.
+            # i18n: EEEE is a babel-style placeholder for the long weekday (you should probably keep this as-is)
+            'next_week': _("EEEE 'at' {time_fmt}"),
+            # i18n: keep the single quotes around the string, and only translate the text inside
+            'other': _("{date_fmt} 'at' {time_fmt}")
+        })
 
 
 def format_number(number, locale=None):
     if not locale:
         locale = get_current_locale()
     return _format_number(number, locale=locale)
+
+
+def format_currency(number, currency, locale=None):
+    if not locale:
+        locale = get_current_locale()
+    return _format_currency(number, currency, locale=locale)
 
 
 def timedelta_split(delta):
@@ -466,3 +522,8 @@ def get_display_tz(obj=None):
         # Avoid failing in a rather ugly way (unformatted error page) when a user has an invalid timezone
         Logger.get('date_time').warning('Invalid timezone: %s (obj=%r, session_tz=%s)', display_tz, obj, session_tz)
         return pytz.timezone(config.DEFAULT_TIMEZONE)
+
+
+def convert_py_weekdays_to_js(py_weekdays):
+    """Convert Python weekdays (0=Mon, 6=Sun) to JavaScript (0=Sun, 6=Sat)."""
+    return [(d + 1) % 7 for d in py_weekdays]

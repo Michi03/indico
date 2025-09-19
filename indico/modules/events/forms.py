@@ -11,6 +11,7 @@ from flask import session
 from wtforms.fields import BooleanField, StringField, TextAreaField, URLField
 from wtforms.validators import DataRequired, InputRequired, ValidationError
 
+from indico.core.config import config
 from indico.core.db import db
 from indico.core.db.sqlalchemy.protection import ProtectionMode
 from indico.modules.categories.fields import CategoryField
@@ -74,18 +75,20 @@ class EventLabelForm(IndicoForm):
             raise ValidationError(_('This title is already in use.'))
 
 
-class EventKeywordsForm(IndicoForm):
-    keywords = IndicoTagListField(_('Keywords'))
+class AllowedKeywordsForm(IndicoForm):
+    event_keywords = IndicoTagListField(_('Event Keywords'))
+    contribution_keywords = IndicoTagListField(_('Contribution Keywords'))
 
     def post_validate(self):
         # case-insensitive keywords deduplication
-        keywords = []
-        seen_keywords = set()
-        for keyword in self.keywords.data:
-            if keyword.lower() not in seen_keywords:
-                keywords.append(keyword)
-                seen_keywords.add(keyword.lower())
-        self.keywords.data = keywords
+        for keywords_field in [self.event_keywords, self.contribution_keywords]:
+            keywords = []
+            seen_keywords = set()
+            for keyword in keywords_field.data:
+                if keyword.lower() not in seen_keywords:
+                    keywords.append(keyword)
+                    seen_keywords.add(keyword.lower())
+            keywords_field.data = keywords
 
 
 class EventCreationFormBase(IndicoForm):
@@ -126,6 +129,12 @@ class LectureCreationForm(EventCreationFormBase):
     person_link_data = EventPersonLinkListField(_('Speakers'), event_type=EventType.lecture)
     description = TextAreaField(_('Description'), widget=TinyMCEWidget())
     theme = IndicoThemeSelectField(_('Theme'), event_type=EventType.lecture, allow_default=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not config.ALLOW_PUBLIC_USER_SEARCH:
+            # setting a token source disables providing a token unconditionally
+            self.person_link_data.search_token_source = 'event-creation-category'  # noqa: S105
 
 
 class UnlistedEventsForm(IndicoForm):

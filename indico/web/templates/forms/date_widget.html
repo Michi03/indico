@@ -4,7 +4,7 @@
     <div class="date-widget">
         {# the hidden field has autofocus on purpose to prevent our JS from focusing the date picker #}
         <input type="hidden" name="{{ field.name }}" id="{{ field.id }}-datestorage" autofocus
-               {% if field.data and not field.date_missing %}value="{{ field.data|format_date('code') }}"{% endif %}
+               {% if field.data and not field.date_missing %}value="{{ field.data.isoformat() }}"{% endif %}
                {{ input_args | html_params }}>
         <span id="{{ field.id }}"></span>
     </div>
@@ -19,6 +19,8 @@
             allowClear: {{ (field.allow_clear if field.allow_clear else false) | tojson }},
             earliest: {{ (field.earliest_date.isoformat() if field.earliest_date else none) | tojson }},
             latest: {{ (field.latest_date.isoformat() if field.latest_date else none) | tojson }},
+            disabledDays: {{ field.disabled_days_js | tojson }},
+            disabledDates: {{ field.disabled_dates | tojson }},
             {% if field.flags.linked_date %}
                 linkedField: {
                     id: {{ field.get_form()[field.linked_field].id | tojson }},

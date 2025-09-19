@@ -11,7 +11,6 @@ from decimal import Decimal
 from operator import itemgetter
 
 import jsonschema
-from babel.numbers import format_currency
 from flask import request, session
 from wtforms.fields import (BooleanField, DecimalField, EmailField, FloatField, HiddenField, IntegerField, SelectField,
                             StringField, TextAreaField)
@@ -31,6 +30,7 @@ from indico.modules.events.registration.models.items import RegistrationFormItem
 from indico.modules.events.registration.models.registrations import PublishRegistrationsMode, Registration
 from indico.modules.events.registration.models.tags import RegistrationTag
 from indico.modules.events.settings import data_retention_settings
+from indico.util.date_time import format_currency
 from indico.util.i18n import _, ngettext
 from indico.util.placeholders import get_missing_placeholders, render_placeholder_info
 from indico.util.spreadsheets import CSVFieldDelimiter
@@ -40,8 +40,8 @@ from indico.web.forms.fields import EmailListField, FileField, IndicoDateTimeFie
 from indico.web.forms.fields.colors import SUIColorPickerField
 from indico.web.forms.fields.datetime import TimeDeltaField
 from indico.web.forms.fields.principals import PrincipalListField
-from indico.web.forms.fields.simple import (HiddenFieldList, IndicoEmailRecipientsField, IndicoMultipleTagSelectField,
-                                            IndicoParticipantVisibilityField)
+from indico.web.forms.fields.simple import HiddenFieldList, IndicoEmailRecipientsField, IndicoParticipantVisibilityField
+from indico.web.forms.fields.sqlalchemy import IndicoQuerySelectMultipleTagField
 from indico.web.forms.util import inject_validators
 from indico.web.forms.validators import (DataRetentionPeriodValidator, HiddenUnless, IndicoEmail, LinkedDateTime,
                                          NoRelativeURLs)
@@ -606,10 +606,14 @@ class RegistrationTagForm(IndicoForm):
 class RegistrationTagsAssignForm(IndicoForm):
     """Form to assign registration tags to registrations."""
 
-    add = IndicoMultipleTagSelectField(_('Add'), description=_('Select tags to assign'))
-    remove = IndicoMultipleTagSelectField(_('Remove'), description=_('Select tags to remove'))
+    add = IndicoQuerySelectMultipleTagField(_('Add'), description=_('Select tags to assign'))
+    remove = IndicoQuerySelectMultipleTagField(_('Remove'), description=_('Select tags to remove'))
     registration_id = HiddenFieldList()
     submitted = HiddenField()
+
+    def __init__(self, *args, event, **kwargs):
+        self.event = event  # used by IndicoQuerySelectMultipleTagField
+        super().__init__(*args, **kwargs)
 
     def validate_remove(self, field):
         if set(self.remove.data) & set(self.add.data):

@@ -13,10 +13,7 @@ import {showUserSearch} from 'indico/react/components/principals/imperative';
   function setupToggle() {
     const $roles = $('#event-roles');
     $roles.on('click', '.toggle-members', function() {
-      const $row = $(this)
-        .closest('tr')
-        .next('tr')
-        .find('.slide');
+      const $row = $(this).closest('tr').next('tr').find('.slide');
       $row.css('max-height', `${$row[0].scrollHeight}px`);
       $row.toggleClass('open close');
     });
@@ -31,10 +28,11 @@ import {showUserSearch} from 'indico/react/components/principals/imperative';
   }
 
   function setupButtons() {
+    const searchToken = document.querySelector('#event-roles').dataset.searchToken;
     $('#event-roles').on('click', '.js-add-members', async evt => {
       evt.stopPropagation();
       const $this = $(evt.target);
-      const users = await showUserSearch({withExternalUsers: true});
+      const users = await showUserSearch({withExternalUsers: true, searchToken});
       if (users.length) {
         $.ajax({
           url: $this.data('href'),

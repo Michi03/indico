@@ -7,6 +7,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+
 import {WTFDateField} from 'indico/react/components';
 
 window.setupDateWidget = function setupDateWidget(options) {
@@ -24,6 +25,8 @@ window.setupDateWidget = function setupDateWidget(options) {
         notBefore: false,
         notAfter: false,
       },
+      disabledDays: null,
+      disabledDates: null,
     },
     options
   );
@@ -42,6 +45,8 @@ window.setupDateWidget = function setupDateWidget(options) {
       earliest={options.earliest}
       latest={options.latest}
       linkedField={options.linkedField}
+      disabledDays={options.disabledDays}
+      disabledDates={options.disabledDates}
     />,
     document.getElementById(options.fieldId)
   );

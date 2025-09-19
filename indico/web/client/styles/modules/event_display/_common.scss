@@ -73,7 +73,7 @@
     align-self: stretch;
 
     .i-button {
-      @include i-button-states($black, transparent, transparent, $gray, white, false);
+      @include i-button-states($black, transparent, transparent, $black, white, false);
       border-radius: 0;
       padding: 0 0.8em;
       font-size: 1.1em;

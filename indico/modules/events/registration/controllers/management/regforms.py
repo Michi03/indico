@@ -285,6 +285,8 @@ class RHRegistrationFormNotificationPreview(RHManageRegFormBase):
                 value = getattr(mock_registration, form_item.personal_data_type.column)
             else:
                 value = form_item.field_impl.default_value
+            if value is NotImplemented:
+                continue
             data_entry = RegistrationData()
             mock_registration.data.append(data_entry)
             for attr, field_value in form_item.field_impl.process_form_data(mock_registration, value).items():
@@ -376,11 +378,13 @@ class RHRegistrationFormModify(RHManageRegFormBase):
     def _process(self):
         min_data_retention = data_retention_settings.get('minimum_data_retention')
         max_data_retention = data_retention_settings.get('maximum_data_retention') or timedelta(days=3650)
+        regform_retention_weeks = self.regform.retention_period.days // 7 if self.regform.retention_period else None
         return WPManageRegistration.render_template('management/regform_modify.html', self.event,
                                                     form_data=get_flat_section_setup_data(self.regform),
                                                     regform=self.regform,
                                                     data_retention_range={'min': min_data_retention.days // 7,
-                                                                          'max': max_data_retention.days // 7},
+                                                                          'max': max_data_retention.days // 7,
+                                                                          'regform': regform_retention_weeks},
                                                     has_predefined_affiliations=Affiliation.query.has_rows())
 
 

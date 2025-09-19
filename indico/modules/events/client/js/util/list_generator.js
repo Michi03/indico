@@ -5,7 +5,8 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
-/* global setupSearchBox:false, handleRowSelection:false, setupTableSorter:false, handleAjaxError:false */
+/* eslint-disable import/unambiguous */
+/* global setupSearchBox, handleRowSelection, setupTableSorter, handleAjaxError */
 
 (function(global) {
   function colorizeFilter(filter) {
@@ -36,9 +37,7 @@
 
   global.handleRowSelection = function(trigger) {
     const $obj = $('table.i-table input.select-row').on('change', function() {
-      $(this)
-        .closest('tr')
-        .toggleClass('selected', this.checked);
+      $(this).closest('tr').toggleClass('selected', this.checked);
       $('.js-requires-selected-row').toggleClass(
         'disabled',
         !$('.list input:checkbox:checked').length
@@ -79,7 +78,7 @@
       const isOnlyFilter = !!$filter.find('[data-only-filter]').length;
       $filter.dropdown({selector: "a[data-toggle='dropdown']", relative_to: $filter});
       if (!hasColumnSelector || isOnlyFilter) {
-        $filter.find('.title-wrapper').on('click', function(evt) {
+        $filter.find('.title-wrapper').on('click', evt => {
           $filter.find("a[data-toggle='dropdown']").trigger('click');
           evt.stopPropagation();
         });
@@ -131,14 +130,12 @@
       });
     }
 
-    $('.js-reset-btn').on('click', function() {
-      $('.list-filter input:checkbox:checked')
-        .prop('checked', false)
-        .trigger('change');
+    $('.js-reset-btn').on('click', () => {
+      $('.list-filter input:checkbox:checked').prop('checked', false).trigger('change');
       $('.js-clear-filters-message').show({
         done() {
           const $this = $(this);
-          setTimeout(function() {
+          setTimeout(() => {
             $this.slideUp();
           }, 4000);
         },
@@ -157,11 +154,11 @@
       }
     });
 
-    $('#list-filter-select-all').on('click', function() {
+    $('#list-filter-select-all').on('click', () => {
       $('.list-filter-dialog .visibility:not(.enabled)').trigger('click');
     });
 
-    $('#list-filter-select-none').on('click', function() {
+    $('#list-filter-select-none').on('click', () => {
       $('.list-filter-dialog .visibility.enabled').trigger('click');
     });
   };
@@ -175,26 +172,22 @@
     handleRowSelection(true);
     setupTableSorter();
 
-    $('.list').on('indico:htmlUpdated', function() {
+    $('.list').on('indico:htmlUpdated', () => {
       handleRowSelection(true);
       setupTableSorter();
     });
 
     $('.list .toolbar').dropdown();
 
-    $('#select-all').on('click', function() {
-      $('table.i-table input.select-row')
-        .prop('checked', true)
-        .trigger('change');
+    $('#select-all').on('click', () => {
+      $('table.i-table input.select-row').prop('checked', true).trigger('change');
     });
 
-    $('#select-none').on('click', function() {
-      $('table.i-table input.select-row')
-        .prop('checked', false)
-        .trigger('change');
+    $('#select-none').on('click', () => {
+      $('table.i-table input.select-row').prop('checked', false).trigger('change');
     });
 
-    $('.change-columns-width').on('click', function() {
+    $('.change-columns-width').on('click', () => {
       $('.js-list-table-wrapper').toggleClass('scrollable');
       $('.change-columns-width').toggleClass('active');
     });
@@ -203,13 +196,11 @@
       e.preventDefault();
       const $this = $(this);
       if (!$this.hasClass('disabled')) {
-        $('.list form')
-          .attr('action', $this.data('href'))
-          .submit();
+        $('.list form').attr('action', $this.data('href')).submit();
       }
     });
 
-    $('.list .toolbar').on('click', '.disabled', function(e) {
+    $('.list .toolbar').on('click', '.disabled', e => {
       e.preventDefault();
       e.stopPropagation();
     });

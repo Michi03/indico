@@ -38,6 +38,17 @@ function generateModuleAliases() {
       alias: dirName,
       onlyModule: false,
     };
+  }).sort((a, b) => {
+    // Sort by specificity to ensure that child modules are matched first.
+    // For example, `indico/modules/events/registration` should come before `indico/modules/events`.
+    const aParts = a.name.split('/').length;
+    const bParts = b.name.split('/').length;
+
+    if (aParts !== bParts) {
+      // more parts == more specific => should come first
+      return bParts - aParts;
+    }
+    return a.name.localeCompare(b.name);
   });
 }
 
@@ -51,6 +62,7 @@ export default env => {
     externals: {
       'jquery': 'jQuery',
       'moment': 'moment',
+      'flask-urls': '_IndicoCoreFlaskUrls',
       'react': '_IndicoCoreReact',
       'react-dnd': '_IndicoCoreReactDnd',
       'react-dom': '_IndicoCoreReactDom',
@@ -72,6 +84,7 @@ export default env => {
       'indico/utils/case': '_IndicoUtilsCase',
       'indico/utils/plugins': '_IndicoUtilsPlugins',
       'indico/react/components/principals/imperative': '_IndicoPrincipalsImperative',
+      'indico/custom_elements': '_IndicoCustomElements',
     },
     module: {
       rules: [

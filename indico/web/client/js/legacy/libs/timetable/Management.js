@@ -63,39 +63,32 @@ type(
       var selected = false;
 
       var id = Html.em(
-        {'data-id': elem.get('friendly_id'), 'style': {paddingLeft: '5px', fontSize: '0.9em'}},
+        {'data-id': elem.get('friendly_id'), style: {paddingLeft: '5px', fontSize: '0.9em'}},
         elem.get('friendly_id')
       );
       return Html.div({}, id, ' - ', elem.get('title') + (speakers ? ' (' + speakers + ')' : ''));
     },
 
     _sortList: function(type, second_click) {
-      var self = this;
-      var selected = _(this.getSelectedList().getAll()).map(function(item) {
-        return item.get('id');
-      });
-      var initial = _(self.getAll());
+      const self = this;
+      const selected = Object.values(this.getSelectedList().getAll()).map(item => item.get('id'));
+      const initial = Object.values(self.getAll());
 
       $('#sortById').css('font-weight', type == 'friendly_id' ? 'bold' : '');
       $('#sortByTitle').css('font-weight', type == 'title' ? 'bold' : '');
 
-      var sorted = initial
-        .chain()
-        .map(function(value, key) {
-          return {
-            key: key,
-            value: value.get(type),
-          };
-        })
-        .sortBy(function(item) {
-          return item.value;
-        });
+      // XXX if someone ever needs to debug something here: it's basically random whether `_` in
+      // here is underscore or lodash...
+      const sorted = _.sortBy(
+        initial.map((value, key) => ({key, value: value.get(type)})),
+        'value'
+      );
 
       // reverse order only if second click, else reset order
       this.reverseState = second_click ? !this.reverseState : false;
 
       if (this.reverseState) {
-        sorted = sorted.reverse();
+        sorted.reverse();
       }
 
       // Clear selection and elements
@@ -103,21 +96,13 @@ type(
       self.clear();
 
       // Add sorted items
-      var counter = 0;
-      sorted.each(function(item) {
-        self.set(counter + '', initial.value()[item.key]);
-        counter++;
+      sorted.forEach((item, i) => {
+        self.set(String(i), initial[item.key]);
       });
 
       // Reselect items
       each(self.domList, function(listItem) {
-        if (
-          selected.indexOf(
-            $(listItem.dom)
-              .find('em')
-              .data('id') + ''
-          ) > -1
-        ) {
+        if (selected.indexOf($(listItem.dom).find('em').data('id') + '') > -1) {
           listItem.eventObservers.click();
         }
       });

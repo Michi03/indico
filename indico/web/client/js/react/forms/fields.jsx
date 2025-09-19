@@ -374,6 +374,10 @@ export function FinalField({name, adapter, component, description, required, onC
   if (extraProps.validate && rest.validate) {
     extraProps.validate = validators.chain(extraProps.validate, rest.validate);
     delete rest.validate;
+  } else if (rest.validate === null || rest.validate === undefined) {
+    // avoid overwriting default (required) validator e.g. when conditionally setting a validator
+    // on a field (and using null/undefined in case no validator is needed)
+    delete rest.validate;
   }
 
   return (
@@ -421,7 +425,12 @@ export function FinalInput({name, label, type, nullIfEmpty, noAutoComplete, ...r
   } else if (type === 'text' || type === 'email' || type === 'tel') {
     extraProps.format = formatters.trim;
     extraProps.formatOnBlur = true;
-    extraProps.parse = nullIfEmpty ? parsers.nullIfEmpty : identity;
+    const parse = nullIfEmpty ? parsers.nullIfEmpty : identity;
+    if (type === 'email') {
+      extraProps.parse = v => parse(v.toLowerCase());
+    } else {
+      extraProps.parse = parse;
+    }
   }
 
   if (noAutoComplete) {
@@ -543,18 +552,21 @@ FinalRadio.propTypes = {
 /**
  * Like `FinalField` but for a dropdown.
  */
-export function FinalDropdown({name, label, multiple, ...rest}) {
+export function FinalDropdown({name, label, multiple, nullIfEmpty, parse, format, ...rest}) {
   const extraProps = {};
   if (multiple) {
     extraProps.isEqual = unsortedArraysEqual;
+  }
+  if (parse === undefined) {
+    parse = nullIfEmpty ? parsers.nullIfEmpty : identity;
   }
   return (
     <FinalField
       name={name}
       adapter={DropdownAdapter}
       label={label}
-      format={identity}
-      parse={identity}
+      format={format}
+      parse={parse}
       search
       deburr
       // https://github.com/final-form/react-final-form/issues/544
@@ -569,17 +581,23 @@ FinalDropdown.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string,
   multiple: PropTypes.bool,
+  nullIfEmpty: PropTypes.bool,
+  parse: PropTypes.func,
+  format: PropTypes.func,
 };
 
 FinalDropdown.defaultProps = {
   label: null,
   multiple: false,
+  nullIfEmpty: false,
+  parse: undefined,
+  format: identity,
 };
 
 /**
  * Like `FinalField` but for a dropdown with support for adding a custom freetext item.
  */
-export function FinalComboDropdown({name, label, ...rest}) {
+export function FinalComboDropdown({name, label, allowAdditions, ...rest}) {
   return (
     <FinalField
       name={name}
@@ -587,7 +605,7 @@ export function FinalComboDropdown({name, label, ...rest}) {
       label={label}
       format={x => (x.id === null ? x.text : x.id)}
       parse={identity}
-      allowAdditions
+      allowAdditions={allowAdditions}
       search
       selection
       {...rest}
@@ -598,10 +616,12 @@ export function FinalComboDropdown({name, label, ...rest}) {
 FinalComboDropdown.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string,
+  allowAdditions: PropTypes.bool,
 };
 
 FinalComboDropdown.defaultProps = {
   label: null,
+  allowAdditions: true,
 };
 
 /**
@@ -624,24 +644,18 @@ export function FinalSubmitButton({
   children,
   extraSubscription,
 }) {
-  const {
-    validating,
-    hasValidationErrors,
-    pristine,
-    submitting,
-    submitError,
-    submitSucceeded,
-  } = useFormState({
-    subscription: {
-      validating: true,
-      hasValidationErrors: true,
-      pristine: true,
-      submitting: true,
-      submitError: true,
-      submitSucceeded: true,
-      ...extraSubscription,
-    },
-  });
+  const {validating, hasValidationErrors, pristine, submitting, submitError, submitSucceeded} =
+    useFormState({
+      subscription: {
+        validating: true,
+        hasValidationErrors: true,
+        pristine: true,
+        submitting: true,
+        submitError: true,
+        submitSucceeded: true,
+        ...extraSubscription,
+      },
+    });
   const disabled =
     validating ||
     (disabledIfInvalid && hasValidationErrors) ||

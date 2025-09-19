@@ -37,7 +37,7 @@ const START_NEEDED = 0;
 const END_NEEDED = 1;
 const BOTH_POPULATED = 2;
 
-customElements.define(
+CustomElementBase.define(
   'ind-date-picker',
   class extends CustomElementBase {
     // Last value of the internal id used in the widgets
@@ -53,6 +53,12 @@ customElements.define(
 
     get value() {
       return this.querySelector('input').value;
+    }
+
+    set value(value) {
+      const input = this.querySelector('input');
+      CustomElementBase.setValue(input, value ? formatDate(this.format, new Date(value)) : '');
+      input.dispatchEvent(new Event('input', {bubbles: true}));
     }
 
     setup() {
@@ -125,7 +131,7 @@ customElements.define(
   }
 );
 
-customElements.define(
+CustomElementBase.define(
   'ind-date-range-picker',
   class extends CustomElementBase {
     // Last value of the internal id used in the widgets
@@ -138,6 +144,7 @@ customElements.define(
       rangeStartMax: Date, // Maximum allowed value for the start of the range (inclusive)
       rangeEndMin: Date, // Minimum allowed value for the end of the range (inclusive)
       rangeEndMax: Date, // Minimum allowed value for the end of the range (inclusive)
+      format: String, // Date format
     };
 
     static observedAttributes = [
@@ -147,6 +154,7 @@ customElements.define(
       'range-start-max',
       'range-end-min',
       'range-end-max',
+      'format',
     ];
 
     get value() {
@@ -201,18 +209,14 @@ customElements.define(
         rightTriggerLocked
       );
 
-      const dateFormat = formatDescription.textContent
-        .split(':')[1]
-        .trim()
-        .toLowerCase();
-      const parseDate = createDateParser(dateFormat);
+      const parseDate = createDateParser(this.format);
 
-      indCalendar.format = dateFormat;
+      indCalendar.format = this.format;
       indCalendar.rangeStart = this.rangeStart;
       indCalendar.rangeEnd = this.rangeEnd;
       indCalendar.setSelectionPreview(selection);
-      rangeStartInput.defaultValue = formatDate(dateFormat, this.rangeStart);
-      rangeEndInput.defaultValue = formatDate(dateFormat, this.rangeEnd);
+      rangeStartInput.defaultValue = formatDate(this.format, this.rangeStart);
+      rangeEndInput.defaultValue = formatDate(this.format, this.rangeEnd);
       updateSelectionLimits();
 
       formatDescription.id = `${id}-format`;
@@ -234,11 +238,11 @@ customElements.define(
       });
       this.addEventListener('x-attrchange.range-start', () => {
         indCalendar.rangeStart = this.rangeStart;
-        rangeStartInput.defaultValue = formatDate(dateFormat, this.rangeStart);
+        rangeStartInput.defaultValue = formatDate(this.format, this.rangeStart);
       });
       this.addEventListener('x-attrchange.range-end', () => {
         indCalendar.rangeEnd = this.rangeEnd;
-        rangeEndInput.defaultValue = formatDate(dateFormat, this.rangeEnd);
+        rangeEndInput.defaultValue = formatDate(this.format, this.rangeEnd);
       });
       this.addEventListener('x-attrchange.range-start-min', updateSelectionLimits);
       this.addEventListener('x-attrchange.range-start-max', updateSelectionLimits);
@@ -279,11 +283,11 @@ customElements.define(
 
         // Set the input values where the value changed
         if (!isSameDate(selection.left, indCalendar.rangeStart)) {
-          setNativeInputValue(rangeStartInput, formatDate(dateFormat, selection.left));
+          setNativeInputValue(rangeStartInput, formatDate(this.format, selection.left));
           rangeStartInput.dispatchEvent(new Event('input', {bubbles: true}));
         }
         if (!isSameDate(selection.right, indCalendar.rangeEnd)) {
-          setNativeInputValue(rangeEndInput, formatDate(dateFormat, selection.right));
+          setNativeInputValue(rangeEndInput, formatDate(this.format, selection.right));
           rangeEndInput.dispatchEvent(new Event('change', {bubbles: true}));
         }
 
@@ -317,7 +321,7 @@ customElements.define(
   }
 );
 
-customElements.define(
+CustomElementBase.define(
   'ind-inline-date-picker',
   class extends CustomElementBase {
     static attributes = {
@@ -353,7 +357,7 @@ customElements.define(
   }
 );
 
-customElements.define(
+CustomElementBase.define(
   'ind-inline-date-range-picker',
   class extends CustomElementBase {
     static attributes = {
@@ -520,7 +524,7 @@ class InlineModeController {
   tearDownGlobalEvents() {}
 }
 
-customElements.define(
+CustomElementBase.define(
   'ind-calendar',
   class extends CustomElementBase {
     static attributes = {
@@ -815,7 +819,7 @@ customElements.define(
   }
 );
 
-customElements.define(
+CustomElementBase.define(
   'ind-date-grid',
   class extends CustomElementBase {
     static lastId = 0;
@@ -892,6 +896,18 @@ customElements.define(
         }
       });
 
+      let getDateValidity = () => true;
+
+      Object.defineProperty(indDateGrid, 'filter', {
+        set(fn = () => true) {
+          getDateValidity = fn;
+          updateGridDates();
+        },
+        get() {
+          return getDateValidity;
+        },
+      });
+
       let debounceTimer;
 
       function updateGridDates() {
@@ -920,7 +936,6 @@ customElements.define(
             const isRenderable = !indDateGrid.hideDatesFromOtherMonths || belongsToCurrentMonth;
 
             calendarButton.dataset.currentMonth = belongsToCurrentMonth;
-            calendarButton.disabled = !isRenderable;
 
             if (!isRenderable) {
               calendarButton.textContent = '';
@@ -931,40 +946,43 @@ customElements.define(
               calendarButton.removeAttribute('data-range-end');
               calendarButton.value = '';
               calendarButton.tabIndex = -1;
-              calendarButton.disabled = true;
-              return;
-            }
-
-            // Update button attributes
-            calendarButton.textContent = date.getDate();
-            calendarButton.setAttribute(
-              'aria-label',
-              date.toLocaleDateString(indDateGrid.locale, {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })
-            );
-            calendarButton.toggleAttribute(
-              'data-weekend',
-              weekInfo.weekend.includes(date.getDay() + 1)
-            );
-            calendarButton.tabIndex = -1;
-            calendarButton.value = toDateString(date);
-
-            if (this.allowableSelectionRange.includes(date)) {
-              calendarButton.removeAttribute('aria-disabled');
             } else {
-              calendarButton.setAttribute('aria-disabled', true);
-            }
+              const isValid = getDateValidity(date, {
+                locale: indDateGrid.locale,
+                weekInfo,
+              });
+              const isSelectable = indDateGrid.allowableSelectionRange.includes(date) && isValid;
 
-            if (selectedRange.includes(date)) {
-              calendarButton.setAttribute('aria-selected', true);
-            } else {
-              calendarButton.removeAttribute('aria-selected');
+              calendarButton.textContent = date.getDate();
+              calendarButton.setAttribute(
+                'aria-label',
+                date.toLocaleDateString(indDateGrid.locale, {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })
+              );
+              calendarButton.toggleAttribute(
+                'data-weekend',
+                weekInfo.weekend.includes(date.getDay() + 1)
+              );
+              calendarButton.tabIndex = -1;
+              calendarButton.value = toDateString(date);
+
+              if (isSelectable) {
+                calendarButton.removeAttribute('aria-disabled');
+              } else {
+                calendarButton.setAttribute('aria-disabled', true);
+              }
+
+              if (selectedRange.includes(date)) {
+                calendarButton.setAttribute('aria-selected', true);
+              } else {
+                calendarButton.removeAttribute('aria-selected');
+              }
+              calendarButton.toggleAttribute('data-range-start', selectedRange.startsWith(date));
+              calendarButton.toggleAttribute('data-range-end', selectedRange.endsWith(date));
             }
-            calendarButton.toggleAttribute('data-range-start', selectedRange.startsWith(date));
-            calendarButton.toggleAttribute('data-range-end', selectedRange.endsWith(date));
           });
 
           const focusableButton = listbox.querySelector(

@@ -49,7 +49,6 @@
                     </button>
                 </div>
                 <div class="group hide-if-locked">
-                    <div id="indico-user-to-add" class="hidden"></div>
                     <button class="i-button arrow icon-plus" data-toggle="dropdown">
                         {% trans %}Register{% endtrans %}
                     </button>
@@ -63,7 +62,8 @@
                         <li>
                             <a href="#" class="js-add-user"
                                data-href="{{ url_for('.create_registration', regform) }}"
-                               data-title="{% trans %}Register a Indico user{% endtrans %}">
+                               data-title="{% trans %}Register a Indico user{% endtrans %}"
+                               data-search-token="{{ make_user_search_token() }}">
                                 {% trans %}Indico user{% endtrans %}
                             </a>
                         </li>
@@ -172,6 +172,14 @@
                                     {%- trans %}Reject registrations{% endtrans -%}
                                 </a>
                             </li>
+                            <li>
+                                <a href="#" class="icon-loop js-requires-selected-row disabled js-modify-status"
+                                   data-href="{{ url_for('.registrations_reset', regform) }}"
+                                   data-method="POST"
+                                   data-confirm="{% trans %}Do you really want to reset the selected registrations?{% endtrans %}">
+                                    {%- trans %}Reset registrations{% endtrans -%}
+                                </a>
+                            </li>
                         </ul>
                     {% endif %}
                     {% if not event.is_locked %}
@@ -227,7 +235,7 @@
             </div>
         </div>
         <div class="list-content" id="registration-list">
-            {{ render_registration_list(regform, registrations, dynamic_columns, static_columns, total_registrations) }}
+            {{ render_registration_list(regform, registrations, dynamic_columns, static_columns, extra_columns, total_registrations) }}
         </div>
     </div>
 

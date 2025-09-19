@@ -14,12 +14,28 @@ export const getStaticData = state => state.staticData;
 
 export const getFlatSections = state => state.sections;
 export const getItems = state => state.items;
+export const getHiddenItemsInitialized = state => state.hiddenItems.ready;
+export const getHiddenItemIds = state => state.hiddenItems.ids;
 
 /** Get an item by its ID. */
 export const getItemById = createSelector(
   getItems,
   (__, itemId) => itemId,
   (fields, itemId) => fields[itemId]
+);
+
+/** Check whether an item is hidden. */
+export const isItemHidden = createSelector(
+  getHiddenItemIds,
+  (__, itemId) => itemId,
+  (hiddenIds, itemId) => !!itemId && hiddenIds.includes(itemId)
+);
+
+/** Get the HTML names of hidden items. */
+export const getHiddenItemHTMLNames = createSelector(
+  getItems,
+  getHiddenItemIds,
+  (fields, hiddenIds) => Object.values(_.pick(fields, hiddenIds)).map(f => f.htmlName)
 );
 
 /** Get the currency used by the registration form. */
@@ -43,7 +59,11 @@ export const getPriceFormatter = createSelector(
 /** Get a sorted list of enabled top-level sections. */
 const getSections = createSelector(
   getFlatSections,
-  sections => _.sortBy(Object.values(sections).filter(s => s.enabled), ['position', 'id'])
+  sections =>
+    _.sortBy(
+      Object.values(sections).filter(s => s.enabled),
+      ['position', 'id']
+    )
 );
 
 /** Get a mapping from section IDs to sorted item lists. */

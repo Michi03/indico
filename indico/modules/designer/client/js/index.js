@@ -77,6 +77,49 @@ import {$T} from 'indico/utils/i18n';
     return itemIdCounter;
   }
 
+  function resizeFont(divContainer, item) {
+    // Adapted from https://stackoverflow.com/a/4166021
+    const $item = divContainer.find('.designer-item');
+    const pattern = /([0-9.]+)pt/g;
+    let fontSize = parseFloat(pattern.exec(item.font_size)[1]);
+    const minFontSize = 6;
+
+    const resizer = $('<div>', {
+      id: 'font-resizer',
+      text: item.type === 'fixed' ? item.text : itemTitles[item.type],
+      css: {
+        visibility: 'hidden',
+        whiteSpace: 'nowrap',
+        overflow: 'visible',
+        fontSize: fontSize + 'pt',
+        fontFamily: $item.css('font-family'),
+        fontWeight: $item.css('font-weight'),
+        fontStyle: $item.css('font-style'),
+      },
+    }).appendTo(divContainer);
+
+    while (fontSize > minFontSize && resizer[0].scrollWidth > item.width) {
+      resizer.css('font-size', fontSize + 'pt');
+      $item.css('font-size', zoomFont(fontSize + 'pt'));
+      fontSize -= 0.5;
+    }
+    resizer.remove();
+  }
+
+  function getStyleForTextOverflow(overflowType) {
+    if (overflowType === 'wrap') {
+      return {
+        'white-space': 'normal',
+        overflow: 'visible',
+      };
+    } else if (overflowType === 'resize') {
+      return {
+        'white-space': 'pre',
+      };
+    }
+    return {};
+  }
+
   function createItem(type) {
     var item = {
       id: generateItemId(),
@@ -94,6 +137,7 @@ import {$T} from 'indico/utils/i18n';
       height: isImage(type) ? 150 : null,
       text: $T('Fixed text'),
       zIndex: itemIdCounter + 10,
+      text_overflow: 'wrap',
 
       // The following attributes have no meaning to the server
       selected: false,
@@ -115,14 +159,15 @@ import {$T} from 'indico/utils/i18n';
           color: this.color,
           backgroundColor: this.background_color,
           zIndex: this.zIndex,
+          ...getStyleForTextOverflow(this.text_overflow),
         })
         .attr('data-type', this.type)
         .text(
           this.type === 'fixed'
             ? this.text
             : this.type === 'fixed_image' && this.image_id
-            ? ''
-            : itemTitles[this.type]
+              ? ''
+              : itemTitles[this.type]
         );
       return html;
     }.bind(item);
@@ -268,6 +313,7 @@ import {$T} from 'indico/utils/i18n';
     $('#alignment-selector').val(item.text_align);
     $('#font-selector').val(item.font_family);
     $('#size-selector').val(item.font_size);
+    $('#overflow-selector').val(item.text_overflow);
     $('#style-selector').val(itemStyles.length ? itemStyles.join('_') : 'normal');
     $('.js-element-width').val(item.width / pixelsPerCm);
     $('.js-element-height').val(item.height / pixelsPerCm);
@@ -311,6 +357,9 @@ import {$T} from 'indico/utils/i18n';
         var div = $item.parent('.ui-draggable');
         item.text = text;
         div.html(item.toHTML());
+        if (item.text_overflow === 'resize') {
+          resizeFont(div, item);
+        }
       }
     }
   }
@@ -348,9 +397,9 @@ import {$T} from 'indico/utils/i18n';
           .attr('id', 'rulerv' + i)
           .css({
             'line-height': pixelsPerCm / 2.0 + 'px',
-            'height': pixelsPerCm + 'px',
-            'left': 0,
-            'top': i * pixelsPerCm + 'px',
+            height: pixelsPerCm + 'px',
+            left: 0,
+            top: i * pixelsPerCm + 'px',
           })
           .html(i + 1)
           .appendTo(vRuler);
@@ -366,7 +415,7 @@ import {$T} from 'indico/utils/i18n';
   // If there are already some items being displayed, it does not erase them
   function displayItems(isBackside) {
     var itemsList = isBackside ? backsideItems : items;
-    $.each(itemsList, function(i, item) {
+    $.each(itemsList, (i, item) => {
       var newDiv = createDiv(item, isBackside);
       newDiv.css({
         left: zoom(item.x) + 'px',
@@ -380,6 +429,9 @@ import {$T} from 'indico/utils/i18n';
       }
       if (item.selected && !isBackside) {
         selectItem(newDiv.find('.designer-item'));
+      }
+      if (item.text_overflow === 'resize') {
+        resizeFont(newDiv, item);
       }
     });
   }
@@ -486,7 +538,7 @@ import {$T} from 'indico/utils/i18n';
           normalizeZIndex();
         }
       },
-    }[direction]());
+    })[direction]();
   }
 
   function itemsOverlap(item1, item2) {
@@ -543,6 +595,9 @@ import {$T} from 'indico/utils/i18n';
       size: function() {
         selectedItem.font_size = $('#size-selector').val();
       },
+      overflow: function() {
+        selectedItem.text_overflow = $('#overflow-selector').val();
+      },
       style: function() {
         switch ($('#style-selector').val()) {
           case 'normal':
@@ -588,9 +643,13 @@ import {$T} from 'indico/utils/i18n';
           selectedItem.width = selectedItem.height;
         }
       },
-    }[attribute]());
+    })[attribute]();
 
+    const parentDiv = div.parent('.ui-draggable');
     div.replaceWith(selectedItem.toHTML());
+    if (selectedItem.text_overflow === 'resize') {
+      resizeFont(parentDiv, selectedItem);
+    }
     if (selectedItem.type === 'fixed_image') {
       $('.designer-item.selected').append(createFixedImageElement(selectedItem));
     }
@@ -625,7 +684,7 @@ import {$T} from 'indico/utils/i18n';
         width: templateDimensions.realWidth,
         height: templateDimensions.realHeight,
         background_position: $('input[name=bg-position]:checked').val(),
-        items: _.values(items).map(function(item) {
+        items: _.values(items).map(item => {
           var itemCopy = $.extend(true, {}, item);
           itemCopy.font_size = unzoomFont(item.font_size);
           return item;
@@ -645,7 +704,7 @@ import {$T} from 'indico/utils/i18n';
         )
       : $.Deferred().resolve();
 
-    confirmed.then(function() {
+    confirmed.then(() => {
       $.ajax({
         url: location.pathname,
         data: JSON.stringify(templateData),
@@ -780,10 +839,7 @@ import {$T} from 'indico/utils/i18n';
     $imageElement.appendTo($div);
     const $imageFile = $('#imageFile');
     $imageFile.val('');
-    $imageFile
-      .next('label')
-      .addClass('i-button')
-      .text($T.gettext('Choose a file'));
+    $imageFile.next('label').addClass('i-button').text($T.gettext('Choose a file'));
     $('.js-upload-img').prop('disabled', $imageFile.val());
     $('.js-remove-img').prop('disabled', !lastSelectedItem.image_id);
   }
@@ -808,7 +864,7 @@ import {$T} from 'indico/utils/i18n';
 
   function displayTemplate(template, isBackside) {
     if (template.data) {
-      template.data.items.forEach(function(item) {
+      template.data.items.forEach(item => {
         createItemFromObject(item, isBackside);
       });
       displayItems(isBackside);
@@ -930,33 +986,23 @@ import {$T} from 'indico/utils/i18n';
     images = {...template.images, ...backsideTemplate.images};
 
     // Item class
-    $(document).ready(function() {
+    $(document).ready(() => {
       var removeBackgroundQtip = $('.js-remove-bg').qtip();
 
       $('#bg-form input[type="file"]').on('change', function() {
         var $this = $(this);
         if (this.files) {
-          $this
-            .next('label')
-            .removeClass('i-button')
-            .text(this.files[0].name);
+          $this.next('label').removeClass('i-button').text(this.files[0].name);
         }
-        $('.js-upload-bg')
-          .prop('disabled', !$this.val())
-          .toggleClass('highlight', !!$this.val());
+        $('.js-upload-bg').prop('disabled', !$this.val()).toggleClass('highlight', !!$this.val());
       });
 
       $('#img-form input[type="file"]').on('change', function() {
         var $this = $(this);
         if (this.files) {
-          $this
-            .next('label')
-            .removeClass('i-button')
-            .text(this.files[0].name);
+          $this.next('label').removeClass('i-button').text(this.files[0].name);
         }
-        $('.js-upload-img')
-          .prop('disabled', !$this.val())
-          .toggleClass('highlight', !!$this.val());
+        $('.js-upload-img').prop('disabled', !$this.val()).toggleClass('highlight', !!$this.val());
       });
 
       // select and inline edit
@@ -968,13 +1014,13 @@ import {$T} from 'indico/utils/i18n';
           inlineEditItem($(this));
         });
 
-      $('.js-upload-bg').click(function() {
+      $('.js-upload-bg').click(() => {
         $('.js-toggle-side.front').click();
         $('#bg-form').submit();
         return false;
       });
 
-      $('.js-upload-img').click(function() {
+      $('.js-upload-img').click(() => {
         lastSelectedItem = getSelectedItemData();
         if (lastSelectedItem.type === 'fixed_image') {
           $('#img-form').submit();
@@ -1028,13 +1074,13 @@ import {$T} from 'indico/utils/i18n';
         template.data.background_position = newPosition;
       });
 
-      $('.js-remove-bg').click(function(e) {
+      $('.js-remove-bg').click(e => {
         e.preventDefault();
         removeBackgroundQtip.qtip('api').toggle();
         removeBackground(template);
       });
 
-      $('.js-remove-img').click(function(e) {
+      $('.js-remove-img').click(e => {
         e.preventDefault();
         const selectedItem = getSelectedItemData();
         if (selectedItem.type === 'fixed_image') {
@@ -1053,35 +1099,35 @@ import {$T} from 'indico/utils/i18n';
         setSelectedItemAttribute(attr, config);
       });
 
-      $('.insert-element-btn').click(function(e) {
+      $('.insert-element-btn').click(e => {
         e.preventDefault();
         $('.js-toggle-side.front').click();
         insertElement();
       });
 
-      $('.js-remove-element').click(function(e) {
+      $('.js-remove-element').click(e => {
         e.preventDefault();
         removeSelectedElement();
       });
 
-      $('.js-save-template').click(function(e) {
+      $('.js-save-template').click(e => {
         e.preventDefault();
         save(template);
       });
 
-      $('.template-width, .template-height').on('input', function() {
+      $('.template-width, .template-height').on('input', () => {
         changeTemplateSize(template, backsideTemplate);
       });
 
-      $('.js-element-width').on('keyup click', function() {
+      $('.js-element-width').on('keyup click', () => {
         setSelectedItemAttribute('width', config);
       });
 
-      $('.js-element-height').on('keyup click', function() {
+      $('.js-element-height').on('keyup click', () => {
         setSelectedItemAttribute('height', config);
       });
 
-      $('#fixed-text-field').on('keyup', function() {
+      $('#fixed-text-field').on('keyup', () => {
         setSelectedItemAttribute('text', config);
       });
 
@@ -1089,12 +1135,8 @@ import {$T} from 'indico/utils/i18n';
         var $selectedOption = $(this).find('option:selected');
 
         if ($selectedOption.val() !== 'custom') {
-          $('.template-width')
-            .val($selectedOption.data('width'))
-            .change();
-          $('.template-height')
-            .val($selectedOption.data('height'))
-            .change();
+          $('.template-width').val($selectedOption.data('width')).change();
+          $('.template-height').val($selectedOption.data('height')).change();
           changeTemplateSize(template, backsideTemplate);
         }
         $('.js-template-dimension').prop('disabled', $selectedOption.val() !== 'custom');
@@ -1123,7 +1165,7 @@ import {$T} from 'indico/utils/i18n';
         $('.template-side.active').trigger('indico:backgroundChanged');
       });
 
-      $('.template-side').on('indico:backgroundChanged', function() {
+      $('.template-side').on('indico:backgroundChanged', () => {
         var $backgroundFile = $('#backgroundFile');
         var $templateSide = $('.template-side.front');
         var $templateSideBackground = $templateSide.find('.background-image');
@@ -1132,10 +1174,7 @@ import {$T} from 'indico/utils/i18n';
           $templateSideBackground.remove();
           $templateSide.append($('<img>', {class: 'background'}));
           $backgroundFile.val('');
-          $backgroundFile
-            .next('label')
-            .addClass('i-button')
-            .text($T.gettext('Choose a file'));
+          $backgroundFile.next('label').addClass('i-button').text($T.gettext('Choose a file'));
         }
         $('.js-upload-bg').prop('disabled', !$backgroundFile.val());
         $('.js-remove-bg').prop('disabled', !template.background_url);
@@ -1145,7 +1184,7 @@ import {$T} from 'indico/utils/i18n';
 
       $('.template-side.front').trigger('indico:backgroundChanged');
 
-      $('.template-side.back').on('indico:backsideUpdated', function(evt, data) {
+      $('.template-side.back').on('indico:backsideUpdated', (evt, data) => {
         backsideTemplateID = data.backside_template_id;
         Object.assign(images, data.template.images);
         clearBacksideTemplate(backsideTemplate);
@@ -1157,7 +1196,7 @@ import {$T} from 'indico/utils/i18n';
         $('.backside-template-title, .js-front-affected-title').text(data.template.title);
       });
 
-      $('.js-remove-backside').on('click', function() {
+      $('.js-remove-backside').on('click', () => {
         backsideTemplateID = null;
         clearBacksideTemplate(backsideTemplate);
         if (removeBackSide) {
@@ -1166,7 +1205,7 @@ import {$T} from 'indico/utils/i18n';
         toggleBacksidePlaceholder(true);
       });
 
-      $('.js-change-orientation').on('click', function() {
+      $('.js-change-orientation').on('click', () => {
         var $width = $('.template-width');
         var $height = $('.template-height');
         var widthValue = $width.val();
@@ -1242,9 +1281,7 @@ import {$T} from 'indico/utils/i18n';
       templateDimensions = new Dimensions(template.data.width, template.data.height);
       $('.js-template-name').val(template.title);
       $('.js-is-clonable').prop('checked', template.is_clonable);
-      $('.template-container')
-        .width(templateDimensions.width)
-        .height(templateDimensions.height);
+      $('.template-container').width(templateDimensions.width).height(templateDimensions.height);
     } else {
       templateDimensions = new Dimensions(config.tpl_size[0], config.tpl_size[1]);
     }

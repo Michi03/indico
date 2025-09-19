@@ -137,7 +137,7 @@ import {camelizeKeys} from 'indico/utils/case';
       listingMessage.toggleClass('hidden', JSON.parse($listingField.val()));
     });
 
-    options.protectionModeFields.on('change', function() {
+    options.protectionModeFields.on('change', () => {
       updateProtectionMessage();
     });
 
@@ -167,8 +167,8 @@ import {camelizeKeys} from 'indico/utils/case';
       if (occurrences && occurrences.length === 1) {
         setLectureTimes(occurrences[0]);
       } else {
-        startDt = moment(`${startDate} ${startTime}`, 'DD/MM/YYYY HH:mm');
-        endDt = moment(`${endDate} ${endTime}`, 'DD/MM/YYYY HH:mm');
+        startDt = moment(`${startDate} ${startTime}`);
+        endDt = moment(`${endDate} ${endTime}`);
       }
     }
 
@@ -191,9 +191,7 @@ import {camelizeKeys} from 'indico/utils/case';
     function hideAvailability(resetCheckbox) {
       if ($currentMessage) {
         if (resetCheckbox) {
-          $('#availability-messages')
-            .find("input[id^='create']")
-            .prop('checked', false);
+          $('#availability-messages').find("input[id^='create']").prop('checked', false);
           $createBooking.val('false');
         }
         $currentMessage.hide();
@@ -290,33 +288,33 @@ import {camelizeKeys} from 'indico/utils/case';
         const startTime = $('#event-creation-start_dt-timestorage').val();
         const endDate = $('#event-creation-end_dt-datestorage').val();
         const endTime = $('#event-creation-end_dt-timestorage').val();
-        startDt = moment(`${startDate} ${startTime}`, 'DD/MM/YYYY HH:mm');
-        endDt = moment(`${endDate} ${endTime}`, 'DD/MM/YYYY HH:mm');
+        startDt = moment(`${startDate} ${startTime}`);
+        endDt = moment(`${endDate} ${endTime}`);
         // workaround for automatic end date update if start date is after end date
         if (endDt.isBefore(startDt)) {
-          endDt = moment(`${startDate} ${endTime}`, 'DD/MM/YYYY HH:mm');
+          endDt = moment(`${startDate} ${endTime}`);
         }
         updateAvailability();
       });
 
-      $('#event-creation-start_dt-timestorage').on('change', function() {
+      $('#event-creation-start_dt-timestorage').on('change', () => {
         const startDate = $('#event-creation-start_dt-datestorage').val();
         const startTime = $('#event-creation-start_dt-timestorage').val();
-        startDt = moment(`${startDate} ${startTime}`, 'DD/MM/YYYY HH:mm');
+        startDt = moment(`${startDate} ${startTime}`);
         updateAvailability();
       });
 
       $('#event-creation-end_dt-datestorage').on('change', function() {
         const endDate = $(this).val();
         const endTime = $('#event-creation-end_dt-timestorage').val();
-        endDt = moment(`${endDate} ${endTime}`, 'DD/MM/YYYY HH:mm');
+        endDt = moment(`${endDate} ${endTime}`);
         updateAvailability();
       });
 
       $('#event-creation-end_dt-timestorage').on('change', function() {
         const endDate = $('#event-creation-end_dt-datestorage').val();
         const endTime = $(this).val();
-        endDt = moment(`${endDate} ${endTime}`, 'DD/MM/YYYY HH:mm');
+        endDt = moment(`${endDate} ${endTime}`);
         updateAvailability();
       });
 

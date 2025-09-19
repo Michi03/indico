@@ -11,8 +11,6 @@ import React, {useRef} from 'react';
 import {useNativeEvent} from 'indico/react/hooks';
 import {Translate} from 'indico/react/i18n';
 
-import 'indico/custom_elements/ind_select';
-
 export default function Select({
   options,
   value,
@@ -39,7 +37,7 @@ export default function Select({
   useNativeEvent(indSelectRef, 'change', onChange);
 
   return (
-    <ind-select ref={indSelectRef} value={value} {...inputProps}>
+    <ind-select ref={indSelectRef} value={value} {...inputProps} data-clearable={!required}>
       <div className="caption" data-caption>
         <Translate>Select a choice</Translate>
       </div>

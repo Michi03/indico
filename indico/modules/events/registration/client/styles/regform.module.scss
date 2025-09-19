@@ -72,6 +72,16 @@
     );
   }
 
+  &.management-hidden {
+    background: repeating-linear-gradient(
+      45deg,
+      $pastel-blue,
+      $pastel-blue 10px,
+      $light-blue 10px,
+      $light-blue 20px
+    );
+  }
+
   legend {
     // XXX: Copy styles from Semantic UI
     margin: 0 0 0.28571429rem 0;
@@ -124,26 +134,9 @@
         color: rgba(0, 0, 0, 0.2);
       }
 
-      .number-field,
-      .boolean-field {
+      .number-field {
         display: flex;
         align-items: center;
-      }
-
-      .boolean-field :global(.ui.button:not(.active):not(:hover):focus) {
-        background-color: #e0e1e2;
-        color: rgba(0, 0, 0, 0.6);
-      }
-
-      :global(.error) .boolean-field :global(.ui.buttons .ui.button) {
-        background-color: #fff6f6;
-        color: $dark-red;
-        outline: 1px solid $dark-red;
-
-        &:hover {
-          background-color: $light-red;
-          color: $pastel-red;
-        }
       }
 
       .date-field {
@@ -248,6 +241,7 @@
         }
 
         .dropdown-text {
+          width: 100%;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -323,10 +317,19 @@
   }
 
   > .actions {
-    visibility: hidden;
+    & > *:not(.conditional) {
+      visibility: hidden;
+    }
 
-    a + a {
+    a + a,
+    a + i,
+    i + i {
       margin-left: 3px;
+    }
+
+    a:global(.disabled) {
+      color: $gray;
+      cursor: not-allowed;
     }
   }
 
@@ -355,28 +358,8 @@
       cursor: grabbing;
     }
 
-    &:hover > .actions {
+    &:hover > .actions > * {
       visibility: visible;
-    }
-  }
-
-  :global(.DateRangePickerInput__disabled) {
-    background: inherit;
-  }
-
-  :global(.DateRangePickerInput_calendarIcon)[disabled] {
-    visibility: hidden;
-  }
-
-  :global(.SingleDatePickerInput) {
-    border-radius: 4px;
-
-    & > :global(.DateInput) {
-      max-width: 130px;
-    }
-
-    & > button {
-      margin-left: 5px;
     }
   }
 

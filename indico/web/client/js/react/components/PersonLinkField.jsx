@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import React, {useMemo, useState} from 'react';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
-import {Button, Segment, List, Label, Icon, Popup, Ref} from 'semantic-ui-react';
+import {Button, Icon, Label, List, Popup, Ref, Segment} from 'semantic-ui-react';
 
 import {UserSearch} from 'indico/react/components/principals/Search';
 import {PrincipalType} from 'indico/react/components/principals/util';
@@ -192,7 +192,7 @@ const PersonLinkSection = ({
               onEdit={scope => onEdit(idx, scope)}
               onClickRole={(roleIdx, value) => onClickRole(idx, roleIdx, value)}
               canDelete={canDelete}
-              canEdit={canEdit}
+              canEdit={canEdit || !p.type} // allow editing manually entered persons
               roles={defaultRoles.map(({name, ...rest}) => ({
                 ...rest,
                 name,
@@ -242,13 +242,17 @@ function PersonLinkField({
   autoSort,
   setAutoSort,
   hasPredefinedAffiliations,
-  canEnterManually,
+  allowCustomAffiliations,
+  customPersonsMode,
+  requiredPersonFields,
   defaultSearchExternal,
+  userSearchDisabled,
   nameFormat,
   validateEmailUrl,
   extraParams,
+  searchToken,
 }) {
-  const [favoriteUsers] = useFavoriteUsers(null, !sessionUser);
+  const favoriteUsersController = useFavoriteUsers(null, !sessionUser);
   const [modalOpen, setModalOpen] = useState('');
   const [selected, setSelected] = useState(null);
   const sections = roles.filter(x => x.section);
@@ -290,14 +294,14 @@ function PersonLinkField({
   };
 
   const onAdd = values => {
-    const existing = persons.filter(p => !!p.email).map(p => p.email);
+    const existing = persons.filter(p => !!p.email).map(p => p.email.toLowerCase());
     const hooks = getPluginObjects('onAddPersonLink');
     values.forEach(p => {
       p.name = formatName(p);
       p.roles = roles.filter(x => x.default).map(x => x.name);
       hooks.forEach(f => f(p));
     });
-    onChange([...persons, ...values.filter(v => !existing.includes(v.email))]);
+    onChange([...persons, ...values.filter(v => !existing.includes(v.email.toLowerCase()))]);
   };
 
   const onSubmit = value => {
@@ -334,11 +338,16 @@ function PersonLinkField({
                 label={plural || label}
                 persons={filtered}
                 defaultRoles={roles}
-                onEdit={(idx, scope) => onEdit(persons.findIndex(p => p === filtered[idx]), scope)}
+                onEdit={(idx, scope) =>
+                  onEdit(
+                    persons.findIndex(p => p === filtered[idx]),
+                    scope
+                  )
+                }
                 onChange={values =>
                   onChange(persons.filter(p => !filterCondition(p)).concat(values))
                 }
-                canEdit={canEnterManually}
+                canEdit={customPersonsMode === 'always'}
                 extraParams={extraParams}
               />
             );
@@ -350,9 +359,14 @@ function PersonLinkField({
               label={sections.length > 0 ? Translate.string('Others') : undefined}
               persons={others}
               defaultRoles={roles}
-              onEdit={(idx, scope) => onEdit(persons.findIndex(p => p === others[idx]), scope)}
+              onEdit={(idx, scope) =>
+                onEdit(
+                  persons.findIndex(p => p === others[idx]),
+                  scope
+                )
+              }
               onChange={values => onChange(persons.filter(p => !othersCondition(p)).concat(values))}
-              canEdit={canEnterManually}
+              canEdit={customPersonsMode === 'always'}
               extraParams={extraParams}
             />
           )}
@@ -377,9 +391,10 @@ function PersonLinkField({
             </Button>
           )}
           <UserSearch
-            favorites={favoriteUsers}
+            favoritesController={favoriteUsersController}
             existing={persons.map(p => p.userIdentifier)}
             onAddItems={onAdd}
+            onEnterManually={customPersonsMode === 'never' ? null : () => setModalOpen('details')}
             triggerFactory={props => (
               <Button type="button" {...props}>
                 <Icon name="search" />
@@ -390,9 +405,10 @@ function PersonLinkField({
             withEventPersons={eventId !== null}
             initialFormValues={{external: defaultSearchExternal}}
             eventId={eventId}
-            disabled={!sessionUser}
+            disabled={!sessionUser || !searchToken || userSearchDisabled}
+            searchToken={searchToken}
           />
-          {canEnterManually && (
+          {customPersonsMode === 'always' && (
             <Button type="button" onClick={() => setModalOpen('details')}>
               <Icon name="keyboard" />
               <Translate>Enter manually</Translate>
@@ -404,7 +420,9 @@ function PersonLinkField({
               onSubmit={onSubmit}
               person={persons[selected]}
               otherPersons={selected === null ? persons : _.without(persons, persons[selected])}
+              requiredPersonFields={requiredPersonFields}
               hasPredefinedAffiliations={hasPredefinedAffiliations}
+              allowCustomAffiliations={allowCustomAffiliations}
               validateEmailUrl={validateEmailUrl}
               extraParams={extraParams}
             />
@@ -434,11 +452,15 @@ PersonLinkField.propTypes = {
   autoSort: PropTypes.bool,
   setAutoSort: PropTypes.func,
   hasPredefinedAffiliations: PropTypes.bool,
-  canEnterManually: PropTypes.bool,
+  allowCustomAffiliations: PropTypes.bool,
+  customPersonsMode: PropTypes.oneOf(['always', 'after_search', 'never']),
+  requiredPersonFields: PropTypes.array,
   defaultSearchExternal: PropTypes.bool,
+  userSearchDisabled: PropTypes.bool,
   nameFormat: PropTypes.string,
   validateEmailUrl: PropTypes.string,
   extraParams: PropTypes.object,
+  searchToken: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
 };
 
 PersonLinkField.defaultProps = {
@@ -449,11 +471,15 @@ PersonLinkField.defaultProps = {
   autoSort: true,
   setAutoSort: null,
   hasPredefinedAffiliations: false,
-  canEnterManually: true,
+  allowCustomAffiliations: true,
+  customPersonsMode: 'always',
+  requiredPersonFields: [],
   defaultSearchExternal: false,
+  userSearchDisabled: false,
   nameFormat: '',
   validateEmailUrl: null,
   extraParams: {},
+  searchToken: null,
 };
 
 export function WTFPersonLinkField({
@@ -464,11 +490,15 @@ export function WTFPersonLinkField({
   sessionUser,
   emptyMessage,
   hasPredefinedAffiliations,
-  canEnterManually,
+  allowCustomAffiliations,
+  customPersonsMode,
+  requiredPersonFields,
   defaultSearchExternal,
+  userSearchDisabled,
   nameFormat,
   validateEmailUrl,
   extraParams,
+  searchToken,
 }) {
   const [persons, setPersons] = useState(
     defaultValue.sort((a, b) => a.displayOrder - b.displayOrder)
@@ -520,11 +550,15 @@ export function WTFPersonLinkField({
       autoSort={autoSort}
       setAutoSort={setAutoSort}
       hasPredefinedAffiliations={hasPredefinedAffiliations}
-      canEnterManually={canEnterManually}
+      allowCustomAffiliations={allowCustomAffiliations}
+      customPersonsMode={customPersonsMode}
+      requiredPersonFields={requiredPersonFields}
       defaultSearchExternal={defaultSearchExternal}
       nameFormat={nameFormat}
       validateEmailUrl={validateEmailUrl}
       extraParams={extraParams}
+      searchToken={searchToken}
+      userSearchDisabled={userSearchDisabled}
     />
   );
 }
@@ -537,11 +571,15 @@ WTFPersonLinkField.propTypes = {
   sessionUser: PropTypes.object,
   emptyMessage: PropTypes.string,
   hasPredefinedAffiliations: PropTypes.bool,
+  allowCustomAffiliations: PropTypes.bool,
   nameFormat: PropTypes.string,
-  canEnterManually: PropTypes.bool,
+  customPersonsMode: PropTypes.oneOf(['always', 'after_search', 'never']),
+  requiredPersonFields: PropTypes.array,
   defaultSearchExternal: PropTypes.bool,
+  userSearchDisabled: PropTypes.bool,
   validateEmailUrl: PropTypes.string,
   extraParams: PropTypes.object,
+  searchToken: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
 };
 
 WTFPersonLinkField.defaultProps = {
@@ -551,9 +589,13 @@ WTFPersonLinkField.defaultProps = {
   sessionUser: null,
   emptyMessage: null,
   hasPredefinedAffiliations: false,
-  canEnterManually: true,
+  allowCustomAffiliations: true,
+  customPersonsMode: 'always',
+  requiredPersonFields: [],
   defaultSearchExternal: false,
+  userSearchDisabled: false,
   nameFormat: '',
   validateEmailUrl: null,
   extraParams: {},
+  searchToken: null,
 };

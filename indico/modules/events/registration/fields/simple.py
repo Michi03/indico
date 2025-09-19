@@ -11,8 +11,7 @@ from decimal import Decimal
 from marshmallow import ValidationError, fields, pre_load, validate, validates_schema
 from PIL import Image
 
-from indico.core.marshmallow import mm
-from indico.modules.events.registration.fields.base import (BillableFieldDataSchema,
+from indico.modules.events.registration.fields.base import (BillableFieldDataSchema, FieldSetupSchemaBase,
                                                             LimitedPlacesBillableFieldDataSchema,
                                                             RegistrationFormBillableField, RegistrationFormFieldBase)
 from indico.modules.files.models.files import File
@@ -30,7 +29,7 @@ from indico.util.string import remove_accents, str_to_ascii, validate_email
 KEEP_EXISTING_FILE_UUID = '00000000-0000-0000-0000-000000000001'
 
 
-class TextFieldDataSchema(mm.Schema):
+class TextFieldDataSchema(FieldSetupSchemaBase):
     min_length = fields.Integer(load_default=0, validate=validate.And(validate.Range(0), validate.NoneOf((1,))))
     max_length = fields.Integer(load_default=0, validate=validate.Range(0))
 
@@ -106,6 +105,7 @@ class CheckboxField(RegistrationFormBillableField):
     name = 'checkbox'
     mm_field_class = fields.Boolean
     setup_schema_base_cls = LimitedPlacesBillableFieldDataSchema
+    allow_condition = True
     friendly_data_mapping = {None: '',
                              True: L_('Yes'),
                              False: L_('No')}
@@ -153,8 +153,11 @@ class CheckboxField(RegistrationFormBillableField):
     def default_value(self):
         return False
 
+    def get_data_for_condition(self, value) -> set:
+        return {value}
 
-class DateFieldDataSchema(mm.Schema):
+
+class DateFieldDataSchema(FieldSetupSchemaBase):
     date_format = fields.String(required=True, validate=validate.OneOf([
         '%d/%m/%Y %I:%M %p',
         '%d.%m.%Y %I:%M %p',
@@ -250,6 +253,7 @@ class BooleanField(RegistrationFormBillableField):
     mm_field_class = fields.Boolean
     setup_schema_base_cls = BooleanFieldSetupSchema
     not_empty_if_required = False
+    allow_condition = True
     friendly_data_mapping = {None: '',
                              True: L_('Yes'),
                              False: L_('No')}
@@ -287,6 +291,9 @@ class BooleanField(RegistrationFormBillableField):
     @property
     def empty_value(self):
         return None
+
+    def get_data_for_condition(self, value) -> set:
+        return {value}
 
     def get_places_used(self):
         places_used = 0
@@ -329,6 +336,10 @@ class CountryField(RegistrationFormFieldBase):
             # this method returning `None` and thus breaking the participant list..
             return ''
         return get_country(registration_data.data) if registration_data.data else ''
+
+    @property
+    def filter_choices(self):
+        return {x['countryKey']: x['caption'] for x in self.unprocess_field_data(None, None)['choices']}
 
 
 class FileField(RegistrationFormFieldBase):
@@ -380,6 +391,15 @@ class FileField(RegistrationFormFieldBase):
             return ''
         return registration_data.filename
 
+    def get_validators(self, existing_registration):
+        def _check_field_upload(value):
+            if not (file := File.query.filter_by(uuid=value).first()):
+                raise ValidationError('The file no longer exists')
+            if self.form_item.id != file.meta.get('regform_field_id'):
+                raise ValidationError('The file was not uploaded for this field')
+
+        return [_check_field_upload]
+
 
 class EmailField(RegistrationFormFieldBase):
     name = 'email'
@@ -419,7 +439,7 @@ class PictureField(FileField):
             if min_picture_size and min(pic.size) < min_picture_size:
                 raise ValidationError(_('The uploaded picture pixels is smaller than the minimum size of {}.')
                                       .format(min_picture_size))
-        return _picture_size_and_type
+        return [_picture_size_and_type, *super().get_validators(existing_registration)]
 
     @make_interceptable
     def _get_min_size(self):

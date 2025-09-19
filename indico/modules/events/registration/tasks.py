@@ -65,16 +65,21 @@ def delete_field_data():
             # expect structured data e.g. Accommodation & {Single,Multi}Choice.
             # This makes the React code relatively simple and we can always distinguish
             # purged fields since they have the 'is_purged' flag set to True
-            data.data = snakify_keys(data.field_data.field.field_impl.default_value)
+            default = data.field_data.field.field_impl.default_value
             if data.field_data.field.field_impl.is_file_field:
                 _delete_file(data)
             data.field_data.field.is_purged = True
+            if default is not NotImplemented:
+                data.data = snakify_keys(default)
+            else:
+                db.session.delete(data)
     db.session.commit()
 
 
 @celery.periodic_task(name='registration_retention_period', run_every=crontab(minute='30', hour='3'))
 def delete_registrations():
-    is_expired = db.and_(RegistrationForm.retention_period.isnot(None),
+    is_expired = db.and_(~RegistrationForm.is_purged,
+                         RegistrationForm.retention_period.isnot(None),
                          db.cast(Event.end_dt, db.Date) + RegistrationForm.retention_period <= now_utc().date())
     registrations = (Registration.query
                      .join(RegistrationForm, RegistrationForm.id == Registration.registration_form_id)
@@ -103,8 +108,12 @@ def delete_registrations():
 
 
 @celery.task(name='delete_previous_registration_file')
-def delete_previous_registration_file(reg_data, storage_backend, storage_file_id):
-    if reg_data.storage_backend == storage_backend and reg_data.storage_file_id == storage_file_id:
+def delete_previous_registration_file(registration_id, field_data_id, storage_backend, storage_file_id):
+    reg_data = RegistrationData.get((registration_id, field_data_id))
+    if reg_data and reg_data.storage_backend == storage_backend and reg_data.storage_file_id == storage_file_id:
+        # If we still have registration data (ie a file was replaced/removed but the field is still there),
+        # we abort the deletion in case the file that's about to be deleted is still referenced in it.
+        # This happens only if the commit failed for some reason.
         return
     logger.debug('Deleting registration file: %s from %s storage', storage_file_id, storage_backend)
     storage = get_storage(storage_backend)

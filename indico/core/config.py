@@ -26,9 +26,14 @@ from indico.util.packaging import package_is_editable
 from indico.util.string import crc32, snakify
 
 
+__all__ = ['config']
+
+
 # Note: Whenever you add/change something here, you MUST update the docs (settings.rst) as well
 DEFAULTS = {
     'ALLOW_ADMIN_USER_DELETION': False,
+    'ALLOW_PUBLIC_USER_SEARCH': True,
+    'ALLOWED_LANGUAGES': None,
     'ATTACHMENT_STORAGE': 'default',
     'AUTH_PROVIDERS': {},
     'BASE_URL': None,
@@ -60,13 +65,16 @@ DEFAULTS = {
     'IDENTITY_PROVIDERS': {},
     'LATEX_RATE_LIMIT': '2 per 3 seconds',
     'LOCAL_IDENTITIES': True,
+    'LOCAL_USERNAMES': True,
     'LOCAL_MODERATION': False,
+    'LOCAL_PASSWORD_MIN_LENGTH': 8,
     'LOCAL_REGISTRATION': True,
     'LOCAL_GROUPS': True,
     'LOGGING_CONFIG_FILE': 'logging.yaml',
     'LOGIN_LOGO_URL': None,
     'LOGO_URL': None,
     'LOG_DIR': '/opt/indico/log',
+    'MATERIAL_PACKAGE_RATE_LIMIT': '3 per 30 minutes, 3 per day',
     'MAX_DATA_EXPORT_SIZE': 10 * 1024,  # 10GB
     'MAX_UPLOAD_FILES_TOTAL_SIZE': 0,
     'MAX_UPLOAD_FILE_SIZE': 0,
@@ -82,6 +90,7 @@ DEFAULTS = {
     'SENTRY_DSN': None,
     'SENTRY_LOGGING_LEVEL': 'WARNING',
     'SESSION_LIFETIME': 86400 * 31,
+    'SESSION_MAX_LIFETIME': None,
     'SIGNUP_CAPTCHA': True,
     'SIGNUP_RATE_LIMIT': '2 per hour; 5 per day',
     'SMTP_ALLOWED_SENDERS': set(),
@@ -304,6 +313,8 @@ class IndicoConfig:
             raise ValueError(f'Invalid default timezone: {self.DEFAULT_TIMEZONE}')
         if self.SMTP_ALLOWED_SENDERS and not self.SMTP_SENDER_FALLBACK:
             raise ValueError('Cannot restrict SMTP senders without a fallback')
+        if not self.DEBUG and self.LOCAL_PASSWORD_MIN_LENGTH < 8:
+            raise ValueError('Minimum password length cannot be less than 8 characters long')
 
     def __getattr__(self, name):
         try:

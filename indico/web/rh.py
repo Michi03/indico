@@ -50,6 +50,8 @@ class RH:
     #: `locators` is a set of callables returning objects with locators.
     #: `preserved_args` is a set of view arg names which will always
     #: be copied from the current request if present.
+    #: `skipped_args` is a set of view arg names which will be ignored if
+    #: present in the request or the locators.
     #: `copy_query_args` specified arguments that are in the query string
     #: but may be provided by one of the locators and thus need to be taken
     #: from the query string when checking if a redirect is needed.
@@ -73,6 +75,7 @@ class RH:
         'args': {},
         'locators': set(),
         'preserved_args': set(),
+        'skipped_args': set(),
         'copy_query_args': set(),
         'endpoint': None
     }
@@ -82,6 +85,7 @@ class RH:
 
     def __init__(self):
         self.commit = True
+        self.noindex = False
 
     # Methods =============================================================
 
@@ -135,6 +139,7 @@ class RH:
             'args': spec.get('args', {}),
             'locators': spec.get('locators', set()),
             'preserved_args': spec.get('preserved_args', set()),
+            'skipped_args': spec.get('skipped_args', set()),
             'copy_query_args': spec.get('copy_query_args', set()),
             'endpoint': spec.get('endpoint'),
         }
@@ -150,7 +155,7 @@ class RH:
             value = getter(self)
             if value is None:
                 raise NotFound('The URL contains invalid data. Please go to the previous page and refresh it.')
-            locator_args = get_locator(value)
+            locator_args = {k: v for k, v in get_locator(value).items() if k not in spec['skipped_args']}
             reused_keys = set(locator_args) & prev_locator_args.keys()
             if any(locator_args[k] != prev_locator_args[k] for k in reused_keys):
                 raise NotFound('The URL contains invalid data. Please go to the previous page and refresh it.')
@@ -327,6 +332,8 @@ class RH:
             res = ''
 
         response = current_app.make_response(res)
+        if self.noindex:
+            response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive, nosnippet'
         if self.DENY_FRAMES:
             response.headers['X-Frame-Options'] = 'DENY'
         return response

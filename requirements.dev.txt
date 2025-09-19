@@ -47,12 +47,14 @@ colorclass==2.2.2
     #   unbeheader
 coverage==7.6.9
     # via pytest-cov
+docker==7.1.0
+    # via -r requirements.dev.in
 docutils==0.21.2
     # via
     #   plantweb
     #   sphinx
     #   sphinx-rtd-theme
-flask==3.1.0
+flask==3.1.1
     # via
     #   -c requirements.txt
     #   flask-url-map-serializer
@@ -64,11 +66,11 @@ greenlet==3.1.1
     # via
     #   -c requirements.txt
     #   sqlalchemy
-h11==0.14.0
+h11==0.16.0
     # via uvicorn
 hatch-requirements-txt==0.4.1
     # via -r requirements.dev.in
-hatchling==1.26.3
+hatchling==1.27.0
     # via
     #   -r requirements.dev.in
     #   hatch-requirements-txt
@@ -87,7 +89,7 @@ itsdangerous==2.2.0
     # via
     #   -c requirements.txt
     #   flask
-jinja2==3.1.5
+jinja2==3.1.6
     # via
     #   -c requirements.txt
     #   flask
@@ -95,6 +97,7 @@ jinja2==3.1.5
 markupsafe==3.0.2
     # via
     #   -c requirements.txt
+    #   flask
     #   jinja2
     #   werkzeug
 migra==3.0.1663481299
@@ -160,15 +163,16 @@ redis==5.2.1
     # via
     #   -c requirements.txt
     #   pytest-redis
-requests==2.32.3
+requests==2.32.4
     # via
     #   -c requirements.txt
+    #   docker
     #   plantweb
     #   responses
     #   sphinx
 responses==0.25.3
     # via -r requirements.dev.in
-ruff==0.9.0
+ruff==0.12.8
     # via -r requirements.dev.in
 schemainspect==3.1.1663587362
     # via migra
@@ -225,7 +229,7 @@ sqlbag==0.1.1617247075
     # via migra
 sqlparse==0.5.3
     # via -r requirements.dev.in
-starlette==0.41.3
+starlette==0.47.2
     # via sphinx-autobuild
 tomlkit==0.13.2
     # via -r requirements.dev.in
@@ -235,14 +239,16 @@ typing-extensions==4.12.2
     # via
     #   -c requirements.txt
     #   anyio
+    #   starlette
 unbeheader==1.4.0
     # via -r requirements.dev.in
-urllib3==1.26.20
+urllib3==2.5.0
     # via
     #   -c requirements.txt
+    #   docker
     #   requests
     #   responses
-uv==0.5.16
+uv==0.8.6
     # via -r requirements.dev.in
 uvicorn==0.32.1
     # via sphinx-autobuild

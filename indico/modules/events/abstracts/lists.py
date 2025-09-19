@@ -193,7 +193,7 @@ class AbstractListGeneratorBase(ListGeneratorBase):
         total_entries = abstracts_query.count()
         abstracts = self._filter_list_entries(abstracts_query, list_config['filters']).all()
         dynamic_item_ids, static_item_ids = self._split_item_ids(list_config['items'], 'dynamic')
-        static_item_ids.append('submitter')
+        static_item_ids.append('authors')
         static_columns = self._get_static_columns(static_item_ids)
         dynamic_columns = self._get_sorted_contribution_fields(dynamic_item_ids)
         return {

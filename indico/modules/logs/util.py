@@ -6,7 +6,7 @@
 # LICENSE file for more details.
 
 import re
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from difflib import SequenceMatcher
 from enum import Enum
 
@@ -72,6 +72,9 @@ def make_diff_log(changes, fields):
         elif all(isinstance(x, datetime) for x in change):
             type_ = 'datetime'
             change = [x.isoformat() for x in change]
+        elif all(isinstance(x, date) for x in not_none_change):
+            type_ = 'date'
+            change = [x.isoformat() if x is not None else default for x in change]
         elif not_none_change and all(isinstance(x, timedelta) for x in not_none_change):
             type_ = 'timedelta'
             with force_locale(None, default=False):
@@ -90,7 +93,7 @@ def render_changes(a, b, type_):
     :param b: new value
     :param type_: the type determining how the values should be compared
     """
-    if type_ in ('number', 'enum', 'bool', 'datetime', 'timedelta'):
+    if type_ in ('number', 'enum', 'bool', 'datetime', 'date', 'timedelta'):
         if a in (None, ''):
             a = '\N{EMPTY SET}'
         if b in (None, ''):
@@ -167,7 +170,7 @@ def _diff_list(a, b):
     return Markup(', ').join(output)
 
 
-def serialize_log_entry(entry):
+def serialize_log_entry(entry, tzinfo):
     return {
         'id': entry.id,
         'type': entry.type,
@@ -176,7 +179,7 @@ def serialize_log_entry(entry):
         'module': entry.module,
         'description': entry.summary,
         'meta': entry.meta,
-        'time': entry.logged_dt.astimezone(entry.event.tzinfo).isoformat(),
+        'time': entry.logged_dt.astimezone(tzinfo).isoformat(),
         'payload': entry.data,
         'user': {
             'fullName': entry.user.full_name if entry.user else None,

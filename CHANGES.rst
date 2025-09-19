@@ -2,10 +2,186 @@ Changelog
 =========
 
 
-Version 3.3.6
+Version 3.3.8
 -------------
 
 *Unreleased*
+
+Improvements
+^^^^^^^^^^^^
+
+- Add a CAPTCHA and rate limiting to the material package endpoint, and an event
+  setting to restrict who can generate one (defaults to managers only) (:pr:`6996`)
+- Add support for custom event reminders with freely chosen subject and body, and
+  allow rich-text for the custom message in standard reminders (:pr:`6989`, thanks
+  :user:`tomako, unconventionaldotdev`)
+- Allow specifying a maximum session lifetime via :data:`SESSION_MAX_LIFETIME`
+  beyond which it cannot be refreshed by activity (:pr:`7030`)
+- Make displaying corresponding author email addresses in the Book of Abstracts
+  opt-in (:pr:`7002`, thanks :user:`adamjenkins`)
+- Allow selecting which invitees to remind on the invitations list (:issue:`6804`,
+  :pr:`6918`, thanks :user:`duartegalvao, unconventionaldotdev`)
+
+Bugfixes
+^^^^^^^^
+
+- Fix missing spacing between toolbar button groups (:pr:`6981`)
+- Fix error with certain registration form field types if the badge text overflow
+  behavior was set to "resize" (:pr:`6993`)
+- Fix not being able to update a registration if an accommocation field was added
+  after registering and the user already paid for the registration (:pr:`7000`)
+- Fix registration form field type selector not being fully visible on smaller
+  screen widths (:issue:`7012`, :pr:`7013`)
+- Fix user search not working for admins in room booking module with no rooms defined
+  (:issue:`7016`, :pr:`7017`, thanks :user:`behackl`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Use proper heading hierarchy (H3 instead of H4) for date headings on category event
+  list pages (:pr:`7038`, thanks :user:`foxbunny`)
+- Add accessible labels to extra slots dropdown fields in registration forms (:pr:`7039`,
+  thanks :user:`foxbunny`)
+- Use proper semantic heading elements for registration form section titles (:pr:`7040`,
+  thanks :user:`foxbunny`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Remove broken support for custom multipass providers setting a maximum session
+  lifetime; use :data:`SESSION_MAX_LIFETIME` instead (:pr:`7030`)
+- Use `Biome <https://biomejs.dev/>`__ to format JS/JSX, TS/TSX, JSON and CSS (:pr:`7042`)
+- Add the env var ``INDICO_TEST_USE_DOCKER``, which allows for tests to be run on
+  a PostgreSQL server running in a container
+
+
+Version 3.3.7
+-------------
+
+*Released on July 14, 2025*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Prevent dumping basic user details (name, affiliation and email) in bulk using the
+  user id (:cve:`2025-53640`)
+
+.. note::
+
+    With Indico being a tool that is primarily used for academic events, where it is
+    expected behavior that you can look users up by name and email and use the email
+    address as a common way of identifying someone (as names are not unique, often not
+    even combined with someone's affiliation), we only classify this as "medium"
+    severity. Looking up *some* users is normal, but obviously being able to look up
+    *all* of them at once, is not something that's intended.
+
+    In case you want to lock down user search much more strongly, please have a look
+    at the :data:`ALLOW_PUBLIC_USER_SEARCH` setting which has been added in this release
+    as well.
+
+Improvements
+^^^^^^^^^^^^
+
+- Add a new :data:`ALLOWED_LANGUAGES` setting to ``indico.conf`` to restrict which
+  languages can be used (:pr:`6818`, thanks :user:`openprojects`)
+- Set reasonable maximum lengths on signup form fields (:pr:`6724`)
+- Preserve the selected day when switching between room booking calendar view modes
+  (:pr:`6817`)
+- Notify room moderators about new pending bookings in their rooms (:pr:`6823`)
+- Show moderated rooms as "mine" and enable "bookings in my rooms" etc. for room
+  moderators (:pr:`6823`)
+- Use the new date picker in more places (:issue:`6662`, :pr:`6832`)
+- Log conference menu changes (:pr:`6851`, thanks :user:`openprojects`)
+- Add duration and date/time placeholders when sending emails for contributions
+  (:pr:`6860`)
+- Use :data:`STATIC_SITE_STORAGE` for the temporary file from a material package
+  (:pr:`6898`)
+- Implement conditional fields in registration forms (:issue:`1227`, :pr:`6678`,
+  thanks :user:`Moliholy, omegak, unconventionaldotdev`)
+- Log user-specific ACL changes to user log (:pr:`6841`, thanks :user:`tomako`)
+- Include language settings when cloning an event (:issue:`6871`, :pr:`6929`)
+- Log user merges to user log (:issue:`6882`, :pr:`6920`)
+- Allow re-sending emails from their log entries (:issue:`6805`, :pr:`6909`,
+  thanks :user:`duartegalvao, unconventionaldotdev`)
+- Allow adding/removing favorite users from search results (:pr:`6950`)
+- Make text overflow behavior in badge designer configurable (:pr:`6944`, thanks
+  :user:`SegiNyn`)
+- Clone registration tags when cloning registration forms and preserve registration
+  tags when cloning registrations (:issue:`6820`, :pr:`6964`)
+- Allow restricting reminder recipients by registration form and tags (:pr:`6877`,
+  thanks :user:`tomako, unconventionaldotdev`)
+- Searching existing Indico users can be restricted to managers by setting
+  :data:`ALLOW_PUBLIC_USER_SEARCH` to ``False``. This also limits the verbosity of email
+  status checks while registering for events and disallows registering on behalf
+  of another Indico user (:pr:`6960`)
+- Allow linking existing booking to an event even if there's no exact date/time overlap,
+  and do not show a large number of unrelated bookings (:issue:`6568`, :issue:`6811`,
+  :pr:`6846`, thanks :user:`Moliholy, unconventionaldotdev`)
+- Add a log for global admin actions, similar to that in events, categories and users
+  (:pr:`6868`, thanks :user:`tomako`)
+
+Bugfixes
+^^^^^^^^
+
+- Fix inconsistent page numbering in PDF timetable (:issue:`6824`, :pr:`6827`)
+- Do not log logins rejected by a plugin as errors (:pr:`6834`, thanks :user:`omegak`)
+- Do not trigger notifications for withdrawn service requests when deleting past events
+  (:issue:`6700`, :pr:`6754`, thanks :user:`bhngupta`)
+- Fix date picker on category calendar view (:issue:`6849`, :pr:`6850`)
+- Fix scheduling existing contributions not working in rare cirucmstances (:pr:`6853`)
+- Convert author/speaker email addresses to lowercase during input and use the lowercase
+  version for deduplication (:pr:`6855`)
+- Fix error when removing the title of an event person (:pr:`6859`)
+- Fix participant visibility being set to "nobody" when a registration was modifified
+  (:pr:`6863`)
+- Fix error when editing a room while no custom attributes have been defined (:pr:`6840`)
+- Allow the browser to perform spellchecking in the HTML/WYSIWYG minutes editor (:pr:`6890`)
+- Fix downdown/combobox issues on iOS Safari devices (:issue:`6830`, :pr:`6839`, thanks
+  :user:`foxbunny`)
+- Fix font rendering issue in event titles with some cyrillic characters (:issue:`6673`,
+  :pr:`6881`, thanks :user:`Fedor204`)
+- Include registration tags in event export (:pr:`6896`)
+- Fix some messages not being translated due to a missing context (:pr:`6910`)
+- Fix datetime handling in excel exports (:issue:`6806`, :pr:`6887`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Fix date range picker not working in some languages (e.g. Japanese) (:issue:`6921`,
+  :pr:`6922`)
+- Fix error when searching in user logs (:issue:`6933`, :pr:`6936`)
+- Fix room booking prompt during event creation not showing up (:pr:`6941`)
+- Fix AM/PM indicator based on event language in PDF timetable (:pr:`6888`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Expose cloning details such as object mappings in the ``event.cloned`` signal (:pr:`6858`)
+- Expose cloning details in the ``contribution.created`` and ``subcontribution.created``
+  signals (:pr:`6858`)
+- Add the id and color of registration tags on the Checkin API endpoint for registation
+  data (:pr:`6874`, thanks :user:`duartegalvao`)
+- Allow disabling arbitrary dates in date picker / calendar controls (:pr:`6905`, thanks
+  :user:`foxbunny`)
+- Support custom data rendering logic in custom registration form fields (:pr:`6967`)
+- Support custom columns and filters in mangement registrant list (:pr:`6968`)
+
+
+Version 3.3.6
+-------------
+
+*Released on March 24, 2025*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Update the `Jinja2 <https://pypi.org/project/Jinja2/>`__ library due to a
+  sandbox escape vulnerability (:cve:`2025-27516`).
+
+.. note::
+
+    Since document templates can only be managed by Indico admins (unless granted to
+    specific other trusted users as well), the impact of this vulnerability is considered
+    low to medium, as it would require a malicious admin to abuse this e.g. to to read
+    ``indico.conf`` data, which is otherwise only accessible to people with direct server
+    access.
 
 Improvements
 ^^^^^^^^^^^^
@@ -29,6 +205,41 @@ Improvements
 - Improve the appearance of the date pickers (:issue:`6719`, :pr:`6720`, thanks :user:`foxbunny`)
 - Add a new setting (:data:`ALLOW_ADMIN_USER_DELETION`) to let administrators permanently
   delete Indico users from the user management UI (:pr:`6652`, thanks :user:`SegiNyn`)
+- Support ``==text==`` to highlight text in markdown (:issue:`6731`, :pr:`6732, 6767`)
+- Add an event setting to allow enforcing search before entering a person manually to
+  a persons list in abstracts and contributions (:pr:`6689`)
+- Allow users to login using their email address (:pr:`6522`, thanks :user:`SegiNyn`)
+- Do not "inline" the full participant list in conference events using a meeting-style
+  timetable and link to the conference participant list instead (:pr:`6753`)
+- Add new setting :data:`LOCAL_USERNAMES` to disable usernames for logging in and only
+  use the email address (:pr:`6751`, :pr:`6810`)
+- Tell search engines to not index events marked as "invisible" (:pr:`6762`, thanks
+  :user:`openprojects`)
+- Make the minimum length of local account passwords configurable, and default to ``15``
+  instead of ``8`` for new installations (:issue:`6629`, :pr:`6740`, thanks :user:`amCap1712`)
+- Include submitter email in abstract PDF export (:issue:`3631`, :pr:`6748`, thanks
+  :user:`amCap1712`)
+- Remove anonymized users from local groups (:pr:`6738`, thanks :user:`SegiNyn`)
+- Add ACLs for room booking locations which can grant privileges on the location itself
+  and/or all its rooms (:pr:`6566`, thanks :user:`SegiNyn`)
+- Support alternative names in predefined affiliations and make its search more powerful
+  (:pr:`6758`)
+- Add setting to disallow entering custom affiliations when predefined affiliations are used
+  (:pr:`6809`)
+- Log changes to event payment methods (:pr:`6739`)
+- Add button to select all rooms for exporting in the room list (:pr:`6773`, thanks
+  :user:`Michi03`)
+- Include abstract details in comment notification email subject (:issue:`6449`, :pr:`6782`,
+  thanks :user:`amCap1712`)
+- Use markdown editor field in survey questionnaire setup (:pr:`6783`, thanks :user:`amCap1712`)
+- Use markdown editor field for contribution description (:issue:`6723`, :pr:`6749`, thanks
+  :user:`amCap1712`)
+- Allow resetting registrations back to pending in bulk (:issue:`5954`, :pr:`6784`, thanks
+  :user:`amCap1712`)
+- Allow to configure a restrictive set of allowed contribution keywords (:pr:`6778`, thanks
+  :user:`tomako, unconventionaldotdev`)
+- Add a log for user actions, similar to that in events and categories (:pr:`6779`, :pr:`6813`,
+  thanks :user:`tomako`)
 
 Bugfixes
 ^^^^^^^^
@@ -41,6 +252,25 @@ Bugfixes
 - Fix sending emails if site name contains an ``@`` character (:pr:`6687`)
 - Do not show country field description twice in registration forms (:pr:`6708`)
 - Do not show "other" document templates from deleted events/categories (:pr:`6711`)
+- Fix price display of choice fields in registration form (:issue:`6728`, :pr:`6729`)
+- Fix error when creating a new room and setting attributes or equipment during creation
+  (:pr:`6730`)
+- Fix the usage of select list scrollbar causing it to close immediately (:issue:`6735`,
+  :pr:`6736`, thanks :user:`foxbunny`)
+- Trigger event creation notification emails when cloning events (:pr:`6744`)
+- Fix image uploading not working when editing an existing note without having permissions
+  to manage materials on the event level (:pr:`6760`)
+- Do not redirect to the ToS acceptance page when impersonating a user (:pr:`6770`)
+- Fix display issues after reacting to a favorite category suggestion (:pr:`6771`)
+- Include event labels in dashboard ICS export (:issue:`5886, 6372`, :pr:`6769`, thanks
+  :user:`amCap1712`)
+- Do not show default values for purged registration fields (:issue:`5898`, :pr:`6772, 6781`,
+  thanks :user:`amCap1712`)
+- Do not create empty survey sections during event cloning (:pr:`6774`)
+- Fix inaccurate timezone in the dates of the timetable PDF (:pr:`6786`)
+- Fix error with accommodation fields that have the "no accommodation" option disabled
+  (:pr:`6812`)
+- Reset token-based links for correct user when done by an admin (:pr:`6814`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -49,12 +279,23 @@ Accessibility
   (:pr:`6324`, thanks :user:`foxbunny`)
 - Implement a new date range picker and use it in the Room Booking module
   (:pr:`6464`, thanks :user:`foxbunny`)
+- Make main section title in the base layout the default bypass blocks target
+  (:pr:`6726`, thanks :user:`foxbunny`)
+- Improve places selection accessibility in SingleChoiceInput
+  (:pr:`6763`, thanks :user:`foxbunny`)
+- Improve places selection accessibility in MultiChoiceInput
+  (:pr:`6764`, thanks :user:`foxbunny`)
+- Improve BooleanInput accessibility (:pr:`6756`, thanks :user:`foxbunny`)
+- Improve keyboard navigation order within the category list page
+  (:pr:`6776`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
 - Remove the `marshmallow-enum` dependency (:issue:`6701`, :pr:`6703`, thanks
   :user:`federez-tba`)
+- Add new signals during signup email validation and login which can make the
+  process fail with a custom message (:pr:`6759`, thanks :user:`openprojects`)
 
 
 Version 3.3.5
@@ -132,6 +373,8 @@ Bugfixes
 - Use locale-aware price formatting in registration form fields (:pr:`6586`)
 - Handle badge designer items exceeding the canvas boundaries more gracefully (:pr:`6603`,
   thanks :user:`SegiNyn`)
+- Fix tips not correctly positioning when contents are changed (:pr:`6797`, thanks
+  :user:`foxbunny`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -169,7 +412,7 @@ Security fixes
   process, so it can only target newly created (and thus unprivileged) Indico users.
   We consider this vulnerability to be of "medium" severity since the ability to abuse
   this is somewhat limited, but you should update as soon as possible nonetheless
-  (:cve:`CVE-2024-45399`)
+  (:cve:`2024-45399`)
 
 Internationalization
 ^^^^^^^^^^^^^^^^^^^^
@@ -505,7 +748,7 @@ Improvements
 - Add a legend to the category calendar, allowing to filter events either by category, venue,
   room or keywords (:issue:`6105, 6106, 6128, 6148, 6149, 6127`, :pr:`6110, 6158, 6183`,
   thanks :user:`Moliholy, unconventionaldotdev`)
-- Allow to configure a restrictive set of allowed keywords (:issue:`6127`, :pr:`6183`,
+- Allow to configure a restrictive set of allowed event keywords (:issue:`6127`, :pr:`6183`,
   thanks :user:`Moliholy, unconventionaldotdev`).
 - Add week and day views in the category calendar and improve navigation controls
   (:issue:`6108, 6129, 6107`, :pr:`6110`, thanks :user:`Moliholy, unconventionaldotdev`).
@@ -622,7 +865,7 @@ Security fixes
 ^^^^^^^^^^^^^^
 
 - Update `Werkzeug <https://pypi.org/project/Werkzeug/>`__ library due to a
-  DoS vulnerability while parsing certain file uploads (:cve:`CVE-2023-46136`)
+  DoS vulnerability while parsing certain file uploads (:cve:`2023-46136`)
 - Fix registration form CAPTCHA not being fully validated (:pr:`6096`)
 
 Improvements
@@ -661,7 +904,7 @@ Security fixes
 ^^^^^^^^^^^^^^
 
 - Update `Pillow <https://pypi.org/project/Pillow/>`__ library due to
-  vulnerabilities in libwebp (:cve:`CVE-2023-4863`)
+  vulnerabilities in libwebp (:cve:`2023-4863`)
 
 Internationalization
 ^^^^^^^^^^^^^^^^^^^^
@@ -706,7 +949,7 @@ Security fixes
   considering that event organizers may indeed delete suspicious-looking content when
   encountering it, there is a non-negligible risk of such an attack to succeed. Because
   of this it is strongly recommended to upgrade as soon as possible (:pr:`5862`,
-  :cve:`CVE-2023-37901`)
+  :cve:`2023-37901`)
 
 Internationalization
 ^^^^^^^^^^^^^^^^^^^^
@@ -882,9 +1125,9 @@ Security fixes
 
 - Sanitize HTML in global announcement messages
 - Update `cryptography <https://pypi.org/project/cryptography/>`__ library due to
-  vulnerabilities in OpenSSL (:cve:`CVE-2023-0286`)
+  vulnerabilities in OpenSSL (:cve:`2023-0286`)
 - Update `werkzeug <https://pypi.org/project/werkzeug/>`__ library due to a potential
-  Denial of Service vulnerability (:cve:`CVE-2023-25577`)
+  Denial of Service vulnerability (:cve:`2023-25577`)
 
 .. note::
 
@@ -1016,7 +1259,7 @@ Security fixes
 ^^^^^^^^^^^^^^
 
 - Update `cryptography <https://pypi.org/project/cryptography/>`__ library due to
-  vulnerabilities in OpenSSL (:cve:`CVE-2022-3602`, :cve:`CVE-2022-3786`)
+  vulnerabilities in OpenSSL (:cve:`2022-3602`, :cve:`2022-3786`)
 
 .. note::
 

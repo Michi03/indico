@@ -7,6 +7,7 @@
 
 import math
 from operator import itemgetter
+from uuid import uuid4
 
 from flask import flash, jsonify, redirect, render_template, request, session
 from flask_multipass import AuthProvider
@@ -31,6 +32,7 @@ from indico.modules.auth.util import (impersonate_user, load_identity_info, regi
                                       url_for_logout)
 from indico.modules.auth.views import WPAuth, WPAuthUser, WPSignup
 from indico.modules.legal import legal_settings
+from indico.modules.logs.models.entries import LogKind, UserLogRealm
 from indico.modules.users import User, user_management_settings
 from indico.modules.users.controllers import RHUserBase
 from indico.modules.users.models.affiliations import Affiliation
@@ -39,7 +41,7 @@ from indico.util.i18n import _, force_locale
 from indico.util.marshmallow import LowercaseString, ModelField, not_empty
 from indico.util.passwords import validate_secure_password
 from indico.util.signing import secure_serializer
-from indico.util.string import crc32
+from indico.util.string import crc32, validate_email
 from indico.web.args import parser, use_kwargs
 from indico.web.flask.templating import get_template_module
 from indico.web.flask.util import url_for
@@ -92,7 +94,7 @@ class RHLogin(RH):
             single_auth_provider = multipass.single_auth_provider
             if single_auth_provider and single_auth_provider.is_external:
                 multipass.set_next_url()
-                return redirect(url_for('.login', provider=single_auth_provider.name))
+                return redirect(url_for('.login', provider=single_auth_provider.name, force=('1' if force else None)))
 
         # Save the 'next' url to go to after login
         multipass.set_next_url()
@@ -211,6 +213,9 @@ class RHLinkAccount(RH):
         identity = Identity(user=self.user, provider=self.identity_info['provider'],
                             identifier=self.identity_info['identifier'], data=self.identity_info['data'],
                             multipass_data=self.identity_info['multipass_data'])
+        self.user.log(UserLogRealm.user, LogKind.positive, 'Accounts', 'External account linked',
+                      data={'Provider': multipass.identity_providers[identity.provider].title,
+                            'Identifier': identity.identifier})
         logger.info('Created new identity for %s: %s', self.user, identity)
         del session['login_identity_info']
         db.session.flush()
@@ -370,21 +375,26 @@ class RHAccounts(RHUserBase):
             defaults = FormDefaults(username=self.user.local_identity.identifier)
             local_account_form = EditLocalIdentityForm(identity=self.user.local_identity, obj=defaults)
         else:
-            local_account_form = AddLocalIdentityForm()
+            local_account_form = AddLocalIdentityForm(user_emails=self.user.all_emails)
         return local_account_form
 
     def _handle_add_local_account(self, form):
-        identity = Identity(provider='indico', identifier=form.data['username'], password=form.data['password'])
+        identifier = form.username.data if config.LOCAL_USERNAMES else str(uuid4())  # uuid to have something unique
+        identity = Identity(provider='indico', identifier=identifier, password=form.password.data)
         self.user.identities.add(identity)
+        self.user.log(UserLogRealm.user, LogKind.positive, 'Accounts', 'Local account created', session.user,
+                      data={'Identifier': identifier})
         logger.info('User %s added a local account (%s)', self.user, identity.identifier)
         flash(_('Local account added successfully'), 'success')
 
     def _handle_edit_local_account(self, form):
-        self.user.local_identity.identifier = form.data['username']
+        if config.LOCAL_USERNAMES:
+            self.user.local_identity.identifier = form.username.data
         if form.data['new_password']:
-            self.user.local_identity.password = form.data['new_password']
+            self.user.local_identity.password = form.new_password.data
             session.pop('insecure_password_error', None)
             logger.info('User %s (%s) changed their password', self.user, self.user.local_identity.identifier)
+            self.user.log(UserLogRealm.user, LogKind.change, 'Accounts', 'Password changed', session.user)
         flash(_('Your local account credentials have been updated successfully'), 'success')
 
     def _process(self):
@@ -422,6 +432,8 @@ class RHRemoveAccount(RHUserBase):
             provider_title = multipass.identity_providers[self.identity.provider].title
         except KeyError:
             provider_title = self.identity.provider.title()
+        self.user.log(UserLogRealm.user, LogKind.negative, 'Accounts', 'External account removed', session.user,
+                      data={'Provider': provider_title, 'Identifier': self.identity.identifier})
         flash(_('{provider} ({identifier}) successfully removed from your accounts')
               .format(provider=provider_title, identifier=self.identity.identifier), 'success')
         return redirect(url_for('.accounts'))
@@ -460,6 +472,7 @@ class RegistrationHandler:
             'cancelURL': url_for_logout(),
             'moderated': self.moderate_registrations,
             'hasPredefinedAffiliations': Affiliation.query.has_rows(),
+            'allowCustomAffiliations': not user_management_settings.get('only_predefined_affiliations'),
             'mandatoryFields': user_management_settings.get('mandatory_fields_account_request'),
             'tosUrl': legal_settings.get('tos_url'),
             'tos': legal_settings.get('tos'),
@@ -478,14 +491,14 @@ class RegistrationHandler:
                 unknown = RAISE
 
             email = fields.String(required=True, validate=validate.OneOf(emails))
-            first_name = fields.String(required=True)
-            last_name = fields.String(required=True)
-            address = fields.String(load_default='')
+            first_name = fields.String(required=True, validate=[not_empty, validate.Length(max=250)])
+            last_name = fields.String(required=True, validate=[not_empty, validate.Length(max=250)])
+            address = fields.String(load_default='', validate=validate.Length(max=500))
             if self.moderate_registrations and 'affiliation' in mandatory_fields:
-                affiliation = fields.String(required=True, validate=not_empty)
+                affiliation = fields.String(required=True, validate=[not_empty, validate.Length(max=250)])
             else:
-                affiliation = fields.String(load_default='')
-            phone = fields.String(load_default='')
+                affiliation = fields.String(load_default='', validate=validate.Length(max=250))
+            phone = fields.String(load_default='', validate=validate.Length(max=100))
             affiliation_link = ModelField(Affiliation, data_key='affiliation_id', load_default=None)
 
             if legal_settings.get('terms_require_accept'):
@@ -509,6 +522,12 @@ class RegistrationHandler:
             def check_email_unique(self, email, **kwargs):
                 if User.query.filter(~User.is_deleted, ~User.is_pending, User.all_emails == email).has_rows():
                     raise ValidationError('Email already in use')
+
+            @validates_schema(skip_on_field_errors=True)
+            def check_restricted_affiliation(self, data, **kwargs):
+                restricted = user_management_settings.get('only_predefined_affiliations')
+                if restricted and data['affiliation'] and not data['affiliation_link']:
+                    raise ValidationError('Custom affiliations are not allowed', field_name='affiliation_data')
 
         return SignupSchema
 
@@ -702,6 +721,7 @@ class LocalRegistrationHandler(RegistrationHandler):
             **base_signup_config,
             'initialValues': initial_values,
             'showAccountForm': True,
+            'showUsernameField': config.LOCAL_USERNAMES,
             'syncedValues': {},
             'emails': [email],
             'hasPendingUser': bool(pending_data),
@@ -709,20 +729,25 @@ class LocalRegistrationHandler(RegistrationHandler):
 
     def create_schema(self):
         class LocalSignupSchema(super().create_schema()):
-            first_name = fields.String(required=True, validate=not_empty)
-            last_name = fields.String(required=True, validate=not_empty)
-            username = LowercaseString(required=True, validate=not_empty)
-            password = fields.String(required=True, validate=not_empty)
+            first_name = fields.String(required=True, validate=[not_empty, validate.Length(max=250)])
+            last_name = fields.String(required=True, validate=[not_empty, validate.Length(max=250)])
+            if config.LOCAL_USERNAMES:
+                username = LowercaseString(required=True, validate=[not_empty, validate.Length(max=100)])
+            password = fields.String(required=True, validate=[not_empty, validate.Length(max=100)])
 
-            @validates('username')
-            def validate_username(self, username, **kwargs):
-                if Identity.query.filter_by(provider='indico', identifier=username).has_rows():
-                    raise ValidationError(_('This username is already in use.'))
+            if config.LOCAL_USERNAMES:
+                @validates('username')
+                def validate_username(self, username, **kwargs):
+                    if Identity.query.filter_by(provider='indico', identifier=username).has_rows():
+                        raise ValidationError(_('This username is already in use.'))
+                    if validate_email(username, check_dns=False):
+                        raise ValidationError(_('Your username cannot be an email address.'))
 
             @validates_schema(skip_on_field_errors=False)
             def validate_password(self, data, **kwargs):
                 if error := validate_secure_password('set-user-password', data['password'],
-                                                     username=data.get('username', '')):
+                                                     username=data.get('username', ''),
+                                                     emails={session['register_verified_email']}):
                     raise ValidationError(error, 'password')
 
         return LocalSignupSchema
@@ -746,8 +771,11 @@ class LocalRegistrationHandler(RegistrationHandler):
 
     def get_identity_data(self, data):
         del session['register_verified_email']
-        return {'provider': 'indico', 'identifier': data['username'],
-                'password_hash': Identity.password.backend.create_hash(data['password'])}
+        return {
+            'provider': 'indico',
+            'identifier': data['username'] if config.LOCAL_USERNAMES else str(uuid4()),
+            'password_hash': Identity.password.backend.create_hash(data['password']),
+        }
 
     def redirect_success(self):
         return redirect(session.pop('register_next_url', url_for_index()))
@@ -796,6 +824,8 @@ class RHResetPassword(RH):
                 _send_confirmation(form.email.data, 'create-local-identity', '.create_local_identity',
                                    'auth/emails/create_local_identity.txt',
                                    {'user': user, 'alternatives': alternatives}, data={'id': user.id})
+            user.log(UserLogRealm.user, LogKind.other, 'Accounts', 'Password reset requested',
+                     data={'IP': request.remote_addr})
             session['resetpass_email_sent'] = True
             logger.info('Password reset requested for user %s', user)
             return redirect(url_for('.resetpass'))
@@ -803,15 +833,18 @@ class RHResetPassword(RH):
                                       email_sent=session.pop('resetpass_email_sent', False))
 
     def _reset_password(self, identity):
-        form = ResetPasswordForm()
+        form = ResetPasswordForm(user_emails=identity.user.all_emails)
         if form.validate_on_submit():
             identity.password = form.password.data
             flash(_('Your password has been changed successfully.'), 'success')
             login_user(identity.user, identity)
+            identity.user.log(UserLogRealm.user, LogKind.change, 'Accounts', 'Password reset', session.user,
+                              data={'IP': request.remote_addr})
             logger.info('Password reset confirmed for user %s', identity.user)
             # We usually come here from a multipass login page so we should have a target url
             return multipass.redirect_success()
-        form.username.data = identity.identifier
+        if config.LOCAL_USERNAMES:
+            form.username.data = identity.identifier
         return WPAuth.render_template('reset_password.html', form=form, identity=identity, email_sent=False,
                                       widget_attrs={'username': {'disabled': True}})
 
@@ -835,12 +868,15 @@ class RHCreateLocalIdentity(RH):
         return self._create_local_identity(user)
 
     def _create_local_identity(self, user):
-        form = AddLocalIdentityForm()
+        form = AddLocalIdentityForm(user_emails=user.all_emails)
         if form.validate_on_submit():
-            identity = Identity(provider='indico', identifier=form.username.data, password=form.password.data)
+            identifier = form.username.data if config.LOCAL_USERNAMES else str(uuid4())  # uuid to have something unique
+            identity = Identity(provider='indico', identifier=identifier, password=form.password.data)
             user.identities.add(identity)
             flash(_('Local account added successfully'), 'success')
             login_user(identity.user, identity)
+            user.log(UserLogRealm.user, LogKind.positive, 'Accounts', 'Local account created (password reset)',
+                     session.user, data={'Identifier': identifier, 'IP': request.remote_addr})
             logger.info('Password reset confirmed for user %s; local identity created', user)
             # We usually come here from a multipass login page so we should have a target url
             return multipass.redirect_success()

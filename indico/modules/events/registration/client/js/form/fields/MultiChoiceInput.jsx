@@ -10,9 +10,9 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {Field} from 'react-final-form';
 import {useSelector} from 'react-redux';
-import {Dropdown, Label} from 'semantic-ui-react';
+import {Label} from 'semantic-ui-react';
 
-import {Checkbox} from 'indico/react/components';
+import {Checkbox, Select} from 'indico/react/components';
 import {FinalCheckbox, FinalField, FinalInput, validators as v} from 'indico/react/forms';
 import {Translate, PluralTranslate, Param} from 'indico/react/i18n';
 
@@ -52,19 +52,23 @@ function MultiChoiceInputComponent({
     if (value[choice.id]) {
       onChange(_.omit(value, choice.id));
     } else {
-      onChange({...value, [choice.id]: +!value[choice.id]});
+      onChange({...value, [choice.id]: 1});
     }
   };
-  const makeHandleSlotsChange = choice => (__, {value: newValue}) => {
+  const makeHandleSlotsChange = choice => evt => {
     markTouched();
-    if (!+newValue) {
+    const selectedSlots = Number(evt.target.value);
+    if (!selectedSlots) {
       onChange(_.omit(value, choice.id));
     } else {
-      onChange({...value, [choice.id]: +newValue});
+      onChange({...value, [choice.id]: selectedSlots});
     }
   };
 
-  const formatPrice = choice => {
+  const formatPrice = (choice, total = false) => {
+    if (!total) {
+      return _formatPrice(choice.price);
+    }
     const val = value[choice.id] || 0;
     return _formatPrice((val === 0 ? 0 : choice.extraSlotsPay ? val : 1) * choice.price);
   };
@@ -103,7 +107,9 @@ function MultiChoiceInputComponent({
               </td>
               <td>
                 {choice.isEnabled && !!choice.price && (
-                  <Label pointing="left">{formatPrice(choice)}</Label>
+                  <Label pointing="left" styleName={!value[choice.id] ? 'greyed' : ''}>
+                    {formatPrice(choice)}
+                  </Label>
                 )}
               </td>
               <td>
@@ -118,37 +124,41 @@ function MultiChoiceInputComponent({
               {withExtraSlots && (
                 <td>
                   {choice.isEnabled && (
-                    <Dropdown
-                      selection
-                      styleName="dropdown"
-                      disabled={
-                        disabled ||
-                        isPaidChoiceLocked(choice) ||
-                        (choice.placesLimit > 0 &&
-                          (placesUsed[choice.id] || 0) - (existingValue[choice.id] || 0) >=
-                            choice.placesLimit)
-                      }
-                      value={value[choice.id] || 0}
-                      onChange={makeHandleSlotsChange(choice)}
-                      options={_.range(0, choice.maxExtraSlots + 2).map(i => ({
-                        key: i,
-                        value: i,
-                        text: i,
-                        disabled:
-                          choice.placesLimit > 0 &&
-                          (placesUsed[choice.id] || 0) - (existingValue[choice.id] || 0) + i >
-                            choice.placesLimit,
-                      }))}
-                    />
+                    <label>
+                      <span styleName="extra-slots-label">
+                        <Translate>Extra slots</Translate>
+                      </span>
+                      <Select
+                        selection
+                        styleName="dropdown"
+                        disabled={
+                          disabled ||
+                          isPaidChoiceLocked(choice) ||
+                          (choice.placesLimit > 0 &&
+                            (placesUsed[choice.id] || 0) - (existingValue[choice.id] || 0) >=
+                              choice.placesLimit)
+                        }
+                        value={String(value[choice.id] || 0)}
+                        onChange={makeHandleSlotsChange(choice)}
+                        options={_.range(0, choice.maxExtraSlots + 2).map(i => ({
+                          value: i,
+                          disabled:
+                            choice.placesLimit > 0 &&
+                            (placesUsed[choice.id] || 0) - (existingValue[choice.id] || 0) + i >
+                              choice.placesLimit,
+                        }))}
+                        required
+                      />
+                    </label>
                   )}
                 </td>
               )}
               {withExtraSlots && (
                 <td>
-                  {choice.isEnabled && !!choice.price && (
+                  {choice.isEnabled && !!choice.price && !!value[choice.id] && (
                     <Label pointing="left">
                       <Translate>
-                        Total: <Param name="price" value={formatPrice(choice)} />
+                        Total: <Param name="price" value={formatPrice(choice, true)} />
                       </Translate>
                     </Label>
                   )}
@@ -279,4 +289,14 @@ export function MultiChoiceSettings() {
       </Field>
     </>
   );
+}
+
+export function multiChoiceShowIfOptions(field) {
+  return field.choices.map(({caption, id}) => ({value: id, text: caption}));
+}
+
+export function multiChoiceGetDataForCondition(value) {
+  return Object.entries(value)
+    .filter(([, slots]) => slots > 0)
+    .map(([key]) => key);
 }

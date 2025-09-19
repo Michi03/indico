@@ -11,7 +11,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {Field} from 'react-final-form';
 import {useSelector} from 'react-redux';
-import {Form, Label, Dropdown} from 'semantic-ui-react';
+import {Form, Label} from 'semantic-ui-react';
 
 import {RadioButton, Select} from 'indico/react/components';
 import {FinalCheckbox, FinalDropdown, FinalField, parsers as p} from 'indico/react/forms';
@@ -69,25 +69,29 @@ function SingleChoiceDropdown({
       comboBoxExtraProps['aria-describedby'] = extraSlotsLabelId;
     }
     extraSlotsDropdown = (
-      <Select
-        id={id ? `${id}-extraslots` : ''}
-        options={options}
-        disabled={
-          disabled ||
-          isPaidChoiceLocked(selectedChoice) ||
-          (selectedChoice.placesLimit > 0 &&
-            (placesUsed[selectedChoice.id] || 0) - (existingValue[selectedChoice.id] || 0) >=
-              selectedChoice.placesLimit)
-        }
-        value={String(selectedSeats)}
-        onChange={evt => {
-          const selectedSlots = Number(evt.target.value);
-          onChange({[selectedChoice.id]: selectedSlots});
-        }}
-        aria-label={Translate.string('Select extra slots')}
-        required
-        {...comboBoxExtraProps}
-      />
+      <label>
+        <span styleName="extra-slots-label">
+          <Translate>Extra slots</Translate>
+        </span>
+        <Select
+          id={id ? `${id}-extraslots` : ''}
+          options={options}
+          disabled={
+            disabled ||
+            isPaidChoiceLocked(selectedChoice) ||
+            (selectedChoice.placesLimit > 0 &&
+              (placesUsed[selectedChoice.id] || 0) - (existingValue[selectedChoice.id] || 0) >=
+                selectedChoice.placesLimit)
+          }
+          value={String(selectedSeats)}
+          onChange={evt => {
+            const selectedSlots = Number(evt.target.value);
+            onChange({[selectedChoice.id]: selectedSlots});
+          }}
+          required
+          {...comboBoxExtraProps}
+        />
+      </label>
     );
   }
 
@@ -191,6 +195,7 @@ function SingleChoiceRadioGroup({
   const management = useSelector(getManagement);
   const formatPrice = useSelector(getPriceFormatter);
   const selectedChoice = choices.find(c => c.id in value) || {id: ''};
+  const selectedSeats = value[selectedChoice.id] || 0;
   const radioChoices = [...choices];
   if (!isRequired) {
     radioChoices.unshift({id: '', isEnabled: true, caption: Translate.string('None', 'Choice')});
@@ -234,7 +239,11 @@ function SingleChoiceRadioGroup({
                 />
               </td>
               <td>
-                {c.isEnabled && !!c.price && <Label pointing="left">{formatPrice(c.price)}</Label>}
+                {c.isEnabled && !!c.price && (
+                  <Label pointing="left" styleName={isPurged || !isChecked(c) ? 'greyed' : ''}>
+                    {formatPrice(c.price)}
+                  </Label>
+                )}
               </td>
               <td>
                 {c.id !== '' && c.placesLimit !== 0 && (
@@ -249,30 +258,34 @@ function SingleChoiceRadioGroup({
                 <>
                   <td>
                     {c.isEnabled && (
-                      <Dropdown
-                        id={id ? `${id}-extraslot` : ''}
-                        selection
-                        styleName="dropdown"
-                        disabled={
-                          disabled ||
-                          isPaidChoiceLocked(c) ||
-                          (c.placesLimit > 0 &&
-                            (placesUsed[c.id] || 0) - (existingValue[c.id] || 0) >= c.placesLimit)
-                        }
-                        value={value[selectedChoice.id]}
-                        onChange={(e, data) => onChange({[selectedChoice.id]: data.value})}
-                        options={_.range(1, c.maxExtraSlots + 2).map(i => ({
-                          key: i,
-                          value: i,
-                          text: i,
-                          disabled:
-                            selectedChoice.placesLimit > 0 &&
-                            (placesUsed[selectedChoice.id] || 0) -
-                              (existingValue[selectedChoice.id] || 0) +
-                              i >
-                              selectedChoice.placesLimit,
-                        }))}
-                      />
+                      <label>
+                        <span styleName="extra-slots-label">
+                          <Translate>Extra slots</Translate>
+                        </span>
+                        <Select
+                          id={id ? `${id}-extraslot` : ''}
+                          selection
+                          styleName="dropdown"
+                          disabled={
+                            disabled ||
+                            isPaidChoiceLocked(c) ||
+                            (c.placesLimit > 0 &&
+                              (placesUsed[c.id] || 0) - (existingValue[c.id] || 0) >= c.placesLimit)
+                          }
+                          value={String(selectedSeats)}
+                          onChange={evt => onChange({[selectedChoice.id]: evt.target.value})}
+                          options={_.range(1, c.maxExtraSlots + 2).map(i => ({
+                            value: i,
+                            disabled:
+                              selectedChoice.placesLimit > 0 &&
+                              (placesUsed[selectedChoice.id] || 0) -
+                                (existingValue[selectedChoice.id] || 0) +
+                                i >
+                                selectedChoice.placesLimit,
+                          }))}
+                          required
+                        />
+                      </label>
                     )}
                   </td>
                   <td>
@@ -282,7 +295,9 @@ function SingleChoiceRadioGroup({
                           Total:{' '}
                           <Param
                             name="price"
-                            value={formatPrice(value[selectedChoice.id] * c.price)}
+                            value={formatPrice(
+                              (selectedChoice.extraSlotsPay ? selectedSeats : 1) * c.price
+                            )}
                           />
                         </Translate>
                       </Label>
@@ -504,4 +519,14 @@ export function SingleChoiceSettings() {
       </Field>
     </>
   );
+}
+
+export function singleChoiceShowIfOptions(field) {
+  return field.choices.map(({caption, id}) => ({value: id, text: caption}));
+}
+
+export function singleChoiceGetDataForCondition(value) {
+  return Object.entries(value)
+    .filter(([, slots]) => slots > 0)
+    .map(([key]) => key);
 }
