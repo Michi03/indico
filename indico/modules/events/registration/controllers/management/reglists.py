@@ -695,7 +695,10 @@ class RHRegistrationReject(RHManageRegistrationBase):
 
     def _process(self):
         form = RejectRegistrantsForm()
-        message = _('Rejecting this registration will trigger a notification email.')
+        if self.registration.registration_form.state_notifications_enabled:
+            message = _('Rejecting this registration will trigger a notification email.')
+        else:
+            message = _('Rejecting this registration WILL NOT trigger a notification email.')
         if form.validate_on_submit():
             _modify_registration_status(self.registration, approve=False, rejection_reason=form.rejection_reason.data,
                                         attach_rejection_reason=form.attach_rejection_reason.data)

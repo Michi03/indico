@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-Version 3.3.8
+Version 3.3.9
 -------------
 
 *Unreleased*
@@ -26,6 +26,78 @@ Internal Changes
 ^^^^^^^^^^^^^^^^
 
 - Nothing so far
+
+
+Version 3.3.8
+-------------
+
+*Released on September 10, 2025*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Fix a legacy API giving access to profile details of other users due to a broken
+  authorization check (:cve:`2025-59034`, thanks :user:`inkz`)
+- Fix an XSS vulnerability in the LaTeX math rendering code applied to contribution
+  descriptions (:cve:`2025-59035`)
+
+Improvements
+^^^^^^^^^^^^
+
+- Add a CAPTCHA and rate limiting to the material package endpoint, and an event
+  setting to restrict who can generate one (defaults to managers only) (:pr:`6996`)
+- Add support for custom event reminders with freely chosen subject and body, and
+  allow rich-text for the custom message in standard reminders (:pr:`6989`, thanks
+  :user:`tomako, unconventionaldotdev`)
+- Allow specifying a maximum session lifetime via :data:`SESSION_MAX_LIFETIME`
+  beyond which it cannot be refreshed by activity (:pr:`7030`)
+- Make displaying corresponding author email addresses in the Book of Abstracts
+  opt-in (:pr:`7002`, thanks :user:`adamjenkins`)
+- Allow selecting which invitees to remind on the invitations list (:issue:`6804`,
+  :pr:`6918`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add option in the invitation form to lock registrations to the specified email address
+  (:issue:`6803`, :pr:`6972`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add plugin support for scanning custom QR codes in the Check-in app (:pr:`6954`,
+  thanks :user:`SegiNyn`)
+- Add new tags column to the Editable list (:issue:`6614`, :pr:`6615`)
+
+Bugfixes
+^^^^^^^^
+
+- Fix missing spacing between toolbar button groups (:pr:`6981`)
+- Fix error with certain registration form field types if the badge text overflow
+  behavior was set to "resize" (:pr:`6993`)
+- Fix not being able to update a registration if an accommocation field was added
+  after registering and the user already paid for the registration (:pr:`7000`)
+- Fix registration form field type selector not being fully visible on smaller
+  screen widths (:issue:`7012`, :pr:`7013`)
+- Fix user search not working for admins in room booking module with no rooms defined
+  (:issue:`7016`, :pr:`7017`, thanks :user:`behackl`)
+- Fix author contribution list not showing any other contributions (:issue:`7025`,
+  :pr:`7049`, thanks :user:`diksharai9`)
+- Fix some LaTeX strings being rendered incorrectly and/or breaking the timetable
+  PDF generation (:pr:`7068`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Use proper heading hierarchy (H3 instead of H4) for date headings on category event
+  list pages (:pr:`7038`, thanks :user:`foxbunny`)
+- Add accessible labels to extra slots dropdown fields in registration forms (:pr:`7039`,
+  thanks :user:`foxbunny`)
+- Use proper semantic heading elements for registration form section titles (:pr:`7040`,
+  thanks :user:`foxbunny`)
+- Improve screen reader + keyboard support in the registration form picture field
+  (:pr:`7064, 7065`, thanks :user:`foxbunny`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Remove broken support for custom multipass providers setting a maximum session
+  lifetime; use :data:`SESSION_MAX_LIFETIME` instead (:pr:`7030`)
+- Use `Biome <https://biomejs.dev/>`__ to format JS/JSX, TS/TSX, JSON and CSS (:pr:`7042`)
+- Add the env var ``INDICO_TEST_USE_DOCKER``, which allows for tests to be run on
+  a PostgreSQL server running in a container
 
 
 Version 3.3.7

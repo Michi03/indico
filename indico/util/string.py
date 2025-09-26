@@ -242,15 +242,21 @@ def truncate(text, max_size, ellipsis='...'):
 
 def strip_tags(text):
     """Strip HTML tags and replace adjacent whitespace by one space."""
-    return do_striptags(text)
+    return do_striptags(text or '')
 
 
-def render_markdown(text, escape_latex_math=True, md=None, extra_html=False, **kwargs):
-    """Mako markdown to HTML filter.
+def _escape_for_mathjax(text):
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def render_markdown(text, *, escape_latex_math=True, md=None, extra_html=False, **kwargs):
+    """Convert Markdown to HTML.
 
     :param text: Markdown source to convert to HTML
-    :param escape_latex_math: Whether math expression should be left untouched or a function that will be called
-                              to replace math-mode segments.
+    :param escape_latex_math: Whether math expression should be left untouched or a function
+                              that will be called to replace math-mode segments. If a function
+                              is provided, it must ensure that the output is safe for whatever
+                              context the output is used in.
     :param md: An alternative markdown processor (can be used
                to generate e.g. a different format)
     :param extra_html: Whether to allow a bigger set of HTML tags
@@ -264,6 +270,11 @@ def render_markdown(text, escape_latex_math=True, md=None, extra_html=False, **k
             segment = m.group(0)
             if callable(escape_latex_math):
                 segment = escape_latex_math(segment)
+            else:
+                # mathjax supports escaped html entities, but since the latex blocks do not pass through
+                # bleach we need to manually escape them, without using bleach which would also clean up
+                # unclosed tags (which aren't tags) and thus break certain latex strings that look like tags
+                segment = _escape_for_mathjax(segment)
             math_segments.append(segment)
             return LATEX_MATH_PLACEHOLDER
 
@@ -290,7 +301,7 @@ def render_markdown(text, escape_latex_math=True, md=None, extra_html=False, **k
         return result
 
 
-def html_to_markdown(html):
+def html_to_markdown(html, **config):
     """Convert basic HTML to Markdown.
 
     This util is meant for cases like comments where the text is generally written
@@ -299,6 +310,8 @@ def html_to_markdown(html):
     """
     ht = HTML2Text(bodywidth=0)
     ht.pad_tables = True
+    for key, value in config.items():
+        setattr(ht, key, value)
     return ht.handle(html)
 
 
@@ -426,7 +439,7 @@ def is_legacy_id(id_):
     numeric or have a leading zero, resulting in different objects
     with the same numeric id.
     """
-    return not isinstance(id_, int) and (not id_.isdigit() or str(int(id_)) != id_)
+    return isinstance(id_, str) and (not id_.isdigit() or str(int(id_)) != id_)
 
 
 def text_to_repr(text, html=False, max_length=50):

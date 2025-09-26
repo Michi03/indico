@@ -186,7 +186,12 @@ def extract_logs(caplog, required=True, count=None, one=False, regex=False, **kw
     return found
 
 
-def assert_email_snapshot(snapshot, template, snapshot_filename):
+def _strip_html_whitespace(content):
+    """Remove trailing/leading whitespace in each line of the input content."""
+    return '\n'.join(stripped for line in content.splitlines() if (stripped := line.strip()))
+
+
+def assert_email_snapshot(snapshot, template, snapshot_filename, *, html=False):
     """Assert that an email matches a snapshot.
 
     This verifies that both the subject and the body match the snapshots.
@@ -194,8 +199,12 @@ def assert_email_snapshot(snapshot, template, snapshot_filename):
     :param snapshot: The pytest snapshot fixture
     :param template: The email template module
     :param snapshot_filename: The filename for the snapshot
+    :param html: Whether the template is HTML
     """
     body = template.get_body()
+    if html:
+        # we add a trailing linebreak to make manually editing the snapshot easier
+        body = _strip_html_whitespace(body) + '\n'
     subject = template.get_subject()
     name, ext = os.path.splitext(snapshot_filename)
     snapshot_filename_subject = f'{name}.subject{ext}'
@@ -206,6 +215,19 @@ def assert_email_snapshot(snapshot, template, snapshot_filename):
     snapshot.assert_match(subject + '\n', snapshot_filename_subject)
 
 
+def assert_string_snapshot(snapshot, string, snapshot_filename):
+    """Assert that a string matches a snapshot.
+
+    This is intended for single-line strings which do not have their own trailing linebreak.
+
+    :param snapshot: The pytest snapshot fixture
+    :param obj: The string to compare
+    :param snapshot_filename: The filename for the snapshot
+    """
+    __tracebackhide__ = True
+    snapshot.assert_match(f'{string}\n', snapshot_filename)
+
+
 def assert_json_snapshot(snapshot, obj, snapshot_filename):
     """Assert that a json object matches a snapshot.
 
@@ -214,7 +236,7 @@ def assert_json_snapshot(snapshot, obj, snapshot_filename):
     :param snapshot_filename: The filename for the snapshot
     """
     __tracebackhide__ = True
-    snapshot.assert_match(json.dumps(obj, indent=2, sort_keys=True), snapshot_filename)
+    snapshot.assert_match(json.dumps(obj, indent=2, sort_keys=True) + '\n', snapshot_filename)
 
 
 def assert_yaml_snapshot(snapshot, obj, snapshot_filename, *, strip_dynamic_data=False):

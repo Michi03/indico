@@ -90,10 +90,11 @@ def notify_registration_modification(registration, *, from_management=False, not
 
 
 def notify_registration_state_update(registration, *, attach_rejection_reason=False, from_management=False):
-    _notify_registration(registration, 'registration_state_update_to_registrant.html',
+    if registration.registration_form.state_notifications_enabled:
+        _notify_registration(registration, 'registration_state_update_to_registrant.html',
                          attach_rejection_reason=attach_rejection_reason, allow_session_locale=(not from_management))
-    if registration.registration_form.organizer_notifications_enabled:
-        _notify_registration(registration, 'registration_state_update_to_managers.html', to_managers=True)
+        if registration.registration_form.organizer_notifications_enabled:
+            _notify_registration(registration, 'registration_state_update_to_managers.html', to_managers=True)
 
 
 def notify_registration_receipt_created(registration, receipt, notify_user=True):

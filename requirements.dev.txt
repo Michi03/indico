@@ -47,6 +47,8 @@ colorclass==2.2.2
     #   unbeheader
 coverage==7.6.9
     # via pytest-cov
+docker==7.1.0
+    # via -r requirements.dev.in
 docutils==0.21.2
     # via
     #   plantweb
@@ -164,12 +166,13 @@ redis==5.2.1
 requests==2.32.4
     # via
     #   -c requirements.txt
+    #   docker
     #   plantweb
     #   responses
     #   sphinx
 responses==0.25.3
     # via -r requirements.dev.in
-ruff==0.12.0
+ruff==0.12.8
     # via -r requirements.dev.in
 schemainspect==3.1.1663587362
     # via migra
@@ -226,7 +229,7 @@ sqlbag==0.1.1617247075
     # via migra
 sqlparse==0.5.3
     # via -r requirements.dev.in
-starlette==0.41.3
+starlette==0.47.2
     # via sphinx-autobuild
 tomlkit==0.13.2
     # via -r requirements.dev.in
@@ -236,14 +239,16 @@ typing-extensions==4.12.2
     # via
     #   -c requirements.txt
     #   anyio
+    #   starlette
 unbeheader==1.4.0
     # via -r requirements.dev.in
 urllib3==2.5.0
     # via
     #   -c requirements.txt
+    #   docker
     #   requests
     #   responses
-uv==0.7.13
+uv==0.8.6
     # via -r requirements.dev.in
 uvicorn==0.32.1
     # via sphinx-autobuild

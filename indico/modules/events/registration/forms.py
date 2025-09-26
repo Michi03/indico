@@ -71,7 +71,7 @@ def _generate_preview_link(text, input_selector, state, url, title):
 class RegistrationFormEditForm(IndicoForm):
     _price_fields = ('currency', 'base_price')
     _registrant_notification_fields = ('notification_sender_address', 'message_pending', 'message_unpaid',
-                                       'message_complete', 'attach_ical')
+                                       'message_complete', 'attach_ical', 'state_notifications_enabled')
     _organizer_notification_fields = ('organizer_notifications_enabled', 'organizer_notification_recipients')
     _special_fields = _price_fields + _registrant_notification_fields + _organizer_notification_fields
 
@@ -117,6 +117,11 @@ class RegistrationFormEditForm(IndicoForm):
         _('Attach iCalendar file'),
         widget=SwitchWidget(),
         description=_('Attach an iCalendar file to the mail sent once a registration is complete')
+    )
+    state_notifications_enabled = BooleanField(
+        _('Approval'),
+        widget=SwitchWidget(),
+        description=_('Enable e-mail notifications about the state of the registrations'),
     )
     organizer_notifications_enabled = BooleanField(
         _('Enabled'),
@@ -239,7 +244,7 @@ class RegistrationExceptionalModificationForm(IndicoForm):
 
 
 class InvitationFormBase(IndicoForm):
-    _invitation_fields = ('skip_moderation', 'skip_access_check')
+    _invitation_fields = ('skip_moderation', 'skip_access_check', 'lock_email')
     _email_fields = ('email_sender', 'email_subject', 'email_body')
     email_sender = SelectField(_('Sender'), [DataRequired()])
     email_subject = StringField(_('Email subject'), [DataRequired()])
@@ -250,6 +255,8 @@ class InvitationFormBase(IndicoForm):
     skip_access_check = BooleanField(_('Skip access check'), widget=SwitchWidget(),
                                      description=_('If enabled, the user will be able to register even if the event '
                                                    'is access-restricted.'))
+    lock_email = BooleanField(_('Lock email address'), widget=SwitchWidget(),
+                              description=_('If enabled, the email address cannot be changed during registration.'))
 
     def __init__(self, *args, **kwargs):
         self.regform = kwargs.pop('regform')

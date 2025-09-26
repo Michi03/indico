@@ -5,6 +5,12 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
+/* global handleAjaxError, enableIfChecked, handleRowSelection, setupSearchBox, ajaxDialog,
+          reloadManagementAttachmentInfoColumn */
+
+import _ from 'lodash';
+
+import {$T} from 'indico/utils/i18n';
 import 'indico/modules/events/util/types_dialog';
 
 import './session_display';
@@ -76,13 +82,13 @@ import './session_display';
     handleRowSelection(false);
     const applySearchFilters = setupSearchBox(filterConfig);
 
-    $('#sessions .toolbar').on('click', '.disabled', function(evt) {
+    $('#sessions .toolbar').on('click', '.disabled', evt => {
       evt.preventDefault();
       evt.stopPropagation();
     });
 
     $('#sessions-wrapper')
-      .on('indico:htmlUpdated', function() {
+      .on('indico:htmlUpdated', () => {
         setupTableSorter();
         setupPalettePickers();
         handleRowSelection(true);
@@ -95,7 +101,7 @@ import './session_display';
           url: $this.data('href'),
         });
       })
-      .on('attachments:updated', function(evt) {
+      .on('attachments:updated', evt => {
         const target = $(evt.target);
         reloadManagementAttachmentInfoColumn(target.data('locator'), target.closest('td'));
       });
@@ -105,9 +111,7 @@ import './session_display';
       const $this = $(this);
 
       if (!$this.hasClass('disabled')) {
-        $('#sessions-wrapper form')
-          .attr('action', $this.data('href'))
-          .submit();
+        $('#sessions-wrapper form').attr('action', $this.data('href')).submit();
       }
     });
   };
@@ -146,7 +150,7 @@ import './session_display';
           const $this = $(this);
           const postData = {type_id: newType ? newType.id : null};
 
-          return patchObject($this.data('href'), $this.data('method'), postData).then(function() {
+          return patchObject($this.data('href'), $this.data('method'), postData).then(() => {
             const label = newType ? newType.title : $T.gettext('No type');
             $this.find('.label').text(label);
           });

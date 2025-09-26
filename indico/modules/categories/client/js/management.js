@@ -90,7 +90,7 @@ import {natSortCompare} from 'indico/utils/sort';
       });
     });
 
-    enableIfChecked($tbody, checkboxSelector, $bulkDeleteButton, function($checkboxes) {
+    enableIfChecked($tbody, checkboxSelector, $bulkDeleteButton, $checkboxes => {
       return $checkboxes.filter(':not([data-is-empty=true])').length === 0;
     });
     $bulkDeleteButton.on('click', bulkDeleteCategories).qtip({
@@ -130,12 +130,8 @@ import {natSortCompare} from 'indico/utils/sort';
     }
 
     function restoreCategoryOrder(order) {
-      $.each(order, function(index, id) {
-        $tbody
-          .find(`[data-category-id=${id}]`)
-          .not('.js-move-category')
-          .detach()
-          .appendTo($tbody);
+      $.each(order, (index, id) => {
+        $tbody.find(`[data-category-id=${id}]`).not('.js-move-category').detach().appendTo($tbody);
       });
     }
 
@@ -150,7 +146,7 @@ import {natSortCompare} from 'indico/utils/sort';
     function sortCategories(sortOrder) {
       $tbody
         .find(categoryRowSelector)
-        .sort(function(a, b) {
+        .sort((a, b) => {
           [a, b] = [$(a), $(b)];
           return (
             sortOrder *
@@ -413,10 +409,7 @@ import {natSortCompare} from 'indico/utils/sort';
   function setupRolesToggle() {
     const $roles = $('#event-roles');
     $roles.on('click', '.toggle-members', function() {
-      const $row = $(this)
-        .closest('tr')
-        .next('tr')
-        .find('.slide');
+      const $row = $(this).closest('tr').next('tr').find('.slide');
       $row.css('max-height', `${$row[0].scrollHeight}px`);
       $row.toggleClass('open close');
     });

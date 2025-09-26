@@ -98,7 +98,7 @@
            {% trans %}Registration awaiting manager approval{% endtrans %}
        </div>
        {% trans -%}
-           You can validate or reject this registration and the user will receive a notification.
+           You can validate or reject this registration.
        {%- endtrans %}
     </div>
     <div class="toolbar">
@@ -108,7 +108,7 @@
                         data-update="#registration-details"
                         data-method="POST"
                         data-href="{{ url_for('.approve_registration', registration) }}"
-                        data-confirm="{% trans %}Are you sure you want to approve this registration? This will trigger a notification email.{% endtrans %}"
+                        data-confirm="{% trans %}Are you sure you want to approve this registration?{% endtrans %} {% if registration.registration_form.state_notifications_enabled %}{% trans %}This will trigger a notification email for each registrant.{% endtrans %}{% endif %}"
                         data-title="{% trans %}Approve registration{% endtrans %}">
                     {%- trans %}Approve{% endtrans -%}
                 </button>
@@ -220,7 +220,7 @@
 {% macro _render_reset_registration_button(registration, action_text, conflict=false) %}
     {% set confirm_notification -%}
         {%- block reset_registration_button_confirm_notification_text scoped -%}
-            {%- if registration.state.name == 'withdrawn' -%}
+            {%- if registration.state.name == 'withdrawn' and registration.registration_form.state_notifications_enabled -%}
                 {% trans %}This will trigger a notification email.{% endtrans %}
             {%- else -%}
                 {% trans %}This action will not be notified to the registrant.{% endtrans %}
@@ -311,7 +311,7 @@
                             data-update="#registration-details"
                             data-method="POST"
                             data-title="{% trans %}Withdraw{% endtrans %}"
-                            data-confirm="{% trans %}Are you sure that you want to withdraw this registration? This will trigger a notification email.{% endtrans %}">
+                            data-confirm="{% trans %}Are you sure that you want to withdraw this registration?{% endtrans %}{% if registration.registration_form.state_notifications_enabled %}{% trans %}This will trigger a notification email for each registrant.{% endtrans %}{% endif %}">
                         {% trans %}Withdraw{% endtrans %}
                     </button>
                 </div>

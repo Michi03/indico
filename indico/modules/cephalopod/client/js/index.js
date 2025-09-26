@@ -5,7 +5,9 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
-/* eslint-disable max-len */
+import _ from 'lodash';
+
+import {$T} from 'indico/utils/i18n';
 
 (function(global) {
   /**
@@ -26,9 +28,9 @@
       dataType: 'json',
       timeout: 10000, // 10 seconds
     })
-      .done(function onSuccess(response) {
+      .done(response => {
         let synced = true;
-        _.each(localData, function(localVal, key) {
+        _.each(localData, (localVal, key) => {
           if (localVal === response[key]) {
             return;
           }
@@ -36,7 +38,7 @@
         });
         defer.resolve(synced);
       })
-      .fail(function onError(xhr, status) {
+      .fail((xhr, status) => {
         let errMsg = $T.gettext('Unknown error while contacting the Community Hub');
         if (xhr.state() === 'rejected' && xhr.status === 200 && status === 'parsererror') {
           errMsg = $T.gettext('Internal error: Parse error on the reply of the Community Hub.');
@@ -68,7 +70,7 @@
     });
 
     const dfd = $.Deferred();
-    $.when(dfd).always(function(label) {
+    $.when(dfd).always(label => {
       $('#tracking-status')
         .attr('class', `action-box ${label.class}`)
         .find('.section > .icon')
@@ -102,7 +104,7 @@
       },
       true
     )
-      .done(function(synced) {
+      .done(synced => {
         if (synced) {
           dfd.resolve({
             title: $T.gettext('Synchronized'),
@@ -124,7 +126,7 @@
           });
         }
       })
-      .fail(function(err) {
+      .fail(err => {
         dfd.reject({
           title: $T.gettext('Error!'),
           subtitle: err,
@@ -139,7 +141,7 @@
     checkData,
     settingsUrl
   ) {
-    _checkSynced(cephalopodUrl, checkData).done(function(synced) {
+    _checkSynced(cephalopodUrl, checkData).done(synced => {
       if (!synced) {
         $('<div>', {
           class: 'message-text',

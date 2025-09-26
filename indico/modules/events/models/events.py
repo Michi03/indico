@@ -5,6 +5,7 @@
 # modify it under the terms of the MIT License; see the
 # LICENSE file for more details.
 
+import typing as t
 from contextlib import contextmanager
 from datetime import timedelta
 from email.utils import formataddr
@@ -130,7 +131,7 @@ class Event(SearchableTitleMixin, DescriptionMixin, LocationMixin, ProtectionMan
         primary_key=True
     )
     #: If the event has been deleted
-    is_deleted = db.Column(
+    is_deleted: t.Any = db.Column(
         db.Boolean,
         nullable=False,
         default=False
@@ -747,6 +748,11 @@ class Event(SearchableTitleMixin, DescriptionMixin, LocationMixin, ProtectionMan
     def can_display(self, user, *, allow_admin=True):
         """Check whether the user can display the event in the category."""
         return self.visibility != 0 or self.can_manage(user, allow_admin=allow_admin)
+
+    def can_generate_attachment_package(self, user):
+        """Check whether the user can generate an attachment package."""
+        from indico.modules.attachments.util import can_generate_attachment_package
+        return can_generate_attachment_package(self, user)
 
     @materialize_iterable()
     def get_manage_button_options(self, *, note_may_exist=False):

@@ -17,14 +17,14 @@ import {EmailSurveyParticipantsButton} from './EmailSurveyParticipantsButton';
 import 'chartist/dist/index.css';
 
 (function(global) {
-  $(document).ready(function() {
+  $(document).ready(() => {
     setupSurveyScheduleWindows();
     setupSurveyResultCharts();
     setupSubmissionButtons();
   });
 
   function setupSurveyResultCharts() {
-    $('#survey-results .survey-pie-chart').each(function(idx, elem) {
+    $('#survey-results .survey-pie-chart').each((idx, elem) => {
       const chart = new PieChart(
         elem,
         {
@@ -40,19 +40,17 @@ import 'chartist/dist/index.css';
           labelOffset: 20,
           labelDirection: 'explode',
         }
-      ).on('draw', function removeEmptyLabels(data) {
+      ).on('draw', data => {
         if (data.value === 0) {
           chart.data.labels[data.index] = '';
         }
       });
     });
 
-    $('#survey-results .survey-bar-chart').each(function(idx, elem) {
+    $('#survey-results .survey-bar-chart').each((idx, elem) => {
       const labels = $(elem).data('labels');
       const labelsHeight = labels.length * 20;
-      const containerHeight = $(elem)
-        .parents('.i-box-content')
-        .outerHeight();
+      const containerHeight = $(elem).parents('.i-box-content').outerHeight();
       new BarChart(
         elem,
         {
@@ -120,22 +118,16 @@ import 'chartist/dist/index.css';
         });
       });
 
-    $('.js-add-question-dropdown')
-      .parent()
-      .dropdown({selector: '.js-add-question-dropdown'});
+    $('.js-add-question-dropdown').parent().dropdown({selector: '.js-add-question-dropdown'});
   };
 
   function setupSubmissionButtons() {
-    $('#select-all').on('click', function() {
-      $('#submission-list input:checkbox')
-        .prop('checked', true)
-        .trigger('change');
+    $('#select-all').on('click', () => {
+      $('#submission-list input:checkbox').prop('checked', true).trigger('change');
     });
 
-    $('#select-none').on('click', function() {
-      $('#submission-list input:checkbox')
-        .prop('checked', false)
-        .trigger('change');
+    $('#select-none').on('click', () => {
+      $('#submission-list input:checkbox').prop('checked', false).trigger('change');
     });
 
     $('.js-export-submissions').on('click', function() {
@@ -197,26 +189,20 @@ import 'chartist/dist/index.css';
         complete: IndicoUI.Dialogs.Util.progress(),
         error: handleAjaxError,
         success() {
-          $('.submission-ids:checked')
-            .closest('.submission-row')
-            .remove();
+          $('.submission-ids:checked').closest('.submission-row').remove();
           _disableButtons();
         },
       });
     });
 
-    $('.submission-ids').change(function() {
+    $('.submission-ids').change(() => {
       $('#delete-submissions').prop('disabled', !$('.submission-ids:checked').length);
     });
   }
 
   function updateQuestions(data) {
-    $('#survey-questionnaire-preview')
-      .sortable('destroy')
-      .html(data.questionnaire);
-    $('.js-add-question-dropdown')
-      .parent()
-      .dropdown({selector: '.js-add-question-dropdown'});
+    $('#survey-questionnaire-preview').sortable('destroy').html(data.questionnaire);
+    $('.js-add-question-dropdown').parent().dropdown({selector: '.js-add-question-dropdown'});
     setupQuestionnaireSorter();
   }
 

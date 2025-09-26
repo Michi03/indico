@@ -48,17 +48,11 @@ import {$T} from 'indico/utils/i18n';
     setupToggleEventListButton($pastEvents, onTogglePastEvents);
 
     if (showFutureEvents && !isFlat) {
-      $futureEvents
-        .find('.js-toggle-list')
-        .first()
-        .trigger('click', true);
+      $futureEvents.find('.js-toggle-list').first().trigger('click', true);
     }
 
     if (showPastEvents && !isFlat) {
-      $pastEvents
-        .find('.js-toggle-list')
-        .first()
-        .trigger('click', true);
+      $pastEvents.find('.js-toggle-list').first().trigger('click', true);
     }
 
     function onToggleFutureEvents(shown) {
@@ -99,7 +93,7 @@ import {$T} from 'indico/utils/i18n';
       }
       displaySpinner(false);
 
-      $wrapper.find('.js-toggle-list').on('click', function(evt, triggeredAutomatically) {
+      $wrapper.find('.js-toggle-list').on('click', (evt, triggeredAutomatically) => {
         evt.preventDefault();
         let visible;
         if ($content.is(':empty')) {

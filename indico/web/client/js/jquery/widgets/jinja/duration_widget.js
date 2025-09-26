@@ -7,6 +7,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+
 import {WTFDurationField} from 'indico/react/components';
 
 window.setupDurationWidget = function setupDurationWidget({fieldId, required, disabled}) {
@@ -16,11 +17,7 @@ window.setupDurationWidget = function setupDurationWidget({fieldId, required, di
   field.closest('.exclusivePopup').css('overflow', 'inherit');
 
   ReactDOM.render(
-    <WTFDurationField
-      timeId={`${fieldId}-timestorage`}
-      required={required}
-      disabled={disabled}
-    />,
+    <WTFDurationField timeId={`${fieldId}-timestorage`} required={required} disabled={disabled} />,
     document.getElementById(fieldId)
   );
 };
