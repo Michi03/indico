@@ -26,14 +26,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
       - name: Install build deps 🔧
         run: sudo apt-get install libpq-dev
       - name: Check version 🔍
         run: uv run --no-sync --isolated --with hatchling .github/utils/check_version.py "${GITHUB_REF#refs/tags/v}"
       - name: Extract changelog 📜
         run: python .github/utils/extract_changelog.py "${GITHUB_REF#refs/tags/v}" /tmp/changelog.md
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         name: Setup Node
         with:
           node-version: ${{ env.NODE_VERSION }}

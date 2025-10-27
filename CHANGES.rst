@@ -7,25 +7,61 @@ Version 3.3.9
 
 *Unreleased*
 
+Internationalization
+^^^^^^^^^^^^^^^^^^^^
+
+- New translation: Finnish
+
 Improvements
 ^^^^^^^^^^^^
 
-- Nothing so far :(
+- Disallow comments/judgments on outdated editables (:pr:`7067`)
+- Log original email content (with placeholders) when emailing registrants or
+  sending invitations (:pr:`7093`)
+- Disallow sending registration emails or invitations containing hardcoded (and
+  usually incorrect) token links (:pr:`7093`)
+- Add support for showing registration pictures in the check-in app (:pr:`7099`)
+- Support post-event reminders relative to the event end time (:pr:`7094`)
+- Log local group membership changes of users (:pr:`7122`, thanks :user:`tomako`)
+- Warn when downloading files from an editable not assigned to you (:issue:`7131`,
+  :pr:`7132`)
+- Add URL args to set the default view and date of the cataegory calendar view
+  (:pr:`7144`)
 
 Bugfixes
 ^^^^^^^^
 
-- Nothing so far :)
+- Do not allow sending registration invitation reminders without the invitation
+  link placeholder (:pr:`7093`)
+- Correctly log the user sending a registration invitation reminder (:pr:`7093`)
+- Fix error in weekday recurrence picker when using the Turkish locale (:pr:`7113`)
+- Do not allow selecting fields in disabled sections as a condition (:pr:`7114`)
 
 Accessibility
 ^^^^^^^^^^^^^
 
-- Nothing so far
+- Fix category list link color contrast (:pr:`7070`, thanks :user:`foxbunny`)
+- Fix color contrast and semantics of the protection icon and event count in category link
+  (:pr:`7071`, thanks :user:`foxbunny`)
+- Fix color contrast and screen reader support of the icons in the event list
+  (:pr:`7073`, thanks :user:`foxbunny`)
+- Fix color contrast and screen reader support of the hidden block buttons
+  in the event list (:pr:`7079`, thanks :user:`foxbunny`)
+- Fix contrast of the category info text (:pr:`7078`, thanks :user:`foxbunny`)
+- Fix contrast and screen reader support in breadcrumbs (:pr:`7088`,
+  thanks :user:`foxbunny`)
+- Fix the semantics for the empty materials text (:pr:`7096`, thanks :user:`foxbunny`)
+- Fix announcements accessibility (:pr:`7098`, thanks :user:`foxbuny`)
+- Fix conference description color contrast (:pr:`7118`, thanks :user:`foxbunny`)
+- Improve infogrid accessibility (:pr:`7119`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
-- Nothing so far
+- Allow plugins to store custom annotations/metadata on attachments, and indicate that
+  it has been converted from antoher attachment (:pr:`7108`)
+- Refactor conference page theme CSS to allow easier theming using CSS variables
+  (:pr:`7110`, thanks :user:`foxbunny`)
 
 
 Version 3.3.8
