@@ -74,13 +74,7 @@
                         {% for link in event.person_links|sort(attribute='display_order_key') %}
                             <li>
                                 {% if link.email %}
-                                    {% if session.user %}
-                                        <a href="mailto:{{ link.email }}">{{ link.full_name }}</a>
-                                    {% else %}
-                                        <a title="{% trans %}Log in to see their email address{% endtrans %}">
-                                            {{ link.full_name }}
-                                        </a>
-                                    {% endif %}
+                                    <a href="mailto:{{ link.email }}">{{ link.full_name }}</a>
                                 {% else %}
                                     {{ link.full_name }}
                                 {% endif %}
