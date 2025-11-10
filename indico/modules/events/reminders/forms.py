@@ -23,6 +23,7 @@ from indico.web.forms.base import IndicoForm, generated_data
 from indico.web.forms.fields import (EmailListField, IndicoDateTimeField, IndicoQuerySelectMultipleCheckboxField,
                                      IndicoRadioField, TimeDeltaField)
 from indico.web.forms.fields.sqlalchemy import IndicoQuerySelectMultipleTagField
+from indico.web.forms.util import inject_validators
 from indico.web.forms.validators import DateTimeRange, HiddenUnless, NoRelativeURLs
 from indico.web.forms.widgets import TinyMCEWidget
 
@@ -38,10 +39,13 @@ class ReminderForm(IndicoForm):
 
     # Schedule
     schedule_type = IndicoRadioField(_('Type'), [DataRequired()],
-                                     choices=[('relative', _('Relative to the event start time')),
+                                     choices=[('start_time_relative', _('Before the event start time')),
+                                              ('end_time_relative', _('After the event end time')),
                                               ('absolute', _('Fixed date/time')),
                                               ('now', _('Send immediately'))])
-    relative_delta = TimeDeltaField(_('Offset'), [HiddenUnless('schedule_type', 'relative'), DataRequired()],
+    relative_delta = TimeDeltaField(_('Offset'), [HiddenUnless('schedule_type',
+                                                               {'start_time_relative', 'end_time_relative'}),
+                                                  DataRequired()],
                                     units=('weeks', 'days', 'hours'))
     absolute_dt = IndicoDateTimeField(_('Date'), [HiddenUnless('schedule_type', 'absolute'), DataRequired(),
                                                   DateTimeRange()])
@@ -83,6 +87,8 @@ class ReminderForm(IndicoForm):
         self._reminder_type = reminder_type
         self._render_mode = render_mode
         self.timezone = self.event.timezone
+        if self._reminder_type == ReminderType.custom:
+            inject_validators(self, 'message', [DataRequired()])
         super().__init__(*args, **kwargs)
         allowed_senders = self.event.get_allowed_sender_emails(include_noreply=True,
                                                                extra=self.reply_to_address.object_data)
@@ -108,8 +114,6 @@ class ReminderForm(IndicoForm):
 
         else:
             self.message.label.text = _('Email body')
-            self.message.validators.append(DataRequired())
-            self.message.flags.required = True
             del self.include_summary
             del self.include_description
 
@@ -140,16 +144,24 @@ class ReminderForm(IndicoForm):
             if self.absolute_dt.data is None:
                 return None
             return self.absolute_dt.data
-        elif self.schedule_type.data == 'relative':
+        elif self.schedule_type.data == 'start_time_relative':
             if self.relative_delta.data is None:
                 return None
             return self.event.start_dt - self.relative_delta.data
+        elif self.schedule_type.data == 'end_time_relative':
+            if self.relative_delta.data is None:
+                return None
+            return self.event.end_dt + self.relative_delta.data
         elif self.schedule_type.data == 'now':
             return now_utc()
 
     @generated_data
     def event_start_delta(self):
-        return self.relative_delta.data if self.schedule_type.data == 'relative' else None
+        return self.relative_delta.data if self.schedule_type.data == 'start_time_relative' else None
+
+    @generated_data
+    def event_end_delta(self):
+        return self.relative_delta.data if self.schedule_type.data == 'end_time_relative' else None
 
     @generated_data
     def reminder_type(self):
