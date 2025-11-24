@@ -27,6 +27,11 @@ Improvements
   :pr:`7132`)
 - Add URL args to set the default view and date of the cataegory calendar view
   (:pr:`7144`)
+- Allow changing review tags in the editing timeline (:issue:`7133`, :pr:`7134`)
+- Add an option to request changes in bulk on the editable list (:issue:`7062`,
+  :pr:`7100`)
+- Clone persons settings when cloning an event (:pr:`7158`)
+- Clone editable-type-specific settings when cloning an event (:pr:`7158`)
 
 Bugfixes
 ^^^^^^^^
@@ -36,6 +41,14 @@ Bugfixes
 - Correctly log the user sending a registration invitation reminder (:pr:`7093`)
 - Fix error in weekday recurrence picker when using the Turkish locale (:pr:`7113`)
 - Do not allow selecting fields in disabled sections as a condition (:pr:`7114`)
+- Fix timetable PDF cover page layout to allow proper centering of content (:issue:`7148`,
+  :pr:`7149`)
+- Fix the logic to force downloads not being applied for materials hosted on some storage
+  backend setups (:pr:`7164`)
+- Preserve configured registration date formats in Excel exports (:pr:`7157`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Fix inconsistent styling of nested lists in minutes and editor output (:issue:`7063`,
+  :pr:`7105`, thanks :user:`AtharvMixraw`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -54,6 +67,8 @@ Accessibility
 - Fix announcements accessibility (:pr:`7098`, thanks :user:`foxbuny`)
 - Fix conference description color contrast (:pr:`7118`, thanks :user:`foxbunny`)
 - Improve infogrid accessibility (:pr:`7119`, thanks :user:`foxbunny`)
+- Improve dropdown accessibility in category list toolbar (:pr:`7069`,
+  thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
@@ -62,6 +77,7 @@ Internal Changes
   it has been converted from antoher attachment (:pr:`7108`)
 - Refactor conference page theme CSS to allow easier theming using CSS variables
   (:pr:`7110`, thanks :user:`foxbunny`)
+- Add clear button to optional date picker fields (:pr:`7151`, thanks :user:`foxbunny`)
 
 
 Version 3.3.8
@@ -237,7 +253,7 @@ Internal Changes
 - Expose cloning details such as object mappings in the ``event.cloned`` signal (:pr:`6858`)
 - Expose cloning details in the ``contribution.created`` and ``subcontribution.created``
   signals (:pr:`6858`)
-- Add the id and color of registration tags on the Checkin API endpoint for registation
+- Add the id and color of registration tags on the Checkin API endpoint for registration
   data (:pr:`6874`, thanks :user:`duartegalvao`)
 - Allow disabling arbitrary dates in date picker / calendar controls (:pr:`6905`, thanks
   :user:`foxbunny`)
@@ -2905,7 +2921,7 @@ Major Features
   so they can be restricted to be editable/visible only for event
   managers or authors/submitters instad of anyone who can see the
   abstract/contribution
-- Provide new interface to import registations/contributions from a CSV
+- Provide new interface to import registrations/contributions from a CSV
   file (:issue:`3144`)
 - Rework how access/permissions are managed. Now all access and management
   privileges can be assigned from a single place on the protection
