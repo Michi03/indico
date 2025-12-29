@@ -2,10 +2,54 @@ Changelog
 =========
 
 
+Version 3.3.10
+--------------
+
+*Unreleased*
+
+Improvements
+^^^^^^^^^^^^
+
+- Nothing so far :(
+
+Bugfixes
+^^^^^^^^
+
+- Fix error when adding a user to a material ACL in a subcontribution (:pr:`7209`)
+- Fix timezone selector behaving incorrectly when choosing a custom timezone (:pr:`7214`)
+- Fix error when using shibboleth for authentication (:issue:`7213`, :pr:`7215`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Nothing so far
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Require at least Postgres 14 during new installations. This check can be forced on
+  older Postgres versions (even though they are end-of-life), but we make no guarantees
+  that nothing is broken (:pr:`7232`)
+
+
 Version 3.3.9
 -------------
 
-*Unreleased*
+*Released on December 11, 2025*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Fix an open redirect which could help making harmful URLs look more trustworthy by linking
+  to Indico and having it redirect the user to a malicious site
+- Fix an XSS vulnerability with HTML materials when stored on S3 with certain
+  configuration settings
+
+.. note::
+
+    Anyone running Indico using the "standard" setup from our installation guide
+    or without storing files on S3 (using the ``storage_s3`` plugin) is completely
+    unaffected by this problem.
 
 Internationalization
 ^^^^^^^^^^^^^^^^^^^^
@@ -25,13 +69,42 @@ Improvements
 - Log local group membership changes of users (:pr:`7122`, thanks :user:`tomako`)
 - Warn when downloading files from an editable not assigned to you (:issue:`7131`,
   :pr:`7132`)
-- Add URL args to set the default view and date of the cataegory calendar view
+- Add URL args to set the default view and date of the category calendar view
   (:pr:`7144`)
 - Allow changing review tags in the editing timeline (:issue:`7133`, :pr:`7134`)
 - Add an option to request changes in bulk on the editable list (:issue:`7062`,
   :pr:`7100`)
 - Clone persons settings when cloning an event (:pr:`7158`)
 - Clone editable-type-specific settings when cloning an event (:pr:`7158`)
+- Allow admins to add a secondary email address to a user without sending a
+  validation email (:issue:`6872`, :pr:`7116`, thanks :user:`vasiliyk`)
+- Add new :data:`SMTP_USE_SSL` config option to use always-on TLS (SMTPS) instead of
+  STARTTLS when sending emails (:issue:`4347`, :pr:`7177`, thanks :user:`bpedersen2`)
+- Add review count & score standard deviation columns to the abstract list (:pr:`7173`)
+- Add min/max date settings to registration form date fields (:pr:`6842`, thanks
+  :user:`SegiNyn`)
+- Allow adding a preface when re-sending emails from the event log (:pr:`7172`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Disallow adding multiple fields with the same title in a single registration form
+  section (:pr:`7181`, thanks :user:`tomako`)
+- Add a customizable announcement text on top of the registration form list in
+  conferences with multiple registration forms (:pr:`6916`, thanks :user:`openprojects`)
+- Add a button to view related logs to the management view of a registration (:pr:`7186`,
+  thanks :user:`vtran99`)
+- Log attachment & menu entry ACL changes to user log (:pr:`7136`, thanks :user:`tomako`)
+- Add placeholders to custom event reminders (:pr:`7115`, thanks :user:`tomako`)
+- Add option to require international phone number format in registration form
+  (:pr:`7199`, thanks :user:`openprojects`)
+- Refactor the registration invitation dialogs using React and add email previews
+  (:pr:`7168`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add setting :data:`EMAIL_LOG_STORAGE` to permanently store email attachments and
+  allow re-sending emails with attachments from the event log (:pr:`7182`, :pr:`7203`,
+  thanks :user:`Moliholy, unconventionaldotdev`)
+- Show confirmation dialog when sending invitations (:pr:`7204`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Show a warning when bulk registration approval/rejection skips registrations that are not
+  pending (:issue:`7197`, :pr:`7205`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add a JSON endpoint that returns the event's program/tracks (:pr:`7207`)
 
 Bugfixes
 ^^^^^^^^
@@ -49,6 +122,8 @@ Bugfixes
   :user:`duartegalvao, unconventionaldotdev`)
 - Fix inconsistent styling of nested lists in minutes and editor output (:issue:`7063`,
   :pr:`7105`, thanks :user:`AtharvMixraw`)
+- Validate the arrival/departure date in the registration form accommodation field
+  (:issue:`7171`, :pr:`7174`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -69,12 +144,13 @@ Accessibility
 - Improve infogrid accessibility (:pr:`7119`, thanks :user:`foxbunny`)
 - Improve dropdown accessibility in category list toolbar (:pr:`7069`,
   thanks :user:`foxbunny`)
+- Fix footer color contrast (:pr:`7095`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
 - Allow plugins to store custom annotations/metadata on attachments, and indicate that
-  it has been converted from antoher attachment (:pr:`7108`)
+  it has been converted from another attachment (:pr:`7108`)
 - Refactor conference page theme CSS to allow easier theming using CSS variables
   (:pr:`7110`, thanks :user:`foxbunny`)
 - Add clear button to optional date picker fields (:pr:`7151`, thanks :user:`foxbunny`)

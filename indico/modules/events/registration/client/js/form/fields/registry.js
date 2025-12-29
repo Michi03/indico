@@ -34,6 +34,7 @@ import CountryInput, {CountrySettings} from './CountryInput';
 import DateInput, {
   DateSettings,
   dateSettingsFormDecorator,
+  dateSettingsFormValidator,
   dateSettingsInitialData,
 } from './DateInput';
 import EmailInput from './EmailInput';
@@ -46,7 +47,7 @@ import MultiChoiceInput, {
   multiChoiceGetDataForCondition,
 } from './MultiChoiceInput';
 import NumberInput, {NumberSettings, numberSettingsFormValidator} from './NumberInput';
-import PhoneInput from './PhoneInput';
+import PhoneInput, {PhoneSettings} from './PhoneInput';
 import PictureInput, {PictureSettings} from './PictureInput';
 import SingleChoiceInput, {
   SingleChoiceSettings,
@@ -139,6 +140,7 @@ const fieldRegistry = {
     inputComponent: DateInput,
     settingsComponent: DateSettings,
     settingsFormDecorators: [dateSettingsFormDecorator],
+    settingsFormValidator: dateSettingsFormValidator,
     settingsFormInitialData: dateSettingsInitialData,
     icon: 'calendar',
   },
@@ -155,6 +157,7 @@ const fieldRegistry = {
   phone: {
     title: Translate.string('Phone'),
     inputComponent: PhoneInput,
+    settingsComponent: PhoneSettings,
     icon: 'phone',
   },
   country: {

@@ -54,6 +54,7 @@ DEFAULTS = {
     'DEFAULT_TIMEZONE': 'UTC',
     'DISABLE_CELERY_CHECK': None,
     'EMAIL_BACKEND': 'indico.vendor.django_mail.backends.smtp.EmailBackend',
+    'EMAIL_LOG_STORAGE': None,
     'ENABLE_APPLE_WALLET': False,
     'ENABLE_GOOGLE_WALLET': False,
     'ENABLE_ROOMBOOKING': False,
@@ -102,6 +103,7 @@ DEFAULTS = {
     'SMTP_SERVER': ('localhost', 25),
     'SMTP_TIMEOUT': 30,
     'SMTP_USE_CELERY': True,
+    'SMTP_USE_SSL': False,
     'SMTP_USE_TLS': False,
     'SQLALCHEMY_DATABASE_URI': None,
     'SQLALCHEMY_MAX_OVERFLOW': 3,
@@ -313,6 +315,8 @@ class IndicoConfig:
             raise ValueError(f'Invalid default timezone: {self.DEFAULT_TIMEZONE}')
         if self.SMTP_ALLOWED_SENDERS and not self.SMTP_SENDER_FALLBACK:
             raise ValueError('Cannot restrict SMTP senders without a fallback')
+        if self.SMTP_USE_TLS and self.SMTP_USE_SSL:
+            raise ValueError('SMTP_USE_TLS and SMTP_USE_SSL are mutually exclusive')
         if not self.DEBUG and self.LOCAL_PASSWORD_MIN_LENGTH < 8:
             raise ValueError('Minimum password length cannot be less than 8 characters long')
 

@@ -35,6 +35,7 @@ export function FormFieldAdapter({
   componentLabel,
   defaultValue,
   fieldProps,
+  fieldNeedsValidationError,
   hideValidationError,
   hideErrorWhileActive,
   loaderWhileValidating,
@@ -93,6 +94,10 @@ export function FormFieldAdapter({
     input.id = id;
   }
 
+  if (fieldNeedsValidationError) {
+    input.validationError = errorMessage;
+  }
+
   const field = (
     <Form.Field
       required={required}
@@ -137,6 +142,7 @@ FormFieldAdapter.propTypes = {
   disabled: PropTypes.bool,
   input: PropTypes.object.isRequired,
   required: PropTypes.bool,
+  fieldNeedsValidationError: PropTypes.bool,
   hideValidationError: PropTypes.oneOf([true, false, 'message', 'never']),
   hideErrorWhileActive: PropTypes.bool,
   undefinedValue: PropTypes.any,
@@ -157,6 +163,7 @@ FormFieldAdapter.defaultProps = {
   autoId: true,
   disabled: false,
   required: false,
+  fieldNeedsValidationError: false,
   hideValidationError: false,
   hideErrorWhileActive: false,
   undefinedValue: '',
@@ -351,8 +358,20 @@ ComboDropdownAdapter.defaultProps = {
 };
 
 /**
+ * @typedef {({[key: string]: any}) & {
+ *   name: string;
+ *   adapter?: React.ComponentType;
+ *   component?: React.ComponentType;
+ *   description?: React.ReactNode;
+ *   required?: true | false | 'no-validator';
+ *   onChange?: (value: any, previous: any) => void;
+ * }} FinalFieldProps
+ */
+
+/**
  * A wrapper for final-form's Field component that handles the markup
  * around the field.
+ * @param {FinalFieldProps} props
  */
 export function FinalField({name, adapter, component, description, required, onChange, ...rest}) {
   const extraProps = {};
