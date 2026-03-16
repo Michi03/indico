@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -745,6 +745,8 @@ class LocalRegistrationHandler(RegistrationHandler):
 
             @validates_schema(skip_on_field_errors=False)
             def validate_password(self, data, **kwargs):
+                if 'password' not in data:
+                    return
                 if error := validate_secure_password('set-user-password', data['password'],
                                                      username=data.get('username', ''),
                                                      emails={session['register_verified_email']}):

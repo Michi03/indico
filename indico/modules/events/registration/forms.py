@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -216,6 +216,10 @@ class RegistrationFormCreateForm(IndicoForm):
                                else None)
         if visibility_duration and visibility_duration > retention_period:
             raise ValidationError(_('The retention period cannot be lower than the visibility duration.'))
+
+
+class RegistrationFormCloneForm(IndicoForm):
+    title = StringField(_('Title'), [DataRequired()], description=_('The title of the registration form'))
 
 
 class RegistrationFormScheduleForm(IndicoForm):

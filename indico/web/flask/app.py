@@ -1,10 +1,11 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
 # LICENSE file for more details.
 
+import itertools
 import os
 import uuid
 from urllib.parse import urlsplit
@@ -53,7 +54,8 @@ from indico.web.flask.errors import errors_bp
 from indico.web.flask.stats import get_request_stats, setup_request_stats
 from indico.web.flask.templating import (call_template_hook, decodeprincipal, dedent, groupby, instanceof, markdown,
                                          natsort, plusdelta, subclassof, underline)
-from indico.web.flask.util import ListConverter, XAccelMiddleware, discover_blueprints, url_for, url_rule_to_js
+from indico.web.flask.util import (ListConverter, XAccelMiddleware, discover_blueprints, get_csp_nonce, url_for,
+                                   url_rule_to_js)
 from indico.web.flask.wrappers import IndicoFlask
 from indico.web.forms.jinja_helpers import is_single_line_field, iter_form_fields, render_field
 from indico.web.menu import render_sidemenu
@@ -221,6 +223,7 @@ def setup_jinja(app):
     app.add_template_global(get_request_stats)
     app.add_template_global(_get_indico_version(), 'indico_version')
     app.add_template_global(make_user_search_token)
+    app.add_template_global(get_csp_nonce)
     # Global variables
     app.add_template_global(LocalProxy(get_current_locale), 'current_locale')
     app.add_template_global(LocalProxy(lambda: current_plugin.manifest if current_plugin else None), 'plugin_webpack')
@@ -338,6 +341,7 @@ def add_handlers(app):
     app.before_request(canonicalize_url)
     app.before_request(reject_nuls)
     app.after_request(inject_current_url)
+    app.after_request(inject_csp)
     app.register_blueprint(errors_bp)
 
 
@@ -397,6 +401,64 @@ def inject_current_url(response):
     except UnicodeEncodeError:
         return response
     response.headers['X-Indico-URL'] = url
+    return response
+
+
+def _get_csp_report_config():
+    if not config.CSP_REPORT_URI:
+        return [], {}
+    directives = [f'report-uri {config.CSP_REPORT_URI}', 'report-to csp']
+    headers = {'Reporting-Endpoints': f'csp="{config.CSP_REPORT_URI}"'}
+    return directives, headers
+
+
+def _inject_report_sample(directive):
+    name, *args = directive.split(' ')
+    is_src_directive = name.endswith('-src') or '-src-' in name
+    if "'report-sample'" in args or not is_src_directive:
+        # only set it on source directives that don't already have it
+        return directive
+    return f"{directive} 'report-sample'"
+
+
+def inject_csp(response):
+    if existing_csp := response.headers.get('Content-Security-Policy'):
+        # do not inject a default CSP if one was already set explicitly, e.g. in plugins that
+        # want to apply a more restricted one in some areas. however, if we have reporting configured,
+        # merge the existing CSP with the reporting config
+        if config.CSP_REPORT_URI and 'report-to' not in existing_csp and 'report-uri' not in existing_csp:
+            report_directives, report_headers = _get_csp_report_config()
+            existing_directives = [_inject_report_sample(x.strip()) for x in existing_csp.split(';')]
+            new_csp = '; '.join([*existing_directives, *report_directives])
+            for name, value in report_headers.items():
+                response.headers[name] = value
+            response.headers['Content-Security-Policy'] = new_csp
+        return response
+    if not config.CSP_ENABLED:
+        return response
+    # unsafe-eval is currently needed because of webpack's script-loader which we need for legacy JS
+    sources = ['self', 'unsafe-eval']
+    if nonce := get_csp_nonce(init=False):
+        sources.append(f'nonce-{nonce}')
+    if config.CSP_REPORT_URI and 'report-sample' not in sources:
+        sources.append('report-sample')
+    plugin_sources = values_from_signal(signals.core.get_csp_script_sources.send())
+    sources = ' '.join(itertools.chain((f"'{x}'" for x in sources), plugin_sources, config.CSP_SCRIPT_SOURCES))
+    csp_directives = [
+        f'script-src {sources}',
+        # TODO: change base-uri back to 'none' after upgrading jQuery to 4.0 which no longer uses
+        # <base> internally in its $.parseHTML function (to test: open event creation dialog in Chrome)
+        "base-uri 'self'",
+        *config.CSP_DIRECTIVES,
+    ]
+    report_directives, report_headers = _get_csp_report_config()
+    csp_directives.extend(report_directives)
+    for name, value in report_headers.items():
+        response.headers[name] = value
+    csp_header = (
+        'Content-Security-Policy-Report-Only' if config.CSP_ENABLED == 'report-only' else 'Content-Security-Policy'
+    )
+    response.headers[csp_header] = '; '.join(csp_directives)
     return response
 
 

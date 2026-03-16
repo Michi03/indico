@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -44,6 +44,8 @@ class PosterPDF(DesignerPDFBase):
             if placeholder:
                 if placeholder.group == 'event':
                     text = placeholder.render(self.event)
+                elif placeholder.group == 'fixed':
+                    text = placeholder.render(item)
                 else:
                     continue
             elif item.get('text') is not None:

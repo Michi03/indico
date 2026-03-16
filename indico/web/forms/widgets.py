@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -95,7 +95,7 @@ class JinjaWidget:
         if self.inline_js:
             html += '\n' + javascript
         elif '<script' in javascript:
-            inject_js(template_module.javascript())
+            inject_js(javascript)
         elif html_comment_re.sub('', javascript).strip():
             raise ValueError('Template did not provide valid javascript')
         return Markup(html)

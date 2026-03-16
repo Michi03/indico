@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -34,7 +34,6 @@ export {default as PopoverDropdownMenu} from './PopoverDropdownMenu';
 export {default as ResponsivePopup} from './ResponsivePopup';
 export {default as ListFilter} from './ListFilter';
 export {default as MathJax} from './MathJax';
-export {default as FileSubmission} from './files/FileSubmission';
 export {default as FinalPictureManager} from './pictures/PictureManager';
 export {default as FinalSingleFileManager} from './files/SingleFileManager';
 export {default as FinalSingleFileDrop} from './files/SingleFileDrop';

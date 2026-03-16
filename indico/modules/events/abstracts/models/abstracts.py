@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -408,6 +408,8 @@ class Abstract(ProposalMixin, ProposalRevisionMixin, DescriptionMixin, CustomFie
     @property
     def edit_track_mode(self):
         if not inspect(self).persistent:
+            return EditTrackMode.both
+        elif self.state == AbstractState.invited:
             return EditTrackMode.both
         elif self.state not in {AbstractState.submitted, AbstractState.withdrawn}:
             return EditTrackMode.none

@@ -359,11 +359,21 @@ Customization
 
     A dict with country name overrides.  This can be useful if the official
     ISO name of a country does not match what your Indico instance's target
-    audience expects for a country, e.g. due to political situations.
+    audience expects for a country, e.g. due to political situations. By setting
+    a country's name to ``None`` you can pretend it does not exist. Custom country
+    names can also be translated by using a dict mapping locale/language codes to
+    the translated country names.
 
     .. code-block:: python
 
-        CUSTOM_COUNTRIES = {'KP': 'North Korea'}
+        CUSTOM_COUNTRIES = {
+            'KP': 'North Korea',
+            'US': {
+                'en_GB': 'United States of America',  # Translation based on specific locale
+                'es': 'Estados Unidos'  # Translation based on language (regardless of specific locale)
+            },
+            'AQ': None,  # Remove Antarctica from the list
+        }
 
     Default: ``{}``
 
@@ -758,6 +768,14 @@ Logging
 
     Default: ``None``
 
+.. data:: SENTRY_ENVIRONMENT
+
+    If you use `Sentry`_ for logging warnings/errors, you can specify the
+    environment name here. This can be used to distinguish data from separate
+    Indico installations that are logged to the same Sentry project.
+
+    Default: ``'production'``
+
 .. data:: SENTRY_LOGGING_LEVEL
 
     The minimum level a log record needs to have to be sent to Sentry.
@@ -820,6 +838,44 @@ Security
     maximum lifetime via the ``session_expiry`` entry in the ``multipass_data``.
 
     Default: ``None``
+
+.. data:: CSP_ENABLED
+
+    Specifies whether a ``Content-Security-Policy`` header should be sent. This
+    can also be set to ``'report-only'`` to use ``Content-Security-Policy-Report-Only``
+    instead (only useful when a :data:`CSP_REPORT_URI` is set or when using your
+    browser's dev tools console to look for errors).
+
+    Default: ``False`` (may change in a future release)
+
+.. data:: CSP_REPORT_URI
+
+    Specifies the URL to which CSP violations should be reported. When using
+    `Sentry`_, you can use the "Report URI" which you can find in your project
+    settings under "Security Headers".
+
+    Default: ``None``
+
+.. data:: CSP_SCRIPT_SOURCES
+
+    By default only ``script-src`` values needed for Indico to work are included.
+    If you embed external scripts from other hosts, you may need to include them
+    here or they will not work (use your browser's dev tools to check for log
+    messages related to CSP violations). Note that you MUST NOT add any ``nonce``
+    values there, as this would make the whole policy useless (knowing the nonce
+    in advance means you can set it on any maliciously injected script). The
+    values specified here are not automatically wrapped in single quotes, so if
+    you want to include e.g. a hash, you need to manually quote it.
+
+    Default: ``set()``
+
+.. data:: CSP_DIRECTIVES
+
+    Specify custom top-level CSP directives. This can include any CSP directive besides
+    ``script-src`` which is already handled by Indico itself (use :data:`CSP_SCRIPT_SOURCES`
+    if you need to add custom values there) and ``base-uri`` which is always set to ``'self'``.
+
+    Default: ``set()``
 
 
 Storage
@@ -961,6 +1017,8 @@ System
         location /.xsf/indico/ {
           internal;
           alias /opt/indico/;
+          add_header Content-Security-Policy $upstream_http_content_security_policy;
+          add_header Content-Security-Policy-Report-Only $upstream_http_content_security_policy_report_only;
         }
 
     The :ref:`production installation instructions <install-prod>` already
@@ -1022,6 +1080,35 @@ System
 .. data:: ENABLE_APPLE_WALLET
 
     Whether to enable the Apple Wallet integration for event tickets.
+
+    Default: ``False``
+
+.. data:: DISABLE_GRAVATAR
+
+    Completely disables the Gravatar integration. When enabled, users will no
+    longer see Gravatar or Identicon options on the profile-picture page and
+    Indico will not try to fetch updates from gravatar.com.
+
+    Default: ``False``
+
+.. data:: CHECK_ACTION_PERMISSIONS
+
+    When enabled, certain action buttons in the UI (such as "Create event")
+    will be displayed to logged-in users only if they have the necessary
+    permissions to perform that action.
+
+    When disabled, buttons are always shown, even to non-logged in users (who will be redirected
+    to login when clicking).
+
+    .. note::
+
+        For performance reasons the access check for the "Create event" button only
+        takes into account permissions granted directly to the user, via a local group or via
+        a category role. When using externally-managed groups (e.g. LDAP), then this setting
+        should not be enabled as people may not see the button even though they have creation
+        privileges. When using a custom plugin that grants creation or management access to
+        categories bypassing Indico's usual permission system, this setting should also not be
+        used.
 
     Default: ``False``
 

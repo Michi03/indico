@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -76,7 +76,7 @@ class ActionMenuEntry:
     extra_classes: str = ''
 
 
-def import_user_records_from_csv(fileobj, columns, delimiter=None):
+def import_user_records_from_csv(fileobj, columns, delimiter=None, *, check_email_dns=True):
     """Parse and do basic validation of user data from a CSV file.
 
     :param fileobj: the CSV file to be read.
@@ -110,7 +110,7 @@ def import_user_records_from_csv(fileobj, columns, delimiter=None):
             raise UserValueError(_('Row {}: missing e-mail address').format(row_num))
         record['email'] = record['email'].lower()
 
-        if not validate_email(record['email']):
+        if not validate_email(record['email'], check_dns=check_email_dns):
             raise UserValueError(_('Row {}: invalid e-mail address').format(row_num))
         if not record['first_name'] or not record['last_name']:
             raise UserValueError(_('Row {}: missing first or last name').format(row_num))
@@ -1071,6 +1071,17 @@ def close_registration(regform):
     regform.end_dt = now_utc()
     if not regform.has_started:
         regform.start_dt = regform.end_dt
+
+
+def clone_registration_form(regform: RegistrationForm, title: str) -> RegistrationForm:
+    """Clone a registration form within the same event.
+
+    :param regform: The registration form to clone
+    :param title: The title for the new registration form
+    :return: The cloned registration form
+    """
+    from indico.modules.events.registration.clone import RegistrationFormCloner
+    return RegistrationFormCloner.clone_single_regform(regform, title=title)
 
 
 def get_persons(registrations, include_accompanying_persons=False):

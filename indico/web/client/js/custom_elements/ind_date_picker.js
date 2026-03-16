@@ -1,19 +1,12 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
 import CustomElementBase from 'indico/custom_elements/_base';
-import {
-  DateRange,
-  OpenDateRange,
-  SparseDateRange,
-  getToday,
-  isSameDate,
-  toDateString,
-} from 'indico/utils/date';
+import {DateRange, OpenDateRange, getToday, isSameDate, toDateString} from 'indico/utils/date';
 import {formatDate} from 'indico/utils/date_format';
 import {createDateParser} from 'indico/utils/date_parser';
 import {getWeekInfoForLocale, getFirstDayOfWeek, getWeekdayNames} from 'indico/utils/l10n';
@@ -195,10 +188,6 @@ CustomElementBase.define(
 
     get endRange() {
       return new OpenDateRange(this.rangeEndMin, this.rangeEndMax);
-    }
-
-    get combinedRange() {
-      return new SparseDateRange(this.startRange, this.endRange);
     }
 
     setup() {

@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-Version 3.3.10
+Version 3.3.12
 --------------
 
 *Unreleased*
@@ -10,14 +10,13 @@ Version 3.3.10
 Improvements
 ^^^^^^^^^^^^
 
-- Nothing so far :(
+- Allow bulk (de-)selecting data in tables with shift+click (:issue:`7375`, :pr:`7376`)
 
 Bugfixes
 ^^^^^^^^
 
-- Fix error when adding a user to a material ACL in a subcontribution (:pr:`7209`)
-- Fix timezone selector behaving incorrectly when choosing a custom timezone (:pr:`7214`)
-- Fix error when using shibboleth for authentication (:issue:`7213`, :pr:`7215`)
+- Fix paper file submission when a filename template is configured (:pr:`7381`)
+- Fix selecting existing paper files when submitting an editable (:pr:`7381`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -27,9 +26,163 @@ Accessibility
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
+- Nothing so far
+
+
+Version 3.3.11
+--------------
+
+*Released on February 27, 2026*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Add missing access checks when managing event series (:cve:`2026-28352`, thanks
+  :user:`lighthousekeeper1212`)
+
+.. note::
+
+    While this issue allowed unauthorized changes to event series, the impact is rather low,
+    since this cannot be used to tamper with events or deface them in any way. In case there
+    are access-restricted events in a series, their title and category location could be
+    disclosed though.
+
+Improvements
+^^^^^^^^^^^^
+
+- Show picture field validation status in the registration form (:pr:`7337`,
+  thanks :user:`jbtwist, unconventionaldotdev`)
+- Add a setting :data:`CHECK_ACTION_PERMISSIONS` to hide event creation/management
+  buttons for guests and users who do not have access to them (:pr:`7332`, thanks
+  :user:`jbtwist, unconventionaldotdev`)
+- Add option to filter room booking calendar to show only unused rooms (:pr:`7350`)
+
+Bugfixes
+^^^^^^^^
+
+- Show event role dropdown when editing contribution/session ACLs (:pr:`7339`)
+- Fix error when loading category search results with extra query string params
+  from external search plugins (:pr:`7345`)
+- Require management access to all events in a series to manage it (:pr:`7348`)
+- Fix deleting an event series that contains deleted events (:pr:`7348`)
+- Fix email validation error when entering speakers manually in an invited abstract
+  while logged in (:pr:`7340`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Screen readers now announce the filtering state indicator descriptive text instead of
+  just the short numeric label (:pr:`7335`, thanks :user:`foxbunny`)
+- Screen reader users can now identify the search field on the contribution list page
+  (:pr:`7343`, thanks :user:`foxbunny`)
+- The contribution list is now announced as a list by screen readers, conveying the
+  number of items (:pr:`7346`, thanks :user:`foxbunny`)
+- Contribution descriptions are no longer announced as links by screen readers
+  (:pr:`7349`, thanks :user:`foxbunny`)
+- Contribution list description text, track badges, and type badges now meet WCAG AA
+  color contrast requirements (:pr:`7351`, thanks :user:`foxbunny`)
+- Dialogs now announce their title to screen readers and return focus to the trigger
+  element when closed (:pr:`7354`, thanks :user:`foxbunny`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Require a modern Sentry version (at least v20.6.0) when using a self-hosted Sentry
+  installation for error reporting (:pr:`7333`)
+
+
+Version 3.3.10
+--------------
+
+*Released on February 17, 2026*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Fix potential SSRF issues by disallowing outgoing requests to private/internal/local
+  IP addresses when the URL is user-provided (:cve:`2026-25738`)
+
+.. note::
+
+    There was only one place where this would have allowed returning data retrieved from
+    such a URL to the client, and this was only accessible to authenticated users with
+    event management privileges. Also, this vulnerability is only problematic if sensitive
+    information is accessible via an unauthenticated HTTP GET request (e.g. in AWS cloud
+    environments).
+
+- Fix an open redirect which could help making harmful URLs look more trustworthy by linking
+  to Indico and having it redirect the user to a malicious site
+- Fix an XSS vulnerability related to uploaded materials (:cve:`2026-25739`)
+
+Improvements
+^^^^^^^^^^^^
+
+- Log changes to event reminders in the event log (:pr:`7242`)
+- Allow sending account creation notifications to specific email addresses (:issue:`7166`,
+  :pr:`7233`, thanks :user:`duartegalvao`)
+- Support markdown in survey introduction text (:pr:`7260`)
+- Add Content-Security-Policy support (opt-in via the :data:`CSP_ENABLED` setting) and send
+  a strict CSP for material downloads (:issue:`5486`, :pr:`7257`, :pr:`7303`, :pr:`7308`)
+- Allow admins to disable Gravatar/Identicon profile pictures via the :data:`DISABLE_GRAVATAR`
+  config option (:issue:`7210`, :pr:`7251`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add a UI for managing predefined affiliations (:pr:`7183`, :pr:`7278`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Add support for configurable file types in Paper Peer Reviewing (:issue:`7162`, :pr:`7156`)
+- Use the event's default language (or system default if not set) when creating abstract
+  notifications instead of the user's current language (:pr:`7294`)
+- Allow cloning registration forms within an event (:issue:`3229`, :pr:`6822`, thanks
+  :user:`adam-parker1, Emilijus-M`)
+- Allow removing countries and providing custom translated names for countries via config
+  (:pr:`7292`, :pr:`7299`, thanks :user:`jbtwist`)
+- Add link from log entry details to the related object's page where applicable
+  (:pr:`7269`, thanks :user:`vtran99`)
+
+Bugfixes
+^^^^^^^^
+
+- Fix error when adding a user to a material ACL in a subcontribution (:pr:`7209`)
+- Fix timezone selector behaving incorrectly when choosing a custom timezone (:pr:`7214`)
+- Fix error when using shibboleth for authentication (:issue:`7213`, :pr:`7215`)
+- Fix error when sending scheduled reminders using an event time placeholder (:pr:`7238`)
+- Fix rendering static text/images in poster templates (:pr:`7239`)
+- Do not revert to defaults when disabling all optional event cloners (:issue:`6833`, :pr:`7245`)
+- Fix changing tracks for invited abstracts (:issue:`7061`, :pr:`7240`)
+- Disallow local account passwords longer than 72 characters instead of truncating them
+  (:pr:`7254`)
+- Fix recurrence information not being correctly included in room booking ical export
+  (:pr:`7255`)
+- Fix weird indentation on list items in markdown field preview (:pr:`7260`)
+- Fix unique title validation for disabled regform fields (:pr:`7277`)
+- Fix DatePicker min/max limits being affected by client timezone (:issue:`7273`, :pr:`7280`,
+  thanks :user:`jbtwist`)
+- Fix validation error when choosing exactly the maximum date in a regform date field
+  (:pr:`7288`)
+- Fix submit buttons not being enabled when modifying a markdown field using only the
+  button bar or a keyboard shortcut (:pr:`7310`)
+- Enforce DNS checks on emails only when inviting a new user, and not when importing
+  from CSV (:pr:`7291`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Hide "This field is required" error while uploading files on single-file upload fields
+  (:pr:`7325`, thanks :user:`duartegalvao, unconventionaldotdev`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Add accessible labels and tooltips to icon-only toolbar buttons in the contribution list
+  (:pr:`7316`, thanks :user:`foxbunny`)
+- Screen reader users can now discover the page footer and conference side menu as a landmark
+  region (:pr:`7312`, thanks :user:`foxbunny`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
 - Require at least Postgres 14 during new installations. This check can be forced on
   older Postgres versions (even though they are end-of-life), but we make no guarantees
   that nothing is broken (:pr:`7232`)
+- Disallow server-side requests to private, loopback, reserved and link-local IP ranges in
+  places where the URL is user-provided (Mastodon URL check, LaTeX image retrieval, static
+  site generation) (:pr:`7244`)
+- Log requests to the legacy export API to ``indico.log`` (:pr:`7290`)
+- Disallow concurrent generation of category statistics (:pr:`7307`)
 
 
 Version 3.3.9

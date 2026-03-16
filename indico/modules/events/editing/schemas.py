@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -9,7 +9,7 @@ import re
 from operator import itemgetter
 
 from markupsafe import escape
-from marshmallow import ValidationError, fields, post_dump, validate, validates, validates_schema
+from marshmallow import RAISE, ValidationError, fields, post_dump, validate, validates, validates_schema
 from sqlalchemy import func
 
 from indico.core.marshmallow import mm
@@ -458,6 +458,14 @@ class RoleSchema(mm.Schema):
 
     def _get_source(self, role):
         return 'category' if isinstance(role, CategoryRole) else 'event'
+
+
+class ServiceInfoSchema(mm.Schema):
+    class Meta:
+        unknown = RAISE
+
+    name = fields.String(required=True)
+    version = fields.String(required=True)
 
 
 class ServiceUserSchema(mm.SQLAlchemyAutoSchema):

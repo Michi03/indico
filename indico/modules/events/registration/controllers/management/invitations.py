@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -192,7 +192,7 @@ class RHRegistrationFormImportInvites(RHManageRegFormBase):
 class RHRegistrationFormImportInvitesUpload(RHManageRegFormBase):
     """Process a CSV file into invitation user records."""
 
-    @use_kwargs({'file': fields.Field(required=True)}, location='files')
+    @use_kwargs({'file': fields.Raw(required=True)}, location='files')
     def _process(self, file):
         if not file.filename.lower().endswith('.csv'):
             raise BadRequest('Not a CSV file')
@@ -200,6 +200,7 @@ class RHRegistrationFormImportInvitesUpload(RHManageRegFormBase):
             rows = import_user_records_from_csv(
                 file.stream,
                 columns=['first_name', 'last_name', 'affiliation', 'email'],
+                check_email_dns=False
             )
         except UserValueError as exc:
             abort(422, messages={'file': [str(exc)]})

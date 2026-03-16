@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -42,6 +42,8 @@ _bp.add_url_rule('/manage/registration/<int:reg_form_id>/invitation-preview', 'i
                  invitations.RHRegistrationFormInvitationPreview, methods=('POST',))
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/delete', 'delete_regform', regforms.RHRegistrationFormDelete,
                  methods=('POST',))
+_bp.add_url_rule('/manage/registration/<int:reg_form_id>/clone', 'clone_regform', regforms.RHRegistrationFormClone,
+                 methods=('GET', 'POST'))
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/open', 'open_regform', regforms.RHRegistrationFormOpen,
                  methods=('POST',))
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/close', 'close_regform', regforms.RHRegistrationFormClose,

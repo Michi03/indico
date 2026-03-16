@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -20,6 +20,7 @@ import ReactDOM from 'react-dom';
 import 'indico/modules/events/util/types_dialog';
 import 'indico/react/components/AffiliationPopup';
 import EditableSubmissionButton from 'indico/modules/events/editing/editing/EditableSubmissionButton';
+import PaperSubmissionButton from 'indico/modules/events/papers/components/PaperSubmissionButton';
 import {IButton, ICSCalendarLink} from 'indico/react/components';
 import {Translate} from 'indico/react/i18n';
 import {indicoAxios, handleAxiosError} from 'indico/utils/axios';
@@ -30,6 +31,27 @@ import PublicationButton from './PublicationButton';
 import PublicationSwitch from './PublicationSwitch';
 
 document.addEventListener('DOMContentLoaded', () => {
+  customElements.define(
+    'ind-paper-submission-button',
+    class extends HTMLElement {
+      connectedCallback() {
+        ReactDOM.render(
+          <PaperSubmissionButton
+            eventId={this.getAttribute('event-id')}
+            contributionId={this.getAttribute('contribution-id')}
+            contributionCode={this.getAttribute('contribution-code')}
+            uploadableFiles={JSON.parse(this.getAttribute('uploadable-files')) || []}
+          />,
+          this
+        );
+      }
+
+      disconnectedCallback() {
+        ReactDOM.unmountComponentAtNode(this);
+      }
+    }
+  );
+
   const calendarContainer = document.querySelector('#contribution-calendar-link');
 
   if (!calendarContainer) {
@@ -390,8 +412,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   global.setupEventDisplayContributionList = function setupEventDisplayContributionList() {
     const filterConfig = {
-      itemHandle: 'div.contribution-row',
-      listItems: '#display-contribution-list div.contribution-row',
+      itemHandle: '.contribution-row',
+      listItems: '#display-contribution-list .contribution-row',
       term: '#search-input',
       state: '#filtering-state',
       placeholder: '#filter-placeholder',

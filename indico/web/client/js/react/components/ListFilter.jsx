@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -13,6 +13,8 @@ import {Icon, Input, Dropdown, Label} from 'semantic-ui-react';
 import {Translate} from 'indico/react/i18n';
 
 import './ListFilter.module.scss';
+
+const OPTIONS_SEARCH_THRESHOLD = 10;
 
 const optionSchema = PropTypes.shape({
   value: PropTypes.string.isRequired,
@@ -50,10 +52,12 @@ export default function ListFilter({
   onChangeFilters,
   onChangeSearchText,
   onChangeList,
+  placeholder,
 }) {
   const [internalFilters, setInternalFilters] = useState({});
   const [internalSearchText, setInternalSearchText] = useState('');
   const [openSubmenu, setOpenSubmenu] = useState(-1);
+  const [optionSearchText, setOptionSearchText] = useState('');
   const filters = onChangeFilters ? externalFilters : internalFilters;
   const searchText = onChangeSearchText ? externalSearchText : internalSearchText;
   const optionsMap = new Map(filterOptions.map(o => [o.key, o]));
@@ -80,7 +84,9 @@ export default function ListFilter({
   };
 
   const setFilters = value => {
-    localStorage.setItem(name, JSON.stringify(value));
+    if (name) {
+      localStorage.setItem(name, JSON.stringify(value));
+    }
     if (onChangeFilters) {
       onChangeFilters(value);
       return;
@@ -131,6 +137,9 @@ export default function ListFilter({
 
   // get filters from the local storage
   useEffect(() => {
+    if (!name) {
+      return;
+    }
     const storedFilters = JSON.parse(localStorage.getItem(name)) || {};
     setFilters(_.pickBy(storedFilters, (__, key) => optionsMap.has(key)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,39 +184,51 @@ export default function ListFilter({
             <Dropdown.Item text={Translate.string('No filters were added yet')} disabled />
           )}
           <Dropdown.Divider />
-          {_.sortBy(filterOptions, 'text').map(({key, text: filterText, options}) => (
-            <Dropdown
-              key={key}
-              scrolling
-              icon={null}
-              className="item"
-              direction="right"
-              onOpen={() => setOpenSubmenu(key)}
-              onBlur={evt => evt.stopPropagation()}
-              open={openSubmenu === key}
-              disabled={options.length === 0}
-              trigger={<Dropdown.Item text={filterText} icon="plus" />}
-            >
-              <Dropdown.Menu>
-                {_.sortBy(
-                  options.filter(o => !o.exclusive),
-                  'text'
-                ).map(({value: option, text, color}) => (
-                  <Dropdown.Item
-                    key={option}
-                    value={option}
-                    text={text}
-                    label={getLabelOpts(color)}
-                    active={option in (filters[key] || {})}
-                    onClick={(e, {value}) => toggleFilter(key, value)}
-                  />
-                ))}
-                {!!options.find(o => o.exclusive) && !!options.find(o => !o.exclusive) && (
-                  <Dropdown.Divider />
-                )}
-                {options
-                  .filter(o => o.exclusive)
-                  .map(({value: option, text, color}) => (
+          {_.sortBy(filterOptions, 'text').map(({key, text: filterText, options}) => {
+            const isOpen = openSubmenu === key;
+            const filteredOptions = isOpen
+              ? options.filter(
+                  ({text}) =>
+                    !optionSearchText || text.toLowerCase().includes(optionSearchText.toLowerCase())
+                )
+              : [];
+            return (
+              <Dropdown
+                key={key}
+                scrolling
+                icon={null}
+                className="item"
+                direction="left"
+                onOpen={() => {
+                  setOpenSubmenu(key);
+                  setOptionSearchText('');
+                }}
+                onBlur={evt => evt.stopPropagation()}
+                open={isOpen}
+                disabled={options.length === 0}
+                trigger={<Dropdown.Item text={filterText} icon="plus" />}
+              >
+                <Dropdown.Menu>
+                  {options.length > OPTIONS_SEARCH_THRESHOLD && (
+                    <div
+                      styleName="options-search"
+                      onClick={evt => evt.stopPropagation()}
+                      onMouseDown={evt => evt.stopPropagation()}
+                    >
+                      <Input
+                        icon="search"
+                        placeholder={Translate.string('Search options...')}
+                        value={optionSearchText}
+                        onChange={(e, {value}) => setOptionSearchText(value)}
+                        onKeyDown={evt => evt.stopPropagation()}
+                        onKeyUp={evt => evt.stopPropagation()}
+                      />
+                    </div>
+                  )}
+                  {_.sortBy(
+                    filteredOptions.filter(o => !o.exclusive),
+                    'text'
+                  ).map(({value: option, text, color}) => (
                     <Dropdown.Item
                       key={option}
                       value={option}
@@ -217,14 +238,29 @@ export default function ListFilter({
                       onClick={(e, {value}) => toggleFilter(key, value)}
                     />
                   ))}
-              </Dropdown.Menu>
-            </Dropdown>
-          ))}
+                  {!!filteredOptions.find(o => o.exclusive) &&
+                    !!filteredOptions.find(o => !o.exclusive) && <Dropdown.Divider />}
+                  {filteredOptions
+                    .filter(o => o.exclusive)
+                    .map(({value: option, text, color}) => (
+                      <Dropdown.Item
+                        key={option}
+                        value={option}
+                        text={text}
+                        label={getLabelOpts(color)}
+                        active={option in (filters[key] || {})}
+                        onClick={(e, {value}) => toggleFilter(key, value)}
+                      />
+                    ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            );
+          })}
         </Dropdown.Menu>
       </Dropdown>
       <Input
         autoFocus
-        placeholder={Translate.string('Enter #id or search string')}
+        placeholder={placeholder || Translate.string('Enter #id or search string')}
         onChange={(e, {value}) => setSearchText(value)}
         value={searchText}
         style={{width: '14em'}}
@@ -243,7 +279,7 @@ export default function ListFilter({
 }
 
 ListFilter.propTypes = {
-  name: PropTypes.string.isRequired,
+  name: PropTypes.string,
   list: PropTypes.array.isRequired,
   filters: PropTypes.objectOf(PropTypes.objectOf(optionSchema)),
   searchText: PropTypes.string,
@@ -259,10 +295,12 @@ ListFilter.propTypes = {
   searchableFields: PropTypes.func,
   onChangeList: PropTypes.func,
   onChangeFilters: PropTypes.func,
-  onChangeSearchText: PropTypes.string,
+  onChangeSearchText: PropTypes.func,
+  placeholder: PropTypes.string,
 };
 
 ListFilter.defaultProps = {
+  name: null,
   filters: undefined,
   searchText: undefined,
   searchableId: undefined,
@@ -270,4 +308,5 @@ ListFilter.defaultProps = {
   onChangeList: undefined,
   onChangeFilters: undefined,
   onChangeSearchText: undefined,
+  placeholder: undefined,
 };

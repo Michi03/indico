@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -41,7 +41,7 @@ class RHAPIEventSessionBlocks(RHProtectedEventBase):
             {
                 'id': sb.id,
                 'start_date': sb.start_dt.astimezone(tzinfo).date().isoformat(),
-                'time': format_interval(sb.start_dt.astimezone(tzinfo), sb.end_dt.astimezone(tzinfo), 'Hm'),
+                'time': format_interval(sb.start_dt.astimezone(tzinfo), sb.end_dt.astimezone(tzinfo), skeleton='Hm'),
                 'full_title': sb.full_title,
             }
             for sb in blocks

@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -24,7 +24,7 @@ from indico.modules.events.contributions.models.subcontributions import SubContr
 from indico.modules.events.sessions import Session
 from indico.modules.events.settings import unlisted_events_settings
 from indico.modules.events.timetable.models.entries import TimetableEntry, TimetableEntryType
-from indico.util.caching import memoize_redis
+from indico.util.caching import global_lock, memoize_redis
 from indico.util.date_time import now_utc
 from indico.util.i18n import _, ngettext
 from indico.util.iterables import materialize_iterable
@@ -112,6 +112,7 @@ def get_attachment_count(category_id=None):
 
 
 @memoize_redis(86400)
+@global_lock(timeout=300, use_args=False)
 def get_category_stats(category_id=None):
     """Get category statistics.
 
@@ -241,3 +242,34 @@ def can_create_unlisted_events(user):
         return True
     else:
         return unlisted_events_settings.acls.contains_user('authorized_creators', user)
+
+
+def can_create_events_explicit(user):
+    """Check if the user has explicit event creation permissions somewhere.
+
+    For performance reasons this only checks local groups and roles, but
+    ignores any membership in remote (multipass) groups from LDAP or similar
+    provides. It also does not take into account any permissions granted
+    through plugins that affect the regular user permission checks.
+    """
+    from indico.modules.categories.models.categories import Category
+    from indico.modules.categories.models.principals import CategoryPrincipal
+    from indico.modules.categories.models.roles import CategoryRole
+    from indico.modules.groups.models.groups import LocalGroup
+    from indico.modules.users.models.users import User
+
+    return (
+        CategoryPrincipal.query.join(Category)
+        .filter(
+            ~Category.is_deleted,
+            CategoryPrincipal.has_management_permission('create'),
+        )
+        .filter(
+            db.or_(
+                CategoryPrincipal.user == user,
+                CategoryPrincipal.local_group.has(LocalGroup.members.any(User.id == user.id)),
+                CategoryPrincipal.category_role.has(CategoryRole.members.any(User.id == user.id)),
+            )
+        )
+        .has_rows()
+    )

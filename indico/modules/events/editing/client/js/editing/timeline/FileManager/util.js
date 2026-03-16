@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -42,8 +42,7 @@ export const fileTypePropTypes = {
 
 export async function uploadExistingFile(url, file) {
   try {
-    const {data} = await indicoAxios.post(url, snakifyKeys(file));
-    return data;
+    return await indicoAxios.post(url, snakifyKeys(file));
   } catch (e) {
     handleAxiosError(e);
     return null;

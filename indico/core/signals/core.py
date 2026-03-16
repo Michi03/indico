@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -115,4 +115,9 @@ get_search_providers = _signals.signal('get-search-providers', '''
 Expected to return exactly one `IndicoSearchProvider` subclass. No more than one
 handler for this signal may return one as using multiple search providers at the
 same time is not possible.
+''')
+
+get_csp_script_sources = _signals.signal('get-csp-script-sources', '''
+Return additional values for the `script-src` CSP, in case additional (external)
+hosts need to be added.
 ''')

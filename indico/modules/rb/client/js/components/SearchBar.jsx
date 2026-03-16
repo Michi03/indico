@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -23,10 +23,12 @@ class SearchBar extends React.Component {
     actions: PropTypes.exact({
       setFilterParameter: PropTypes.func.isRequired,
     }).isRequired,
+    wide: PropTypes.bool,
   };
 
   static defaultProps = {
     disabled: false,
+    wide: false,
   };
 
   updateTextFilter = filterValue => {
@@ -40,6 +42,7 @@ class SearchBar extends React.Component {
     const {
       filters: {text},
       disabled,
+      wide,
     } = this.props;
     let inputIcon;
 
@@ -50,7 +53,7 @@ class SearchBar extends React.Component {
     }
 
     return (
-      <div styleName="room-filters">
+      <div styleName={`room-filters ${wide ? 'wide' : ''}`}>
         <DebounceInput
           element={Input}
           size="large"

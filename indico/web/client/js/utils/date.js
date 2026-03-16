@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -191,10 +191,33 @@ export function toDateString(date) {
 }
 
 export function toOptionalDate(dateString) {
-  const date = new Date(dateString);
-  if (!date.getTime()) {
+  /**
+   * This function parses a date string into a Date object.
+   * Since the string is representing a date, but Date will use the
+   * local timezone when creating the object, we need to ensure
+   * there are no time shifts due to timezone differences.
+   */
+  if (!dateString) {
     return;
   }
+
+  if (dateString instanceof Date) {
+    return dateString;
+  }
+
+  const formats = [
+    'YYYY-MM-DD', // ISO date format
+    'ddd MMM DD YYYY', // toDateString() format
+  ];
+
+  // Parses the date string with each format, returning the first valid one
+  const parsedDate = formats.map(format => moment(dateString, format)).find(date => date.isValid());
+
+  if (!parsedDate) {
+    return;
+  }
+
+  const date = new Date(parsedDate.year(), parsedDate.month(), parsedDate.date());
   date.setHours(0, 0, 0, 0);
   return date;
 }
@@ -285,75 +308,5 @@ export class OpenDateRange extends DateRange {
     const start = this.start ?? -Infinity;
     const end = this.end ?? Infinity;
     return new Date(Math.min(end, Math.max(start, date)));
-  }
-}
-
-/**
- * Sparse date range
- *
- * Takes multiple DateRange objects and provides a DateRange interface
- * that tests against all provided range. This allows us to have sparse
- * ranges.
- */
-export class SparseDateRange {
-  constructor(...ranges) {
-    console.assert(ranges.every(r => r instanceof DateRange));
-    this.ranges = ranges;
-  }
-
-  get startDate() {
-    if (this.ranges.length) {
-      return new Date(Math.min(...this.ranges.map(r => r.startDate).filter(Boolean)));
-    }
-    return undefined;
-  }
-
-  get endDate() {
-    if (this.ranges.length) {
-      return new Date(Math.max(...this.ranges.map(r => r.endDate).filter(Boolean)));
-    }
-    return undefined;
-  }
-
-  get isInvalid() {
-    // Multi-range can never be invalid
-    return false;
-  }
-
-  starsWith(date) {
-    return this.ranges.any(r => r.startsWith(date));
-  }
-
-  endsWith(date) {
-    return this.range.any(r => r.endsWith(date));
-  }
-
-  includes(date) {
-    return this.ranges.some(r => r.includes(date));
-  }
-
-  clamp(date) {
-    // Unlike clamp in other ranges, we are dealing with a sparse range,
-    // so the date needs to fit within the closest one. We therefore first
-    // need to identify which range is the closest.
-    let minDist = Infinity;
-    let closestRange;
-
-    if (isNaN(date)) {
-      return date;
-    }
-
-    for (const range of this.ranges) {
-      if (range.includes(date)) {
-        // if it's already in the range, stop
-        return date;
-      }
-      const dist = Math.min(Math.abs(range.start - date), Math.abs(range.end - date));
-      if (dist < minDist) {
-        minDist = dist;
-        closestRange = range;
-      }
-    }
-    return closestRange.clamp(date);
   }
 }

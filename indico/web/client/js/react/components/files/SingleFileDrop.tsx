@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -234,7 +234,10 @@ function SingleFileDrop<Value = unknown>({
       dropzone={dropzone}
       file={file}
       fileAction={fileAction}
-      errors={[...(dropState.errors || []), ...(validationError ? [validationError] : [])]}
+      errors={[
+        ...(dropState.errors || []),
+        ...(dropState.state !== DropState.processing && validationError ? [validationError] : []),
+      ]}
     />
   );
 }

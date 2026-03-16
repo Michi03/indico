@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -42,7 +42,8 @@ import './items.module.scss';
 import './Search.module.scss';
 
 const InitialFormValuesContext = React.createContext({});
-export const UserSearchTokenContext = React.createContext(null);
+export const UserSearchTokenContext = (window._UserSearchTokenContext =
+  window._UserSearchTokenContext || React.createContext(null));
 
 const searchFactory = config => {
   const {

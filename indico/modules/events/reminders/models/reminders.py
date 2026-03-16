@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -419,6 +419,10 @@ class EventReminder(RenderModeMixin, db.Model):
                 email = self._make_email(sender, recipient.email, html_email_tpl or text_email_tpl, attachments,
                                          html=bool(html_email_tpl), alternatives=alternatives)
             send_email(email, self.event, 'Reminder', self.creator, log_metadata={'reminder_id': self.id})
+
+    def log(self, *args, **kwargs):
+        """Log with prefilled metadata for the event reminder."""
+        return self.event.log(*args, meta={'reminder_id': self.id}, **kwargs)
 
     def __repr__(self):
         return format_repr(self, 'id', 'event_id', 'scheduled_dt', is_sent=False)

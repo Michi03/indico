@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -83,7 +83,7 @@ class ManageAttachmentsMixin:
 class AddAttachmentEditorMixin:
     """Upload image attachment from editor."""
 
-    @use_kwargs({'upload': fields.Field(required=True)}, location='files')
+    @use_kwargs({'upload': fields.Raw(required=True)}, location='files')
     def _process(self, upload):
         if not validate_upload_file_size(upload):
             raise UnprocessableEntity

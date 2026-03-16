@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -30,7 +30,7 @@ class UploadFileMixin:
     to specify how the file gets stored.
     """
 
-    @use_kwargs({'file': fields.Field(required=True)}, location='files')
+    @use_kwargs({'file': fields.Raw(required=True)}, location='files')
     def _process(self, file):
         if not validate_upload_file_size(file):
             abort(422, messages={'file': [_('The uploaded file is too large')]})

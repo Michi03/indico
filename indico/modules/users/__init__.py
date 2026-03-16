@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -47,6 +47,7 @@ user_settings = UserSettingsProxy('users', {
 
 user_management_settings = SettingsProxy('user_management', {
     'notify_account_creation': False,
+    'notify_account_creation_emails': [],
     'email_blacklist': [],
     'allow_personal_tokens': True,
     'mandatory_fields_account_request': [],
@@ -64,6 +65,8 @@ def _extend_admin_menu(sender, **kwargs):
     if session.user.is_admin:
         yield SideMenuItem('admins', _('Admins'), url_for('users.admins'), section='user_management')
         yield SideMenuItem('users', _('Users'), url_for('users.users_admin'), section='user_management')
+        yield SideMenuItem('affiliations', _('Affiliations'), url_for('users.affiliations_dashboard'),
+                           section='user_management')
 
 
 @signals.menu.items.connect_via('user-profile-sidemenu')
@@ -96,12 +99,18 @@ def _registration_requested(req, **kwargs):
 @signals.users.registered.connect
 def _registered(user, identity, from_moderation, **kwargs):
     from indico.modules.users.util import get_admin_emails
-    if (from_moderation or identity is None or identity.provider != 'indico' or
-            not user_management_settings.get('notify_account_creation')):
+    if from_moderation or identity is None or identity.provider != 'indico':
         return
+
+    recipients = set(user_management_settings.get('notify_account_creation_emails'))
+    if user_management_settings.get('notify_account_creation'):
+        recipients.update(get_admin_emails())
+    if not recipients:
+        return
+
     with force_locale(None):
         tpl = get_template_module('users/emails/profile_registered_admins.txt', user=user)
-        email = make_email(get_admin_emails(), template=tpl)
+        email = make_email(recipients, template=tpl)
     send_email(email)
 
 

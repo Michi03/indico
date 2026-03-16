@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -642,6 +642,7 @@ class SetupWizard:
             'TEMP_DIR = {!r}'.format(os.path.join(self.data_root_path, 'tmp')),
             'LOG_DIR = {!r}'.format(os.path.join(self.data_root_path, 'log')),
             'LOCAL_PASSWORD_MIN_LENGTH = 15',  # use NIST recommendation for new installations
+            'CSP_ENABLED = True',  # TODO remove once we make this the default for all installations
             f'STORAGE_BACKENDS = {storage_backends!r}',
             "ATTACHMENT_STORAGE = 'default'",
             '',

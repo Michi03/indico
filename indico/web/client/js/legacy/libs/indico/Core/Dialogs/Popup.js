@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -67,6 +67,7 @@ type(
           this._getDialogOptions()
         );
         this.canvas = $('<div/>').dialog(opts);
+        this.canvas.attr('aria-modal', 'true');
       }
       if (!this.dialogElement) {
         this.dialogElement = this.canvas.dialog('widget');
@@ -106,6 +107,11 @@ type(
         if (!this.title) {
           this.dialogElement.find('.ui-dialog-titlebar').hide();
         }
+      }
+
+      var titleId = this.dialogElement.find('.ui-dialog-title').attr('id');
+      if (titleId) {
+        this.canvas.attr('aria-labelledby', titleId);
       }
 
       if (this.postDraw() === true) {

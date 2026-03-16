@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -184,5 +184,6 @@ def serialize_log_entry(entry, tzinfo):
         'user': {
             'fullName': entry.user.full_name if entry.user else None,
             'avatarURL': entry.user.avatar_url if entry.user else None
-        }
+        },
+        'detailsLink': entry.object_details
     }

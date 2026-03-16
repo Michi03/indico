@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -8,10 +8,11 @@
 import inspect
 import os
 import re
+import secrets
 from importlib import import_module
 from urllib.parse import urlsplit
 
-from flask import Blueprint, current_app, g, redirect, request
+from flask import Blueprint, current_app, g, has_request_context, redirect, request
 from flask import send_file as _send_file
 from flask import url_for as _url_for
 from flask.helpers import get_root_path
@@ -133,7 +134,7 @@ def make_compat_redirect_func(blueprint, endpoint, view_func=None, view_args_con
             view_args['event_id'] = mapping.event_id
         try:
             target = _url_for('{}.{}'.format(getattr(blueprint, 'name', blueprint), endpoint), **view_args)
-        except (BuildError, ValueError):
+        except (BuildError, ValueError, TypeError):
             raise NotFound
         return redirect(target, 302 if current_app.debug else 301)
     return _redirect
@@ -256,9 +257,28 @@ def should_inline_file(mimetype, inline=None, *, safe=True):
         inline = False
     if _is_office_mimetype(mimetype):
         inline = False
-    if safe and mimetype in ('text/html', 'image/svg+xml'):
+    if safe and (mimetype == 'text/html' or mimetype.endswith('+xml')):
         inline = False
     return inline
+
+
+def get_safe_file_csp():
+    """Return a strict CSP header suitable for serving arbitrary files.
+
+    This can be used e.g. by plugins that implement file storage backends
+    where `send_file` below is not used.
+    """
+    csp_directives = [
+        "default-src 'none'",
+        # img-src self is needed due to https://bugzilla.mozilla.org/show_bug.cgi?id=1735994
+        "img-src 'self'",
+        # Chrome cannot play videos using its builtin player when accessing a video URL directly
+        # since it's simply an HTML page with a <video> tag pointing to the same URL. Due to some
+        # of these URLs containing special characters that would not work in headers, we just stick
+        # with 'self'...
+        "media-src 'self'",
+    ]
+    return '; '.join(csp_directives)
 
 
 def send_file(name, path_or_fd, mimetype, *, last_modified=None, no_cache=True, inline=None,
@@ -293,7 +313,7 @@ def send_file(name, path_or_fd, mimetype, *, last_modified=None, no_cache=True, 
             raise
         raise NotFound(f'File not found: {path_or_fd}')
     if safe:
-        rv.headers.add('Content-Security-Policy', "script-src 'self'; object-src 'self'")
+        rv.headers.add('Content-Security-Policy', get_safe_file_csp())
     if not conditional and no_cache:
         del rv.expires
         del rv.cache_control.max_age
@@ -377,3 +397,16 @@ class XAccelMiddleware:
         for base, uri in self.mapping:
             if path.startswith(str(base + '/')):
                 return uri + path[len(base):]
+
+
+def get_csp_nonce(*, init=True):
+    if not has_request_context():
+        return None
+    if not init or 'csp_nonce' in g:
+        return g.get('csp_nonce')
+    # I think this is safe because custom headers cannot be sent in a regular request from a browser,
+    # so you cannot combine this with HTML injection to get XSS. Being able to override the nonce is
+    # necessary due to the ajax-form stuff we have, since custom fields often come with JS code to
+    # initialize them, which of course needs to match the page's current nonce instead of a new one.
+    # This could be avoided by using custom elements for all these fields instead of a JS function call...
+    return g.setdefault('csp_nonce', request.headers.get('X-Indico-CSP-Nonce') or secrets.token_urlsafe(32))
