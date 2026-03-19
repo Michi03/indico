@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -140,7 +140,7 @@ def get_linkable_regforms(template):
 def get_printable_event_templates(regform):
     """Return all templates that can be used to print badges/tickets for the given registration form.
 
-    A template can be used if it is either not linked to anything or linked to the current registation form.
+    A template can be used if it is either not linked to anything or linked to the current registration form.
     """
     return (
         DesignerTemplate.query

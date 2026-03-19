@@ -1,19 +1,12 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
 import CustomElementBase from 'indico/custom_elements/_base';
-import {
-  DateRange,
-  OpenDateRange,
-  SparseDateRange,
-  getToday,
-  isSameDate,
-  toDateString,
-} from 'indico/utils/date';
+import {DateRange, OpenDateRange, getToday, isSameDate, toDateString} from 'indico/utils/date';
 import {formatDate} from 'indico/utils/date_format';
 import {createDateParser} from 'indico/utils/date_parser';
 import {getWeekInfoForLocale, getFirstDayOfWeek, getWeekdayNames} from 'indico/utils/l10n';
@@ -65,7 +58,8 @@ CustomElementBase.define(
       const indDatePicker = this;
       const id = `date-picker-${this.constructor.lastId++}`;
       const input = this.querySelector('input');
-      const openCalendarButton = this.querySelector('button');
+      const openCalendarButton = this.querySelector('button[data-calendar-trigger]');
+      const clearButton = this.querySelector('button[value=clear]');
       const formatDescription = this.querySelector('[data-format]');
       const indCalendar = this.querySelector('ind-calendar');
 
@@ -77,6 +71,7 @@ CustomElementBase.define(
       input.setAttribute('aria-describedby', formatDescription.id);
 
       updateRange();
+      updateClearButtonVisibility();
 
       // This property is defined here rather than in the class because it
       // relies on the parseDate() function created in this scope.
@@ -110,6 +105,12 @@ CustomElementBase.define(
       });
       input.addEventListener('input', () => {
         indCalendar.rangeStart = indCalendar.rangeEnd = toDateString(parseDate(this.value));
+        updateClearButtonVisibility();
+      });
+      clearButton?.addEventListener('click', () => {
+        CustomElementBase.setValue(input, '');
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+        input.focus();
       });
       this.addEventListener('x-attrchange.min', updateRange);
       this.addEventListener('x-attrchange.max', updateRange);
@@ -126,6 +127,12 @@ CustomElementBase.define(
         indCalendar.setAllowableSelectionRange(
           new OpenDateRange(indDatePicker.min, indDatePicker.max)
         );
+      }
+
+      function updateClearButtonVisibility() {
+        if (clearButton) {
+          clearButton.hidden = !input.value;
+        }
       }
     }
   }
@@ -183,10 +190,6 @@ CustomElementBase.define(
       return new OpenDateRange(this.rangeEndMin, this.rangeEndMax);
     }
 
-    get combinedRange() {
-      return new SparseDateRange(this.startRange, this.endRange);
-    }
-
     setup() {
       const indDateRangePicker = this;
       const id = `date-range-picker-${this.constructor.lastId++}`;
@@ -195,6 +198,7 @@ CustomElementBase.define(
       const rangeEndInput = this.querySelector('input[data-range-end]');
       const calendarTriggerLeft = this.querySelector('[data-calendar-trigger=left]');
       const calendarTriggerRight = this.querySelector('[data-calendar-trigger=right]');
+      const clearButton = this.querySelector('button[value=clear]');
       const formatDescription = this.querySelector('[data-format]');
       const indCalendar = this.querySelector('ind-calendar');
 
@@ -218,6 +222,7 @@ CustomElementBase.define(
       rangeStartInput.defaultValue = formatDate(this.format, this.rangeStart);
       rangeEndInput.defaultValue = formatDate(this.format, this.rangeEnd);
       updateSelectionLimits();
+      updateClearButtonVisibility();
 
       formatDescription.id = `${id}-format`;
       rangeStartInput.setAttribute('aria-describedby', formatDescription.id);
@@ -252,11 +257,20 @@ CustomElementBase.define(
         const date = parseDate(rangeStartInput.value);
         indCalendar.rangeStart = date;
         selection = selection.copy({left: date});
+        updateClearButtonVisibility();
       });
       rangeEndInput.addEventListener('input', () => {
         const date = parseDate(rangeEndInput.value);
         indCalendar.rangeEnd = date;
         selection = selection.copy({right: date});
+        updateClearButtonVisibility();
+      });
+      clearButton?.addEventListener('click', () => {
+        setNativeInputValue(rangeStartInput, '');
+        setNativeInputValue(rangeEndInput, '');
+        rangeStartInput.dispatchEvent(new Event('input', {bubbles: true}));
+        rangeEndInput.dispatchEvent(new Event('change', {bubbles: true}));
+        rangeStartInput.focus();
       });
       rangeStartInput.addEventListener('keydown', handleAltDownToOpen);
       rangeEndInput.addEventListener('keydown', handleAltDownToOpen);
@@ -315,6 +329,12 @@ CustomElementBase.define(
       function handleAltDownToOpen(evt) {
         if (evt.code === 'ArrowDown' && evt.altKey) {
           openDialog(indCalendar, indDateRangePicker);
+        }
+      }
+
+      function updateClearButtonVisibility() {
+        if (clearButton) {
+          clearButton.hidden = !rangeStartInput.value && !rangeEndInput.value;
         }
       }
     }

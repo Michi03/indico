@@ -1,11 +1,16 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
 @use 'base' as *;
+@use 'design_system';
+
+.contrib-search-label {
+  @extend %visually-hidden;
+}
 
 .author-info {
   table-layout: auto;
@@ -181,12 +186,19 @@
   }
 }
 
+.contribution-list-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 .contribution-list,
 .track-review-list {
   @include font-family-modern-body();
 
   .contribution-row,
   .track-review-row {
+    position: relative;
     padding: 0 10px;
     border-left: 3px solid $pastel-gray;
     margin-bottom: 1em;
@@ -202,7 +214,7 @@
 
     .description {
       position: relative;
-      color: $dark-gray;
+      color: var(--text-secondary-color);
       max-height: 4.2em;
       overflow: hidden;
 
@@ -215,6 +227,25 @@
         position: absolute;
         background: linear-gradient(transparent 0.4em, white 4.2em);
       }
+    }
+
+    .description-link {
+      position: absolute;
+      inset: 0;
+
+      &:focus-visible {
+        outline: 2px solid $blue;
+        outline-offset: -2px;
+      }
+    }
+
+    .description-link-text {
+      @extend %visually-hidden;
+    }
+
+    .contrib-session a {
+      position: relative;
+      z-index: 1;
     }
 
     &:hover {
@@ -245,13 +276,13 @@
 .contrib-type {
   margin: 6px 3px 0 0;
   padding: 0.5em;
-  color: $light-gray;
+  color: white;
   background-color: $dark-blue;
 }
 
 .contrib-track {
-  background: $dark-gray;
-  color: $light-blue;
+  background: var(--text-secondary-color);
+  color: white;
 }
 
 .contrib-session {

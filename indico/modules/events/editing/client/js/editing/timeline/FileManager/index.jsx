@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -108,7 +108,7 @@ export function Dropzone({
   return (
     <div {...getRootProps()}>
       <input {...getInputProps()} />
-      <div styleName="dropzone" className={isDragActive ? 'active' : ''}>
+      <div styleName="dropzone" className={`file-manager-dropzone ${isDragActive ? 'active' : ''}`}>
         <Icon color="grey" size="big" name={showNewFileIcon ? 'plus circle' : 'exchange'} />
       </div>
     </div>
@@ -151,7 +151,7 @@ function FileType({
   };
 
   return (
-    <div styleName="file-type">
+    <div styleName="file-type" className="file-manager-file-type">
       <h3>
         {fileType.name}
         {fileType.required && (
@@ -277,7 +277,11 @@ FileRequirements.propTypes = {
   fileType: PropTypes.shape(fileTypePropTypes).isRequired,
 };
 
+// XXX this export only exists for the tests, DO NOT use the component outside final-form, unless
+// you know what you're doing (you need to pass the proper `value` to avoid onChange being called
+// over and over)
 export default function FileManager({
+  value,
   onChange,
   uploadURL,
   uploadExistingURL,
@@ -296,7 +300,6 @@ export default function FileManager({
   const [state, dispatch] = useReducer(reducer, {
     fileTypes: _fileTypes,
     uploads: {},
-    isDirty: false,
   });
 
   useEffect(() => {
@@ -316,11 +319,11 @@ export default function FileManager({
   }, [pristine, _fileTypes, state]);
 
   useEffect(() => {
-    if (state.isDirty) {
-      onChange(getFiles(state));
-      dispatch(actions.clearDirty());
+    const newValue = getFiles(state);
+    if (!_.isEqual(newValue, value)) {
+      onChange(newValue);
     }
-  }, [onChange, state]);
+  }, [onChange, state, value]);
 
   const uploading = isUploading(state);
   const validationError = getValidationError(state);
@@ -372,6 +375,7 @@ FileManager.propTypes = {
   uploadExistingURL: PropTypes.string,
   fileTypes: PropTypes.arrayOf(PropTypes.shape(fileTypePropTypes)).isRequired,
   files: PropTypes.arrayOf(PropTypes.shape(filePropTypes)),
+  value: PropTypes.object.isRequired,
   onChange: PropTypes.func.isRequired,
   finalFieldName: PropTypes.string,
   pristine: PropTypes.bool,
@@ -391,11 +395,11 @@ FileManager.defaultProps = {
 export function FinalFileManager({
   name,
   uploadURL,
-  uploadExistingURL,
+  uploadExistingURL = null,
   fileTypes,
-  files,
-  mustChange,
-  uploadableFiles,
+  files = [],
+  mustChange = false,
+  uploadableFiles = [],
   ...rest
 }) {
   // We do not use FinalField here since the file manager is more "standalone"
@@ -404,6 +408,7 @@ export function FinalFileManager({
     <Field name={name} isEqual={_.isEqual} format={v => v} parse={v => v} {...rest}>
       {({input, meta: {pristine}}) => (
         <FileManager
+          value={input.value}
           onChange={input.onChange}
           uploadURL={uploadURL}
           uploadExistingURL={uploadExistingURL}
@@ -427,11 +432,4 @@ FinalFileManager.propTypes = {
   files: PropTypes.arrayOf(PropTypes.shape(filePropTypes)),
   mustChange: PropTypes.bool,
   uploadableFiles: PropTypes.arrayOf(PropTypes.shape(uploadablePropTypes)),
-};
-
-FinalFileManager.defaultProps = {
-  uploadExistingURL: null,
-  mustChange: false,
-  files: [],
-  uploadableFiles: [],
 };

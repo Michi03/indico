@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -56,6 +56,19 @@ def _merge_users(target, source, **kwargs):
 @signals.event_management.get_cloners.connect
 def _get_reminder_cloner(sender, **kwargs):
     return ReminderCloner
+
+
+@signals.core.get_placeholders.connect_via('event-reminder-email')
+def _get_event_reminder_placeholders(sender, recipient=None, event=None, **kwargs):
+    from indico.modules.events.placeholders import (EventLinkPlaceholder, EventStartDatePlaceholder,
+                                                    EventStartTimePlaceholder, EventTitlePlaceholder)
+    from indico.modules.events.reminders.placeholders import RecipientFirstNamePlaceholder, RecipientLastNamePlaceholder
+    yield RecipientFirstNamePlaceholder
+    yield RecipientLastNamePlaceholder
+    yield EventTitlePlaceholder
+    yield EventLinkPlaceholder
+    yield EventStartDatePlaceholder
+    yield EventStartTimePlaceholder
 
 
 class ReminderCloner(EventCloner):

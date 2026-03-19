@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -57,7 +57,7 @@ class RegistrationSettingsProxy(EventSettingsProxy):
             form_columns = self.get(event, 'participant_list_form_columns')
             if columns:
                 # The int values are automatically converted to unicode when saved
-                # as JSON. Do it explicitely so that it keeps working if the
+                # as JSON. Do it explicitly so that it keeps working if the
                 # behavior changes and makes sense with the code above.
                 form_columns[str(form.id)] = columns
             else:
@@ -76,4 +76,8 @@ event_badge_settings = EventSettingsProxy('badge', DEFAULT_BADGE_SETTINGS, conve
 
 event_wallet_settings = EventSettingsProxy('wallet', {
     'google_wallet_class_id': None,
+})
+
+event_registration_settings = EventSettingsProxy('registration', defaults={
+    'multi_forms_announcement': '',
 })

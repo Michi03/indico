@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -10,8 +10,8 @@ from flask import session
 
 class CaptchaPluginMixin:
     #: Whether overriding `validate_captcha` is required. Only set this to ``False`` if
-    #: your plugin customizes the build-in CAPTCHA or has some other type of CAPTCHA
-    #: that wants to re-use the default validation logic.
+    #: your plugin customizes the built-in CAPTCHA or has some other type of CAPTCHA
+    #: that wants to reuse the default validation logic.
     custom_captcha_validator = True
 
     def __init_subclass__(cls, **kwargs):

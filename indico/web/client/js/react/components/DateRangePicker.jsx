@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -34,6 +34,7 @@ export default function DateRangePicker({
   disabled,
   startDisabled,
   endDisabled,
+  required,
   onChange,
   onFocus,
   onBlur,
@@ -49,6 +50,7 @@ export default function DateRangePicker({
   }
   const startLocked = disabled || (value?.startDate && startDisabled);
   const endLocked = disabled || (value?.endDate && endDisabled);
+  const showClear = !required;
 
   if (min) {
     rangeStartMin = rangeEndMin = min;
@@ -135,6 +137,11 @@ export default function DateRangePicker({
         >
           <Translate as="span">Open a calendar</Translate>
         </button>
+        {showClear && (
+          <button type="button" className="clear" value="clear" onClick={markTouched}>
+            <Translate as="span">Clear</Translate>
+          </button>
+        )}
 
         <span className="date-format" data-format>
           <Translate>
@@ -162,6 +169,7 @@ DateRangePicker.propTypes = {
   disabled: PropTypes.bool,
   startDisabled: PropTypes.bool,
   endDisabled: PropTypes.bool,
+  required: PropTypes.bool,
   value: PropTypes.shape({
     startDate: PropTypes.string,
     endDate: PropTypes.string,
@@ -185,6 +193,7 @@ DateRangePicker.defaultProps = {
   disabled: false,
   startDisabled: false,
   endDisabled: false,
+  required: false,
   label: Translate.string('Select a date range'),
   rangeStartLabel: Translate.string('Start'),
   rangeEndLabel: Translate.string('End'),
@@ -197,7 +206,7 @@ DateRangePicker.defaultProps = {
   filter: undefined,
 };
 
-function validDate(key, required, invalidMessage, missingMessage) {
+export function validDate(key, required, invalidMessage, missingMessage) {
   return values => {
     const value = values[key];
     if (!value && required) {
@@ -210,12 +219,15 @@ function validDate(key, required, invalidMessage, missingMessage) {
   };
 }
 
-function validDateRange(min, max, key, message) {
+export function validDateRange(min, max, key, message) {
   const range = new DateRange(min, max);
   return values => {
-    const value = values[key];
+    let value = values[key];
     if (!value || value === INVALID) {
       return;
+    }
+    if (typeof value === 'string') {
+      value = fromISOLocalDate(value);
     }
     if (range.includes(value)) {
       return;

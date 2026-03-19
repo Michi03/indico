@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -15,6 +15,7 @@ from operator import attrgetter, itemgetter
 import requests
 from flask import render_template, session
 from PIL import Image
+from requests import RequestException
 from sqlalchemy.orm import contains_eager, joinedload, load_only, undefer
 from sqlalchemy.sql.expression import nullslast
 from werkzeug.http import http_date, parse_date
@@ -43,6 +44,7 @@ from indico.util.date_time import now_utc
 from indico.util.event import truncate_path
 from indico.util.fs import secure_filename
 from indico.util.i18n import _
+from indico.util.network import make_validate_request_url_hook, validate_request_url
 from indico.util.signals import make_interceptable
 from indico.util.string import crc32, remove_accents
 from indico.web.flask.util import send_file, url_for
@@ -408,7 +410,7 @@ def merge_users(source, target, force=False):
 
     if target.identities:
         # In case the target user has identities, make sure they aren't pending as
-        # otherwise logging in would fail (a pending user is not suppoed to have an
+        # otherwise logging in would fail (a pending user is not supposed to have an
         # identity)
         target.is_pending = False
 
@@ -516,20 +518,28 @@ def get_color_for_user_id(user_id: int | str):
         return user_colors[crc32(user_id) % len(user_colors)]
 
 
+class GravatarError(RuntimeError):
+    """Error class indicating a failure when retrieving Gravatar data."""
+
+
 def get_gravatar_for_user(user, identicon, size=256, lastmod=None):
     gravatar_url = f'https://www.gravatar.com/avatar/{hashlib.md5(user.email.lower().encode()).hexdigest()}'
     if identicon:
         params = {'d': 'identicon', 's': str(size), 'forcedefault': 'y'}
+        gravatar_type = 'Identicon'  # not translated on purpose
     else:
         params = {'d': 'mp', 's': str(size)}
+        gravatar_type = 'Gravatar'  # not translated on purpose
     headers = {'If-Modified-Since': lastmod} if lastmod is not None else {}
-    resp = requests.get(gravatar_url, params=params, headers=headers)
+    try:
+        resp = requests.get(gravatar_url, params=params, headers=headers, timeout=5)
+    except RequestException:
+        logger.exception(f'Could not retrieve {gravatar_type}')
+        raise GravatarError(_('Could not retrieve {gravatar_type}').format(gravatar_type=gravatar_type))
     if resp.status_code == 304:
         return None, resp.headers.get('Last-Modified')
     elif resp.status_code != 200:
-        # XXX: Identicon/Gravatar are names that should never be translated
-        raise RuntimeError(_('Could not retrieve {gravatar_type}')
-                           .format(gravatar_type=('Identicon' if identicon else 'Gravatar')))
+        raise GravatarError(_('Could not retrieve {gravatar_type}').format(gravatar_type=gravatar_type))
     pic = Image.open(BytesIO(resp.content))
     if pic.mode not in ('RGB', 'RGBA'):
         pic = pic.convert('RGB')
@@ -595,7 +605,8 @@ def get_mastodon_server_name(url):
         return None
 
     try:
-        resp = requests.get(f'{server_url}/api/v2/instance')
+        validate_request_url(server_url)
+        resp = requests.get(f'{server_url}/api/v2/instance', **make_validate_request_url_hook())
         resp.raise_for_status()
         data = resp.json()
     except (requests.RequestException, requests.JSONDecodeError):
@@ -655,6 +666,7 @@ def log_user_update(user, changes, *, from_sync=False, _extra_log_fields=None):
         'synced_fields': 'Synced fields',
         'first_name': {'title': 'First name', 'type': 'string'},
         'last_name': {'title': 'Last name', 'type': 'string'},
+        'email': {'title': 'Email address', 'type': 'string'},
         'address': 'Address',
         'phone': {'title': 'Phone', 'type': 'string'},
         'affiliation': {'title': 'Affiliation', 'type': 'string'},

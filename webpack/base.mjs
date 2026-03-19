@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2024 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -243,7 +243,7 @@ export function webpackDefaults(env, config, bundles, isPlugin = false) {
           test: /outdatedbrowser\/.+\.js$/,
           loader: 'babel-loader',
           options: {
-            // build JS targetting old browsers so they get the warning as well
+            // build JS targeting old browsers so they get the warning as well
             presets: [['@babel/preset-env', {targets: {browsers: ['last 5 years', 'ie > 6']}}]],
           },
         },

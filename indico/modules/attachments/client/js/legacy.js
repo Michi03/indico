@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -61,7 +61,7 @@ import {$T} from 'indico/utils/i18n';
             history.replaceState({}, document.title, pageURL);
             history.pushState({}, document.title, location.href + hash);
           }
-          const id = location.hash.split('#preview:')[1];
+          const id = parseInt(location.hash.split('#preview:')[1], 10);
           previewAttachment(id);
         }
       })
@@ -84,7 +84,7 @@ import {$T} from 'indico/utils/i18n';
         // a preview hash (since we ensure this in the initial/fake hashchange event on page load)
         history.back();
       } else {
-        // old browsers with no pushState support: the # wil stay which is a bit ugly,
+        // old browsers with no pushState support: the # will stay which is a bit ugly,
         // but let's not break history (we WILL "spam" history though, but that's what you
         // get when using ancient browsers)
         location.hash = '';

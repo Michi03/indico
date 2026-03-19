@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -430,6 +430,7 @@ class Event(SearchableTitleMixin, DescriptionMixin, LocationMixin, ProtectionMan
     # - move_requests (EventMoveRequest.event)
     # - note (EventNote.linked_event)
     # - paper_competences (PaperCompetence.event)
+    # - paper_file_types (PaperFileType.event)
     # - paper_review_questions (PaperReviewQuestion.event)
     # - paper_templates (PaperTemplate.event)
     # - persons (EventPerson.event)
@@ -686,7 +687,7 @@ class Event(SearchableTitleMixin, DescriptionMixin, LocationMixin, ProtectionMan
             # any event that starts on/after the specified date
             return self.start_dt >= from_dt
         elif to_dt is not None:
-            # any event that ends on/before the specifed date
+            # any event that ends on/before the specified date
             return self.end_dt <= to_dt
         else:
             return True
@@ -700,7 +701,7 @@ class Event(SearchableTitleMixin, DescriptionMixin, LocationMixin, ProtectionMan
             # any event that starts on/after the specified date
             return cls.start_dt >= from_dt
         elif to_dt is not None:
-            # any event that ends on/before the specifed date
+            # any event that ends on/before the specified date
             return cls.end_dt <= to_dt
         else:
             return True

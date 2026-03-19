@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -44,6 +44,11 @@ class EventSeries(db.Model):
 
     # relationship backrefs:
     # - events (Event.series)
+
+    def can_manage(self, user):
+        if not user:
+            return False
+        return all(evt.can_manage(user) for evt in self.events)
 
     def __repr__(self):
         return format_repr(self, 'id')

@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -14,7 +14,7 @@ import {selectors as roomsSelectors} from '../../common/rooms';
 import {selectors as userSelectors} from '../../common/user';
 
 const CALENDAR_FILTERS = ['myBookings', 'showInactive'];
-const LOCAL_FILTERS = ['hideUnused', 'onlyAuthorized'];
+const LOCAL_FILTERS = ['hideUnused', 'hideUsed', 'onlyAuthorized'];
 export const getFilters = ({calendar}) => calendar.filters;
 
 export const getRoomFilters = createSelector(

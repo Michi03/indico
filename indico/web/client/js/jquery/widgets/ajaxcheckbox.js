@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -12,7 +12,7 @@ import _ from 'lodash';
 
 (function($) {
   /*
-   * This provides an untility for checkboxes (usually switch widgets) which immediately
+   * This provides a utility for checkboxes (usually switch widgets) which immediately
    * save the state using an AJAX request. The checkbox is disabled during the AJAX request
    * to avoid the user from clicking multiple times and spamming unnecessary AJAX requests.
    *

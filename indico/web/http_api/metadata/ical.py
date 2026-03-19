@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -17,27 +17,6 @@ from pytz import timezone, utc
 from indico.core.config import config
 from indico.util.date_time import now_utc
 from indico.web.http_api.metadata.serializer import Serializer
-
-
-class vRecur(ical.vRecur):  # noqa: N801
-    """Fix vRecur so the frequency comes first."""
-
-    def ical(self):
-        # SequenceTypes
-        freq = self.types['FREQ'](self['FREQ']).ical()
-        result = [f'FREQ={freq}']
-        for key, vals in self.items():
-            if key == 'FREQ':
-                continue
-            typ = self.types[key]
-            if type(vals) not in ical.prop.SequenceTypes:
-                vals = [vals]
-            vals = ','.join(typ(val).ical() for val in vals)
-            result.append(f'{key}={vals}')
-        return ';'.join(result)
-
-
-ical.cal.types_factory['recur'] = vRecur
 
 
 def _deserialize_date(date_dict):

@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -34,19 +34,20 @@ from indico.util.string import format_email_with_name
 from indico.web.flask.templating import get_template_module
 
 
-def build_default_email_template(event, tpl_type):
+def build_default_email_template(event: Event, tpl_type: str) -> AbstractEmailTemplate:
     """
     Build a default e-mail template based on a notification type
     provided by the user.
     """
-    email = get_template_module(f'events/abstracts/emails/default_{tpl_type}_notification.txt')
-    return AbstractEmailTemplate(body=email.get_body(),
-                                 extra_cc_emails=[],
-                                 reply_to_address='',
-                                 subject=email.get_subject(),
-                                 include_authors=True,
-                                 include_submitter=True,
-                                 include_coauthors=True)
+    with event.force_event_locale():
+        email = get_template_module(f'events/abstracts/emails/default_{tpl_type}_notification.txt')
+        return AbstractEmailTemplate(body=email.get_body(),
+                                     extra_cc_emails=[],
+                                     reply_to_address='',
+                                     subject=email.get_subject(),
+                                     include_authors=True,
+                                     include_submitter=True,
+                                     include_coauthors=True)
 
 
 def _names_with_emails(person_links):
@@ -87,7 +88,10 @@ def generate_spreadsheet_from_abstracts(abstracts, static_item_ids, dynamic_item
                                   lambda x: x.accepted_contrib_type.name if x.accepted_contrib_type else None),
         'submitted_contrib_type': ('Submitted type',
                                    lambda x: x.submitted_contrib_type.name if x.submitted_contrib_type else None),
+        'review_count': ('Number of reviews', lambda x: len(x.reviews)),
         'score': ('Score', lambda x: round(x.score, 1) if x.score is not None else None),
+        'score_std': ('Score standard deviation',
+                      lambda x: round(x.score_std, 1) if x.score_std is not None else None),
         'submitted_dt': ('Submission date', lambda x: x.submitted_dt),
         'modified_dt': ('Modification date', lambda x: x.modified_dt or ''),
         'description': ('Content', lambda x: x.description),

@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -35,7 +35,7 @@ function mixinType(target, mixins) {
   var code = target.prototype;
   var mixs = target.mixins;
   iterate(mixins, function(mixinName) {
-    var mixinCode = eval(mixinName);
+    const mixinCode = window[mixinName];
     enumerate(mixinCode.prototype, function(value, key) {
       if (!exists(code[key]) || code[key] === Object.prototype[key]) {
         code[key] = value;

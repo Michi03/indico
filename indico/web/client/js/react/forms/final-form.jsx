@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -9,7 +9,7 @@ import {FORM_ERROR} from 'final-form';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
 import React, {useEffect} from 'react';
-import {Field, Form as FinalForm, useField} from 'react-final-form';
+import {Field, Form as FinalForm, FormSpy, useField} from 'react-final-form';
 import {Button, Form, Modal} from 'semantic-ui-react';
 
 import {FinalSubmitButton} from 'indico/react/forms';
@@ -237,7 +237,7 @@ FinalModalForm.propTypes = {
   validate: PropTypes.func,
   /** The size of the modal. */
   size: PropTypes.oneOf(['mini', 'tiny', 'small', 'standard', 'large', 'fullscreen']),
-  /** Whether the modal's content is scolling. */
+  /** Whether the modal's content is scrolling. */
   scrolling: PropTypes.bool,
   /** The header of the modal (typically a title). */
   header: PropTypes.node.isRequired,
@@ -299,4 +299,16 @@ FinalModalForm.defaultProps = {
   className: null,
   extraActions: null,
   style: null,
+};
+
+export function DebugFormSpy({subscription = {values: true}}) {
+  return (
+    <FormSpy subscription={subscription ?? undefined}>
+      {fprops => <pre>{JSON.stringify(fprops, null, 2)}</pre>}
+    </FormSpy>
+  );
+}
+
+DebugFormSpy.propTypes = {
+  subscription: PropTypes.object,
 };

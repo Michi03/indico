@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -21,8 +21,8 @@ from indico.modules.users.models.emails import UserEmail
 from indico.modules.users.models.users import NameFormat
 from indico.util.i18n import _, get_all_locales
 from indico.web.forms.base import IndicoForm
-from indico.web.forms.fields import (IndicoEnumSelectField, IndicoSelectMultipleCheckboxField, MultiStringField,
-                                     PrincipalField, PrincipalListField)
+from indico.web.forms.fields import (EmailListField, IndicoEnumSelectField, IndicoSelectMultipleCheckboxField,
+                                     MultiStringField, PrincipalField, PrincipalListField)
 from indico.web.forms.util import inject_validators
 from indico.web.forms.validators import HiddenUnless, MastodonServer
 from indico.web.forms.widgets import SwitchWidget
@@ -99,6 +99,12 @@ class UserPreferencesForm(IndicoForm):
 
 class UserEmailsForm(IndicoForm):
     email = EmailField(_('Add new email address'), [DataRequired(), Email()], filters=[lambda x: x.lower() if x else x])
+    skip_validation = BooleanField(_('Skip email validation'))
+
+    def __init__(self, *args, allow_skip_validation=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not allow_skip_validation:
+            del self.skip_validation
 
     def validate_email(self, field):
         conflict = (UserEmail.query
@@ -130,9 +136,20 @@ class MergeForm(IndicoForm):
 
 
 class AdminUserSettingsForm(IndicoForm):
-    notify_account_creation = BooleanField(_('Registration notifications'), widget=SwitchWidget(),
+    _fieldsets = [
+        (_('Account creation notifications'), ('notify_account_creation', 'notify_account_creation_emails')),
+        (_('Miscellaneous'), ('email_blacklist', 'allow_personal_tokens', 'mandatory_fields_account_request',
+                              'only_predefined_affiliations'))
+    ]
+
+    notify_account_creation = BooleanField(_('Notify all admins'), widget=SwitchWidget(),
                                            description=_('Send an email to all administrators whenever someone '
                                                          'registers a new local account.'))
+    notify_account_creation_emails = EmailListField(
+        _('Notify emails'),
+        description=_('List of email addresses that receive a notification whenever a new local account is created. '
+                      'One email address per line.')
+    )
     email_blacklist = MultiStringField(_('Email blacklist'), field=('email_blacklist', _('email')),
                                        unique=True, flat=True,
                                        description=_('Prevent users from creating Indico accounts with these email '

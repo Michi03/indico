@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -69,6 +69,21 @@ Called when a registration form is removed. The `sender` is the
 
 registration_form_field_deleted = _signals.signal('registration-form-field-deleted', '''
 Called when a registration form field is removed. The `sender` is the
+`RegistrationFormField` object.
+''')
+
+registration_form_field_added = _signals.signal('registration-form-field-added', '''
+Called when a registration form field is added. The `sender` is the
+`RegistrationFormField` object.
+''')
+
+registration_form_field_changed = _signals.signal('registration-form-field-changed', '''
+Called when a registration form field is changed. The `sender` is the
+`RegistrationFormField` object.
+''')
+
+registration_form_field_toggled = _signals.signal('registration-form-field-toggled', '''
+Called when a registration form field is enabled or disabled. The `sender` is the
 `RegistrationFormField` object.
 ''')
 

@@ -2,10 +2,207 @@ Changelog
 =========
 
 
+Version 3.3.12
+--------------
+
+*Unreleased*
+
+Improvements
+^^^^^^^^^^^^
+
+- Allow bulk (de-)selecting data in tables with shift+click (:issue:`7375`, :pr:`7376`)
+
+Bugfixes
+^^^^^^^^
+
+- Fix paper file submission when a filename template is configured (:pr:`7381`)
+- Fix selecting existing paper files when submitting an editable (:pr:`7381`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Nothing so far
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Nothing so far
+
+
+Version 3.3.11
+--------------
+
+*Released on February 27, 2026*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Add missing access checks when managing event series (:cve:`2026-28352`, thanks
+  :user:`lighthousekeeper1212`)
+
+.. note::
+
+    While this issue allowed unauthorized changes to event series, the impact is rather low,
+    since this cannot be used to tamper with events or deface them in any way. In case there
+    are access-restricted events in a series, their title and category location could be
+    disclosed though.
+
+Improvements
+^^^^^^^^^^^^
+
+- Show picture field validation status in the registration form (:pr:`7337`,
+  thanks :user:`jbtwist, unconventionaldotdev`)
+- Add a setting :data:`CHECK_ACTION_PERMISSIONS` to hide event creation/management
+  buttons for guests and users who do not have access to them (:pr:`7332`, thanks
+  :user:`jbtwist, unconventionaldotdev`)
+- Add option to filter room booking calendar to show only unused rooms (:pr:`7350`)
+
+Bugfixes
+^^^^^^^^
+
+- Show event role dropdown when editing contribution/session ACLs (:pr:`7339`)
+- Fix error when loading category search results with extra query string params
+  from external search plugins (:pr:`7345`)
+- Require management access to all events in a series to manage it (:pr:`7348`)
+- Fix deleting an event series that contains deleted events (:pr:`7348`)
+- Fix email validation error when entering speakers manually in an invited abstract
+  while logged in (:pr:`7340`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Screen readers now announce the filtering state indicator descriptive text instead of
+  just the short numeric label (:pr:`7335`, thanks :user:`foxbunny`)
+- Screen reader users can now identify the search field on the contribution list page
+  (:pr:`7343`, thanks :user:`foxbunny`)
+- The contribution list is now announced as a list by screen readers, conveying the
+  number of items (:pr:`7346`, thanks :user:`foxbunny`)
+- Contribution descriptions are no longer announced as links by screen readers
+  (:pr:`7349`, thanks :user:`foxbunny`)
+- Contribution list description text, track badges, and type badges now meet WCAG AA
+  color contrast requirements (:pr:`7351`, thanks :user:`foxbunny`)
+- Dialogs now announce their title to screen readers and return focus to the trigger
+  element when closed (:pr:`7354`, thanks :user:`foxbunny`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Require a modern Sentry version (at least v20.6.0) when using a self-hosted Sentry
+  installation for error reporting (:pr:`7333`)
+
+
+Version 3.3.10
+--------------
+
+*Released on February 17, 2026*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Fix potential SSRF issues by disallowing outgoing requests to private/internal/local
+  IP addresses when the URL is user-provided (:cve:`2026-25738`)
+
+.. note::
+
+    There was only one place where this would have allowed returning data retrieved from
+    such a URL to the client, and this was only accessible to authenticated users with
+    event management privileges. Also, this vulnerability is only problematic if sensitive
+    information is accessible via an unauthenticated HTTP GET request (e.g. in AWS cloud
+    environments).
+
+- Fix an open redirect which could help making harmful URLs look more trustworthy by linking
+  to Indico and having it redirect the user to a malicious site
+- Fix an XSS vulnerability related to uploaded materials (:cve:`2026-25739`)
+
+Improvements
+^^^^^^^^^^^^
+
+- Log changes to event reminders in the event log (:pr:`7242`)
+- Allow sending account creation notifications to specific email addresses (:issue:`7166`,
+  :pr:`7233`, thanks :user:`duartegalvao`)
+- Support markdown in survey introduction text (:pr:`7260`)
+- Add Content-Security-Policy support (opt-in via the :data:`CSP_ENABLED` setting) and send
+  a strict CSP for material downloads (:issue:`5486`, :pr:`7257`, :pr:`7303`, :pr:`7308`)
+- Allow admins to disable Gravatar/Identicon profile pictures via the :data:`DISABLE_GRAVATAR`
+  config option (:issue:`7210`, :pr:`7251`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add a UI for managing predefined affiliations (:pr:`7183`, :pr:`7278`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Add support for configurable file types in Paper Peer Reviewing (:issue:`7162`, :pr:`7156`)
+- Use the event's default language (or system default if not set) when creating abstract
+  notifications instead of the user's current language (:pr:`7294`)
+- Allow cloning registration forms within an event (:issue:`3229`, :pr:`6822`, thanks
+  :user:`adam-parker1, Emilijus-M`)
+- Allow removing countries and providing custom translated names for countries via config
+  (:pr:`7292`, :pr:`7299`, thanks :user:`jbtwist`)
+- Add link from log entry details to the related object's page where applicable
+  (:pr:`7269`, thanks :user:`vtran99`)
+
+Bugfixes
+^^^^^^^^
+
+- Fix error when adding a user to a material ACL in a subcontribution (:pr:`7209`)
+- Fix timezone selector behaving incorrectly when choosing a custom timezone (:pr:`7214`)
+- Fix error when using shibboleth for authentication (:issue:`7213`, :pr:`7215`)
+- Fix error when sending scheduled reminders using an event time placeholder (:pr:`7238`)
+- Fix rendering static text/images in poster templates (:pr:`7239`)
+- Do not revert to defaults when disabling all optional event cloners (:issue:`6833`, :pr:`7245`)
+- Fix changing tracks for invited abstracts (:issue:`7061`, :pr:`7240`)
+- Disallow local account passwords longer than 72 characters instead of truncating them
+  (:pr:`7254`)
+- Fix recurrence information not being correctly included in room booking ical export
+  (:pr:`7255`)
+- Fix weird indentation on list items in markdown field preview (:pr:`7260`)
+- Fix unique title validation for disabled regform fields (:pr:`7277`)
+- Fix DatePicker min/max limits being affected by client timezone (:issue:`7273`, :pr:`7280`,
+  thanks :user:`jbtwist`)
+- Fix validation error when choosing exactly the maximum date in a regform date field
+  (:pr:`7288`)
+- Fix submit buttons not being enabled when modifying a markdown field using only the
+  button bar or a keyboard shortcut (:pr:`7310`)
+- Enforce DNS checks on emails only when inviting a new user, and not when importing
+  from CSV (:pr:`7291`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Hide "This field is required" error while uploading files on single-file upload fields
+  (:pr:`7325`, thanks :user:`duartegalvao, unconventionaldotdev`)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Add accessible labels and tooltips to icon-only toolbar buttons in the contribution list
+  (:pr:`7316`, thanks :user:`foxbunny`)
+- Screen reader users can now discover the page footer and conference side menu as a landmark
+  region (:pr:`7312`, thanks :user:`foxbunny`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Require at least Postgres 14 during new installations. This check can be forced on
+  older Postgres versions (even though they are end-of-life), but we make no guarantees
+  that nothing is broken (:pr:`7232`)
+- Disallow server-side requests to private, loopback, reserved and link-local IP ranges in
+  places where the URL is user-provided (Mastodon URL check, LaTeX image retrieval, static
+  site generation) (:pr:`7244`)
+- Log requests to the legacy export API to ``indico.log`` (:pr:`7290`)
+- Disallow concurrent generation of category statistics (:pr:`7307`)
+
+
 Version 3.3.9
 -------------
 
-*Unreleased*
+*Released on December 11, 2025*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Fix an open redirect which could help making harmful URLs look more trustworthy by linking
+  to Indico and having it redirect the user to a malicious site
+- Fix an XSS vulnerability with HTML materials when stored on S3 with certain
+  configuration settings
+
+.. note::
+
+    Anyone running Indico using the "standard" setup from our installation guide
+    or without storing files on S3 (using the ``storage_s3`` plugin) is completely
+    unaffected by this problem.
 
 Internationalization
 ^^^^^^^^^^^^^^^^^^^^
@@ -25,8 +222,42 @@ Improvements
 - Log local group membership changes of users (:pr:`7122`, thanks :user:`tomako`)
 - Warn when downloading files from an editable not assigned to you (:issue:`7131`,
   :pr:`7132`)
-- Add URL args to set the default view and date of the cataegory calendar view
+- Add URL args to set the default view and date of the category calendar view
   (:pr:`7144`)
+- Allow changing review tags in the editing timeline (:issue:`7133`, :pr:`7134`)
+- Add an option to request changes in bulk on the editable list (:issue:`7062`,
+  :pr:`7100`)
+- Clone persons settings when cloning an event (:pr:`7158`)
+- Clone editable-type-specific settings when cloning an event (:pr:`7158`)
+- Allow admins to add a secondary email address to a user without sending a
+  validation email (:issue:`6872`, :pr:`7116`, thanks :user:`vasiliyk`)
+- Add new :data:`SMTP_USE_SSL` config option to use always-on TLS (SMTPS) instead of
+  STARTTLS when sending emails (:issue:`4347`, :pr:`7177`, thanks :user:`bpedersen2`)
+- Add review count & score standard deviation columns to the abstract list (:pr:`7173`)
+- Add min/max date settings to registration form date fields (:pr:`6842`, thanks
+  :user:`SegiNyn`)
+- Allow adding a preface when re-sending emails from the event log (:pr:`7172`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Disallow adding multiple fields with the same title in a single registration form
+  section (:pr:`7181`, thanks :user:`tomako`)
+- Add a customizable announcement text on top of the registration form list in
+  conferences with multiple registration forms (:pr:`6916`, thanks :user:`openprojects`)
+- Add a button to view related logs to the management view of a registration (:pr:`7186`,
+  thanks :user:`vtran99`)
+- Log attachment & menu entry ACL changes to user log (:pr:`7136`, thanks :user:`tomako`)
+- Add placeholders to custom event reminders (:pr:`7115`, thanks :user:`tomako`)
+- Add option to require international phone number format in registration form
+  (:pr:`7199`, thanks :user:`openprojects`)
+- Refactor the registration invitation dialogs using React and add email previews
+  (:pr:`7168`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add setting :data:`EMAIL_LOG_STORAGE` to permanently store email attachments and
+  allow re-sending emails with attachments from the event log (:pr:`7182`, :pr:`7203`,
+  thanks :user:`Moliholy, unconventionaldotdev`)
+- Show confirmation dialog when sending invitations (:pr:`7204`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Show a warning when bulk registration approval/rejection skips registrations that are not
+  pending (:issue:`7197`, :pr:`7205`, thanks :user:`duartegalvao, unconventionaldotdev`)
+- Add a JSON endpoint that returns the event's program/tracks (:pr:`7207`)
 
 Bugfixes
 ^^^^^^^^
@@ -36,6 +267,16 @@ Bugfixes
 - Correctly log the user sending a registration invitation reminder (:pr:`7093`)
 - Fix error in weekday recurrence picker when using the Turkish locale (:pr:`7113`)
 - Do not allow selecting fields in disabled sections as a condition (:pr:`7114`)
+- Fix timetable PDF cover page layout to allow proper centering of content (:issue:`7148`,
+  :pr:`7149`)
+- Fix the logic to force downloads not being applied for materials hosted on some storage
+  backend setups (:pr:`7164`)
+- Preserve configured registration date formats in Excel exports (:pr:`7157`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Fix inconsistent styling of nested lists in minutes and editor output (:issue:`7063`,
+  :pr:`7105`, thanks :user:`AtharvMixraw`)
+- Validate the arrival/departure date in the registration form accommodation field
+  (:issue:`7171`, :pr:`7174`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -54,14 +295,18 @@ Accessibility
 - Fix announcements accessibility (:pr:`7098`, thanks :user:`foxbuny`)
 - Fix conference description color contrast (:pr:`7118`, thanks :user:`foxbunny`)
 - Improve infogrid accessibility (:pr:`7119`, thanks :user:`foxbunny`)
+- Improve dropdown accessibility in category list toolbar (:pr:`7069`,
+  thanks :user:`foxbunny`)
+- Fix footer color contrast (:pr:`7095`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
 - Allow plugins to store custom annotations/metadata on attachments, and indicate that
-  it has been converted from antoher attachment (:pr:`7108`)
+  it has been converted from another attachment (:pr:`7108`)
 - Refactor conference page theme CSS to allow easier theming using CSS variables
   (:pr:`7110`, thanks :user:`foxbunny`)
+- Add clear button to optional date picker fields (:pr:`7151`, thanks :user:`foxbunny`)
 
 
 Version 3.3.8
@@ -237,7 +482,7 @@ Internal Changes
 - Expose cloning details such as object mappings in the ``event.cloned`` signal (:pr:`6858`)
 - Expose cloning details in the ``contribution.created`` and ``subcontribution.created``
   signals (:pr:`6858`)
-- Add the id and color of registration tags on the Checkin API endpoint for registation
+- Add the id and color of registration tags on the Checkin API endpoint for registration
   data (:pr:`6874`, thanks :user:`duartegalvao`)
 - Allow disabling arbitrary dates in date picker / calendar controls (:pr:`6905`, thanks
   :user:`foxbunny`)
@@ -2905,7 +3150,7 @@ Major Features
   so they can be restricted to be editable/visible only for event
   managers or authors/submitters instad of anyone who can see the
   abstract/contribution
-- Provide new interface to import registations/contributions from a CSV
+- Provide new interface to import registrations/contributions from a CSV
   file (:issue:`3144`)
 - Rework how access/permissions are managed. Now all access and management
   privileges can be assigned from a single place on the protection

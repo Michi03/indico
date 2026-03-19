@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -42,6 +42,11 @@ FILE_TYPE_ATTRS = {
     'required': 'File required',
     'publishable': 'Publishable',
     'filename_template': {'title': 'Filename template', 'type': 'string'},
+}
+
+PATCH_REVISION_ATTRS = {
+    'comment': {'title': 'Comment', 'type': 'text'},
+    'tags': {'title': 'Tags', 'convert': lambda change: [sorted(t.title for t in tags) for tags in change]},
 }
 
 
@@ -129,9 +134,10 @@ def publish_editable_revision(revision):
 
 
 @no_autoflush
-def review_editable_revision(revision, editor, action, comment, tags, files=None):
+def review_editable_revision(revision, editor, action, comment, tags, files=None, *, management=False):
     ensure_latest_revision(revision)
-    _ensure_state(revision, EditableState.ready_for_review)
+    if not management:
+        _ensure_state(revision, EditableState.ready_for_review)
     revision_type = {
         EditingReviewAction.accept: RevisionType.acceptance,
         EditingReviewAction.reject: RevisionType.rejection,
@@ -247,17 +253,17 @@ def undo_review(revision):
 
 
 @no_autoflush
-def update_review_comment(revision, text):
+def update_review(revision: EditingRevision, data: dict):
     _ensure_revision_can_be_updated(revision)
-    changes = {'comment': (revision.comment, text)}
-    log_fields = {'comment': 'Comment'}
-    revision.comment = text
+    changes = revision.populate_from_dict(data, keys=PATCH_REVISION_ATTRS)
+    if not changes:
+        return
     revision.modified_dt = now_utc()
     db.session.flush()
-    logger.info('Review comment on revision %r updated by %r', revision, session.user)
+    logger.info('Review on revision %r updated by %r: %r', revision, session.user, changes.keys())
     revision.editable.log(EventLogRealm.reviewing, LogKind.change, 'Editing',
-                          f'Review comment on {revision.editable.log_title} updated',
-                          session.user, data={'Changes': make_diff_log(changes, log_fields)})
+                          f'Review on {revision.editable.log_title} updated',
+                          session.user, data={'Changes': make_diff_log(changes, PATCH_REVISION_ATTRS)})
 
 
 @no_autoflush
@@ -456,5 +462,5 @@ def _compose_filepath(editable, revision_file):
 
 
 def _ensure_publishable_files(editable):
-    if not editable.latest_revision_with_files.has_publishable_files:
+    if not editable.has_publishable_files:
         raise InvalidEditableState

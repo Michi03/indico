@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -492,7 +492,9 @@ class CreateEmailTemplateForm(EditEmailTemplateRuleForm):
         ('merge', _('Merge')),
         ('withdrawn', _('Withdrawn'))
     ], description=_('The default template that will be used as a basis for this notification. '
-                     'You can customize it later.'))
+                     'You can customize it later. If you want the text to be in a specific language that is '
+                     'not the default language of this Indico server, set the default language of this event before '
+                     'creating this notification.'))
 
 
 class AbstractForm(IndicoForm):
@@ -504,7 +506,7 @@ class AbstractForm(IndicoForm):
     submission_comment = TextAreaField(_('Comments'))
     attachments = EditableFileField(_('Attachments'), multiple_files=True, lightweight=True)
 
-    def __init__(self, *args, event, abstract=None, invited=False, management=False, **kwargs):
+    def __init__(self, *args, event, abstract=None, invited=False, management=False, submit_invited=False, **kwargs):
         self.event = event
         self.abstract = abstract
         self.allow_user_search = management or config.ALLOW_PUBLIC_USER_SEARCH
@@ -538,6 +540,8 @@ class AbstractForm(IndicoForm):
             self.person_links.require_speaker = abstracts_settings.get(self.event, 'speakers_required')
         else:
             self.person_links.require_primary_author = False
+        if submit_invited:
+            self.person_links.invited_abstract_uuid = self.abstract.uuid
 
     def _get_description_validators(self, description_settings, invited=False):
         validators = []

@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -11,11 +11,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import {UserSearchTokenContext} from 'indico/react/components/principals/Search';
 import {Translate} from 'indico/react/i18n';
 import {camelizeKeys} from 'indico/utils/case';
 
 import EmailPendingInvitationsButton from './components/EmailPendingInvitationsButton';
 import InvitationList from './components/InvitationList';
+import InviteDialogButton from './components/InviteDialogButton';
 
 (function(global) {
   global.setupInvitationPage = function setupInvitationPage({
@@ -23,6 +25,7 @@ import InvitationList from './components/InvitationList';
     regformId,
     hasPendingInvitations,
     invitations,
+    searchToken,
   }) {
     $('#invitation-list-container').on('indico:confirmed', '.js-invitation-action', function(evt) {
       evt.preventDefault();
@@ -44,25 +47,17 @@ import InvitationList from './components/InvitationList';
       });
     });
 
-    renderInvitationPage({
-      eventId,
-      regformId,
-      hasPendingInvitations,
-      invitations,
-    });
+    const onInvitationsChanged = data => {
+      renderInvitationPage({
+        eventId,
+        regformId,
+        hasPendingInvitations: data.has_pending_invitations,
+        invitations: data.invitation_list,
+      });
+    };
 
-    $('.js-invite-user').ajaxDialog({
-      onClose(data) {
-        if (data) {
-          renderInvitationPage({
-            eventId,
-            regformId,
-            hasPendingInvitations: data.has_pending_invitations,
-            invitations: data.invitation_list,
-          });
-        }
-      },
-    });
+    renderInviteButton({eventId, regformId, onInvitationsChanged, searchToken});
+    renderInvitationPage({eventId, regformId, hasPendingInvitations, invitations});
   };
 
   function renderEmailInvitationsBtn({eventId, regformId, hasPendingInvitations}) {
@@ -86,6 +81,23 @@ import InvitationList from './components/InvitationList';
         regformId={regformId}
         invitations={camelizeKeys(invitations)}
       />,
+      container
+    );
+  }
+
+  function renderInviteButton({eventId, regformId, onInvitationsChanged, searchToken}) {
+    const container = document.getElementById('invite-dialog-button-container');
+    if (!container) {
+      return;
+    }
+    ReactDOM.render(
+      <UserSearchTokenContext.Provider value={searchToken}>
+        <InviteDialogButton
+          eventId={eventId}
+          regformId={regformId}
+          onInvitationsChanged={onInvitationsChanged}
+        />
+      </UserSearchTokenContext.Provider>,
       container
     );
   }

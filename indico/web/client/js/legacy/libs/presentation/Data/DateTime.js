@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -194,7 +194,7 @@ function setDate(date, tuple) {
 /**
  * Returns a tuple from the date.
  * @param {Date} date
- * @retrun {Array}
+ * @return {Array}
  */
 function getDate(date) {
   return [date.getDate(), date.getMonth() + 1, date.getFullYear()];

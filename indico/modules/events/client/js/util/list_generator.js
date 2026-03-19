@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -36,7 +36,22 @@
   }
 
   global.handleRowSelection = function(trigger) {
-    const $obj = $('table.i-table input.select-row').on('change', function() {
+    let lastClickedIndex;
+    const $obj = $('table.i-table input.select-row');
+    $obj.on('click', function(e) {
+      const currentIndex = $obj.index(this);
+      if (e.shiftKey) {
+        const start = Math.min(lastClickedIndex, currentIndex);
+        const end = Math.max(lastClickedIndex, currentIndex);
+        $obj
+          .slice(start, end + 1)
+          .prop('checked', this.checked)
+          .trigger('change');
+      }
+      lastClickedIndex = currentIndex;
+    });
+
+    $obj.on('change', function() {
       $(this).closest('tr').toggleClass('selected', this.checked);
       $('.js-requires-selected-row').toggleClass(
         'disabled',

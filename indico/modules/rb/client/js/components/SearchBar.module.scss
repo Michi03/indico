@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -8,14 +8,22 @@
 @use 'rb:styles/responsive' as *;
 
 .room-filters {
+  &.wide {
+    width: 100%;
+
+    .text-filter {
+      width: 100%;
+    }
+  }
+
   .text-filter input {
-    width: 300px;
+    min-width: 300px;
 
     @media (max-width: $tablet-width) {
-      width: 275px;
+      min-width: 275px;
     }
 
-    & + i.icon.remove {
+    i.icon.remove {
       cursor: pointer;
     }
   }

@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -19,8 +19,7 @@ from indico.web.flask.templating import get_template_module
 
 
 class EmailNotificationCondition(Condition):
-    #: Override if you want to customize the text
-    #: that shouls up for "Any"
+    #: Override if you want to customize the text that shows up for "Any"
     any_caption = pgettext('Email notification condition', 'any')
     #: same for text that shows up for "none"
     none_caption = pgettext('Email notification condition', 'none')

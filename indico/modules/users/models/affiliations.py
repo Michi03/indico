@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -12,6 +12,7 @@ from sqlalchemy.orm import column_property, mapper
 from indico.core.db import db
 from indico.core.db.sqlalchemy.custom.unaccent import define_unaccented_lowercase_index
 from indico.core.db.sqlalchemy.searchable import make_fts_index
+from indico.modules.logs import AppLogEntry
 from indico.util.string import format_repr
 
 
@@ -101,6 +102,10 @@ class Affiliation(db.Model):
             return existing
         return cls(**affiliation_data)
 
+    def log(self, *args, **kwargs):
+        """Log with prefilled metadata for the affiliation."""
+        return AppLogEntry.log(*args, meta={'affiliation_id': self.id}, **kwargs)
+
 
 define_unaccented_lowercase_index(Affiliation.searchable_names, Affiliation.__table__,
                                   'ix_affiliations_searchable_names_unaccent')
@@ -124,7 +129,7 @@ def _mappers_configured():
     # a logarithmic-type scale is the most useful. In the end, the best results were obtained by the following
     # reciprocal function:
     #                                           P = 11 - 100/(x + 10)
-    #      where x is the percentage of occurences of an affiliation
+    #      where x is the percentage of occurrences of an affiliation
     # Since x = 100c / N, where c is the count and N is the total number of objects, the formula can be
     # rewritten as:
     #                                           P = 11 - 10N/(10c + N)

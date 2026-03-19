@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -54,7 +54,7 @@ from indico.util.countries import get_country_reverse
 from indico.util.date_time import now_utc
 from indico.util.i18n import _
 from indico.util.signals import make_interceptable, named_objects_from_signal, values_from_signal
-from indico.util.spreadsheets import csv_text_io_wrapper, unique_col
+from indico.util.spreadsheets import CSVFieldDelimiter, csv_text_io_wrapper, unique_col
 from indico.util.string import camelize_keys, validate_email, validate_email_verbose
 from indico.web.args import parser
 
@@ -76,17 +76,26 @@ class ActionMenuEntry:
     extra_classes: str = ''
 
 
-def import_user_records_from_csv(fileobj, columns, delimiter=','):
+def import_user_records_from_csv(fileobj, columns, delimiter=None, *, check_email_dns=True):
     """Parse and do basic validation of user data from a CSV file.
 
     :param fileobj: the CSV file to be read.
     :param columns: A list of column names, 'first_name', 'last_name', & 'email' are compulsory.
-    :param delimiter: the CSV separator.
+    :param delimiter: the CSV separator. Guessed if omitted.
     :return: A list dictionaries each representing one row,
              the keys of which are given by the column names.
     """
     with csv_text_io_wrapper(fileobj) as ftxt:
-        reader = csv.reader(ftxt.read().splitlines(), delimiter=delimiter)
+        content = ftxt.read().splitlines()
+    if not content:
+        return []
+    if not delimiter:
+        delimiters = [d.delimiter for d in CSVFieldDelimiter]
+        try:
+            delimiter = csv.Sniffer().sniff('\n'.join(content[:10]), delimiters=delimiters).delimiter
+        except csv.Error:
+            raise UserValueError(_('Not a valid CSV file.'))
+    reader = csv.reader(content, delimiter=delimiter)
     used_emails = set()
     email_row_map = {}
     user_records = []
@@ -101,7 +110,7 @@ def import_user_records_from_csv(fileobj, columns, delimiter=','):
             raise UserValueError(_('Row {}: missing e-mail address').format(row_num))
         record['email'] = record['email'].lower()
 
-        if not validate_email(record['email']):
+        if not validate_email(record['email'], check_dns=check_email_dns):
             raise UserValueError(_('Row {}: invalid e-mail address').format(row_num))
         if not record['first_name'] or not record['last_name']:
             raise UserValueError(_('Row {}: missing first or last name').format(row_num))
@@ -558,6 +567,14 @@ def update_registration_consent_to_publish(registration, consent_to_publish):
     registration.consent_to_publish = consent_to_publish
 
 
+def get_registration_spreadsheet_column_formats(regform_items):
+    """Return the configured formats for date columns in registration exports."""
+    return {
+        unique_col(item.title, item.id): item.data['date_format']
+        for item in regform_items if item.input_type == 'date'
+    }
+
+
 def generate_spreadsheet_from_registrations(registrations, regform_items, static_items):
     """Generate a spreadsheet data from a given registration list.
 
@@ -606,11 +623,7 @@ def generate_spreadsheet_from_registrations(registrations, regform_items, static
                 if item.id not in data or not data[item.id].data:  # missing or empty data for the field
                     registration_dict[key] = ''
                     continue
-                dt = datetime.fromisoformat(data[item.id].data).replace(tzinfo=tzinfo)
-                if ':' in item.data.get('date_format'):
-                    registration_dict[key] = dt
-                else:
-                    registration_dict[key] = dt.date()
+                registration_dict[key] = datetime.fromisoformat(data[item.id].data).replace(tzinfo=tzinfo)
             elif item.id in data:
                 registration_dict[key] = item.field_impl.render_spreadsheet_data(data[item.id])
             else:
@@ -904,7 +917,7 @@ def update_regform_item_positions(regform):
 
 
 def create_invitation(regform, user, email_sender, email_subject, email_body, *, skip_moderation, skip_access_check,
-                      lock_email):
+                      lock_email, bcc_addresses=None, copy_for_sender=False):
     invitation = RegistrationInvitation(
         email=user['email'],
         first_name=user['first_name'],
@@ -916,7 +929,8 @@ def create_invitation(regform, user, email_sender, email_subject, email_body, *,
     )
     regform.invitations.append(invitation)
     db.session.flush()
-    notify_invitation(invitation, email_subject, email_body, email_sender)
+    notify_invitation(invitation, email_subject, email_body, email_sender,
+                      bcc_addresses=bcc_addresses, copy_for_sender=copy_for_sender)
     return invitation
 
 
@@ -946,16 +960,14 @@ def import_registrations_from_csv(regform, fileobj, skip_moderation=True, notify
     ]
 
 
-def import_invitations_from_csv(regform, fileobj, email_sender, email_subject, email_body, *, skip_moderation=True,
-                                skip_access_check=True, skip_existing=False, lock_email=False, delimiter=','):
-    """Import invitations from a CSV file.
+def import_invitations_from_user_records(regform, user_records, email_sender, email_subject, email_body, *,
+                                         skip_moderation=True, skip_access_check=True, skip_existing=False,
+                                         lock_email=False, bcc_addresses=None, copy_for_sender=False):
+    """Import invitations from a user records list.
 
     :return: A list of invitations and the number of skipped records which
              is zero if skip_existing=False
     """
-    columns = ['first_name', 'last_name', 'affiliation', 'email']
-    user_records = import_user_records_from_csv(fileobj, columns=columns, delimiter=delimiter)
-
     reg_data = (db.session.query(Registration.user_id, Registration.email)
                 .with_parent(regform)
                 .filter(Registration.is_active)
@@ -986,7 +998,8 @@ def import_invitations_from_csv(regform, fileobj, email_sender, email_subject, e
 
     invitations = [create_invitation(regform, user, email_sender, email_subject, email_body,
                                      skip_moderation=skip_moderation, skip_access_check=skip_access_check,
-                                     lock_email=lock_email)
+                                     lock_email=lock_email, bcc_addresses=bcc_addresses,
+                                     copy_for_sender=copy_for_sender)
                    for user in filtered_records]
     skipped_records = len(user_records) - len(filtered_records)
     return invitations, skipped_records
@@ -1058,6 +1071,17 @@ def close_registration(regform):
     regform.end_dt = now_utc()
     if not regform.has_started:
         regform.start_dt = regform.end_dt
+
+
+def clone_registration_form(regform: RegistrationForm, title: str) -> RegistrationForm:
+    """Clone a registration form within the same event.
+
+    :param regform: The registration form to clone
+    :param title: The title for the new registration form
+    :return: The cloned registration form
+    """
+    from indico.modules.events.registration.clone import RegistrationFormCloner
+    return RegistrationFormCloner.clone_single_regform(regform, title=title)
 
 
 def get_persons(registrations, include_accompanying_persons=False):

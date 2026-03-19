@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -149,3 +149,14 @@ def use_rh_kwargs(schema_cls, **kwargs):
     """Like ``use_rh_args``, but using kwargs when calling the decorated function."""
     kwargs['as_kwargs'] = True
     return use_rh_args(schema_cls, **kwargs)
+
+
+def parse_single_arg(name, field):
+    """Parse a single arg using webargs.
+
+    This is simply convenience to avoid having to use the parser directly
+    and extracting the element from a single-element dict.
+
+    Note that the field must have a `load_default` or be `required`.
+    """
+    return parser.parse({name: field}, unknown=EXCLUDE)[name]

@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -118,7 +118,7 @@ class EventDatesPlaceholder(DesignerPlaceholder):
         if start_dt.date() == end_dt.date():
             interval = format_datetime(start_dt)
         elif start_dt.date().replace(day=1) == end_dt.date().replace(day=1):
-            interval = format_interval(start_dt, end_dt, 'dMMMMy')
+            interval = format_interval(start_dt, end_dt, skeleton='dMMMMy')
         return interval
 
 

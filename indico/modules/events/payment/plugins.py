@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -68,7 +68,7 @@ class PaymentPluginMixin:
     def can_be_modified(self, user, event):
         """Check if the user is allowed to enable/disable/modify the payment method.
 
-        :param user: the :class:`.User` repesenting the user
+        :param user: the :class:`.User` representing the user
         :param event: the :class:`Event`
         """
         return event.can_manage(user)

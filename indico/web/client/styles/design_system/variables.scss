@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -57,7 +57,8 @@ body {
   --control-disabled-inset-indented-color: var(--text-disabled-color);
   --control-border-width: 1px;
   --control-border-radius: 0.3em;
-  --control-border: var(--control-border-width) solid var(--control-border-color);
+  --control-border: var(--control-border-width) solid
+    var(--control-border-color);
   --control-padding: 0.5em 1em;
   --control-internal-gap: 0.2em;
   --control-raised-shadow: 0 0.2em 0.5em rgba(0, 0, 0, 0.3);
@@ -131,4 +132,25 @@ body {
 
   // Modal controls
   --modal-control-box-shadow: 0 0.5em 2em rgba(0, 0, 0, 0.3);
+
+  // Menus (header menu and dropdown menus)
+  --menu-background-color: var(--background-primary);
+  --menu-text-color: var(--clickable-text-color);
+  --menu-text-hover-color: var(--clickable-text-highlight-color);
+  --menu-background-hover-color: var(--background-secondary);
+  --menu-border-color: var(--border-disabled-color);
+  --menu-shadow: var(--control-raised-shadow);
+  --menu-padding: 1em;
+  --menu-vertical-padding-ratio: 0.7;
+  --menu-border: 1px solid var(--menu-border-color);
+}
+
+%dark-mode {
+  // This is a foundation of the dark mode support. It's not yet used as a full app-wide
+  // dark mode so it only contains a subset of the variables. Currently it is used in
+  // areas of the dark pages like lectures and meetings.
+
+  --text-secondary-color: #b5b5b5;
+
+  --clickable-text-color: #21c0ff;
 }

@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -940,7 +940,7 @@ type(
         }
       }
 
-      // Acvtivate/inactivate the arrows accordingly
+      // Activate/deactivate the arrows accordingly
       this.setScrollArrowState('left', true);
       if (this.rightTabIndex == this.tabs.length - 1) {
         this.setScrollArrowState('right', false);
@@ -981,7 +981,7 @@ type(
         }
       }
 
-      // Acvtivate/inactivate the arrows accordingly
+      // Acvtivate/deactivate the arrows accordingly
       this.setScrollArrowState('right', true);
       if (this.leftTabIndex < 1) {
         this.setScrollArrowState('left', false);

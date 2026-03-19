@@ -7,7 +7,7 @@ blinker
 captcha
 celery[redis]
 certifi
-click
+click<8.3  # https://github.com/pallets/click/issues/3111 results in `--no-assets` always being used
 colorclass
 distro
 email-validator<1.3.0  # 1.3 checks SPF which is wrong (JoshData/python-email-validator#90)
@@ -15,7 +15,6 @@ feedgen
 flask-babel
 flask-caching
 flask-cors
-flask-limiter
 flask-marshmallow
 flask-migrate
 flask-multipass
@@ -32,13 +31,14 @@ ipython
 itsdangerous
 jinja2
 jsonschema
+limits
 lxml[html5]
 markdown
 markupsafe
 marshmallow-dataclass
 marshmallow-oneofschema
 marshmallow-sqlalchemy
-marshmallow
+marshmallow<4  # major changes -> later: https://marshmallow.readthedocs.io/en/latest/upgrading.html#upgrading-4-0
 packaging
 pillow
 prompt-toolkit
@@ -54,7 +54,7 @@ qrcode[pil]
 redis[hiredis]
 reportlab
 requests
-sentry-sdk[flask,celery,sqlalchemy,pure_eval]<2  # v2 is not compatible w/ legacy sentry 9
+sentry-sdk[flask,celery,sqlalchemy,pure_eval]
 simplejson
 speaklater
 sqlalchemy<2  # major upgrade
@@ -62,7 +62,7 @@ terminaltables
 translitcodec
 ua-parser
 wallet-py3k
-weasyprint
+weasyprint!=66  # broken flexbox in our receipt template, fixed in the latest version
 webargs
 werkzeug
 wtforms[email]

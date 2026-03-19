@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -75,7 +75,7 @@ export default class CustomElementBase extends HTMLElement {
    * `.toDateString()` method (it doesn't have to be a `Date` object),
    * it is replaced with an empty string.
    *
-   * The `String` attributes are normal attirbutes, and their value
+   * The `String` attributes are normal attributes, and their value
    * is always string. Any value set on this attribute will be coerced
    * into string.
    *

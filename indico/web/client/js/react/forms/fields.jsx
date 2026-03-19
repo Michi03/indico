@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -35,6 +35,7 @@ export function FormFieldAdapter({
   componentLabel,
   defaultValue,
   fieldProps,
+  fieldNeedsValidationError,
   hideValidationError,
   hideErrorWhileActive,
   loaderWhileValidating,
@@ -93,6 +94,10 @@ export function FormFieldAdapter({
     input.id = id;
   }
 
+  if (fieldNeedsValidationError) {
+    input.validationError = errorMessage;
+  }
+
   const field = (
     <Form.Field
       required={required}
@@ -137,6 +142,7 @@ FormFieldAdapter.propTypes = {
   disabled: PropTypes.bool,
   input: PropTypes.object.isRequired,
   required: PropTypes.bool,
+  fieldNeedsValidationError: PropTypes.bool,
   hideValidationError: PropTypes.oneOf([true, false, 'message', 'never']),
   hideErrorWhileActive: PropTypes.bool,
   undefinedValue: PropTypes.any,
@@ -157,6 +163,7 @@ FormFieldAdapter.defaultProps = {
   autoId: true,
   disabled: false,
   required: false,
+  fieldNeedsValidationError: false,
   hideValidationError: false,
   hideErrorWhileActive: false,
   undefinedValue: '',
@@ -351,8 +358,20 @@ ComboDropdownAdapter.defaultProps = {
 };
 
 /**
+ * @typedef {({[key: string]: any}) & {
+ *   name: string;
+ *   adapter?: React.ComponentType;
+ *   component?: React.ComponentType;
+ *   description?: React.ReactNode;
+ *   required?: true | false | 'no-validator';
+ *   onChange?: (value: any, previous: any) => void;
+ * }} FinalFieldProps
+ */
+
+/**
  * A wrapper for final-form's Field component that handles the markup
  * around the field.
+ * @param {FinalFieldProps} props
  */
 export function FinalField({name, adapter, component, description, required, onChange, ...rest}) {
   const extraProps = {};
@@ -415,7 +434,17 @@ FinalField.defaultProps = {
 };
 
 /**
+ * @typedef {FinalFieldProps & {
+ *   label?: string;
+ *   type?: 'text'|'email'|'number'|'tel'|'password';
+ *   nullIfEmpty?: boolean;
+ *   noAutoComplete?: boolean;
+ * }} FinalInputProps
+ */
+
+/**
  * Like `FinalField` but with extra features for ``<input>`` fields.
+ * @param {FinalInputProps} props
  */
 export function FinalInput({name, label, type, nullIfEmpty, noAutoComplete, ...rest}) {
   const extraProps = {};
@@ -469,7 +498,16 @@ FinalInput.defaultProps = {
 };
 
 /**
+ * @typedef {FinalFieldProps & {
+ *   label?: string;
+ *   nullIfEmpty?: boolean;
+ *   action?: React.ReactNode;
+ * }} FinalTextAreaProps
+ */
+
+/**
  * Like `FinalField` but with extra features for ``<textarea>`` fields.
+ * @param {FinalTextAreaProps} props
  */
 export function FinalTextArea({name, label, nullIfEmpty, action, ...rest}) {
   return (
@@ -550,7 +588,18 @@ FinalRadio.propTypes = {
 };
 
 /**
+ * @typedef {FinalFieldProps & {
+ *   label?: string;
+ *   multiple?: boolean;
+ *   nullIfEmpty?: boolean;
+ *   parse?: (value: any) => any;
+ *   format?: (value: any) => any;
+ * }} FinalDropdownProps
+ */
+
+/**
  * Like `FinalField` but for a dropdown.
+ * @param {FinalDropdownProps} props
  */
 export function FinalDropdown({name, label, multiple, nullIfEmpty, parse, format, ...rest}) {
   const extraProps = {};

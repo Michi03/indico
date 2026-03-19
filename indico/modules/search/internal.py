@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -7,6 +7,7 @@
 
 import itertools
 
+from marshmallow import EXCLUDE, fields
 from sqlalchemy.orm import contains_eager, joinedload, load_only, raiseload, selectinload, subqueryload, undefer
 from sqlalchemy import func, or_
 from werkzeug.exceptions import BadRequest
@@ -15,6 +16,7 @@ from indico.core.db import db
 from indico.core.db.sqlalchemy.links import LinkType
 from indico.core.db.sqlalchemy.protection import ProtectionMode
 from indico.core.db.sqlalchemy.util.queries import get_n_matching
+from indico.core.marshmallow import mm
 from indico.modules.attachments.models.attachments import Attachment
 from indico.modules.attachments.models.folders import AttachmentFolder
 from indico.modules.attachments.models.principals import AttachmentFolderPrincipal, AttachmentPrincipal
@@ -52,6 +54,14 @@ def _apply_acl_entry_strategy(rel, principal):
     return rel
 
 
+class _InternalSearchArgs(mm.Schema):
+    category_id = fields.Int()
+    event_id = fields.Int()
+
+    class Meta:
+        unknown = EXCLUDE
+
+
 def _apply_event_access_strategy(rel):
     rel.load_only('id', 'category_id', 'access_key', 'protection_mode')
     return rel
@@ -63,8 +73,8 @@ def _apply_contrib_access_strategy(rel):
 
 
 class InternalSearch(IndicoSearchProvider):
-    def search(self, query, user=None, page=None, object_types=(), *, admin_override_enabled=False,
-               **params):
+    def search(self, query, user=None, page=None, object_types=(), *, admin_override_enabled=False, **params):
+        params = _InternalSearchArgs().load(params)
         category_id = params.get('category_id')
         event_id = params.get('event_id')
         if object_types == [SearchTarget.category]:

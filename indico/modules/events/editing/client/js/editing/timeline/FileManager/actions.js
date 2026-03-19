@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -12,7 +12,6 @@ export const UNDELETE = 'UNDELETE';
 export const REVERT = 'REVERT';
 export const PROGRESS = 'PROGRESS';
 export const START_UPLOADS = 'START_UPLOADS';
-export const CLEAR_DIRTY = 'CLEAR_DIRTY';
 export const UPLOAD_ERROR = 'UPLOAD_ERROR';
 export const RESET = 'RESET';
 export const INVALID_TEMPLATE = 'INVALID_TEMPLATE';
@@ -64,10 +63,6 @@ export const markUploaded = (fileTypeId, fileId, tmpFileId, file) => ({
   fileId,
   tmpFileId,
   file,
-});
-
-export const clearDirty = () => ({
-  type: CLEAR_DIRTY,
 });
 
 export const error = (fileTypeId, tmpFileId) => ({

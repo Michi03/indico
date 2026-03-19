@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -138,7 +138,7 @@ export function FileArea({
             </Grid.Column>
           </Grid.Row>
         </Grid>
-        {errors && (
+        {!!errors?.length && (
           <Message negative>
             <Message.Header>
               <Translate>There were some problems with your file</Translate>

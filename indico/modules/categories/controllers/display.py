@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -89,12 +89,6 @@ class RHCategoryLogo(RHDisplayCategoryBase):
 class RHCategoryStatisticsJSON(RHDisplayCategoryBase):
     def _process(self):
         stats = get_category_stats(self.category.id)
-        if 'min_year' not in stats:
-            # in case the instance was freshly updated and still has data
-            # cached we need to invalidate it to avoid breaking the page
-            # TODO: remove this in 3.0; by then people had enough time to update to 2.3...
-            get_category_stats.clear_cached(self.category.id)
-            stats = get_category_stats(self.category.id)
         data = {
             'events': stats['events_by_year'],
             'contributions': stats['contribs_by_year'],

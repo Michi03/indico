@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -96,7 +96,7 @@ export default function EditableSubmissionButton({
                       contrib_id: contributionId,
                       type: currentType,
                     })}
-                    files={uploadableFiles}
+                    uploadableFiles={uploadableFiles}
                     mustChange
                   />
                 </Form>

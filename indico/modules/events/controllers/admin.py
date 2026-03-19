@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -197,7 +197,7 @@ class RHAutoLinkerConfig(RHAdminBase):
 
 
 class RHDataRetentionSettings(RHAdminBase):
-    """Manage minimun and maximum data retention period in the admin area."""
+    """Manage minimum and maximum data retention period in the admin area."""
 
     def _process(self):
         form = DataRetentionSettingsForm(obj=FormDefaults(**data_retention_settings.get_all()))

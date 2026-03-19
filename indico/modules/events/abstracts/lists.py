@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -49,7 +49,9 @@ class AbstractListGeneratorBase(ListGeneratorBase):
             'reviewed_for_tracks': {'title': _('Reviewed for tracks'), 'filter_choices': track_empty | track_choices},
             'accepted_contrib_type': {'title': _('Accepted type'), 'filter_choices': type_empty | type_choices},
             'submitted_contrib_type': {'title': _('Submitted type'), 'filter_choices': type_empty | type_choices},
+            'review_count': {'title': _('Number of reviews')},
             'score': {'title': _('Score')},
+            'score_std': {'title': _('Score standard deviation')},
             'submitted_dt': {'title': _('Submission date')},
             'modified_dt': {'title': _('Modification date')},
             'description': {'title': _('Content')},

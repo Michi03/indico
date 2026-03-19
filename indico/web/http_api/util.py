@@ -1,9 +1,12 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
 # LICENSE file for more details.
+
+from werkzeug.exceptions import UnprocessableEntity
+
 
 def get_query_parameter(queryParams, keys, default=None, integer=False):
     if not isinstance(keys, (list, tuple, set)):
@@ -13,6 +16,9 @@ def get_query_parameter(queryParams, keys, default=None, integer=False):
             continue
         val = queryParams.pop(k)
         if integer:
-            val = int(val)
+            try:
+                val = int(val)
+            except ValueError:
+                raise UnprocessableEntity(f'Expected an integer for {k}')
         return val
     return default

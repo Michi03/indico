@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -38,6 +38,7 @@ def init_sentry(app):
     sentry_sdk.init(
         dsn=config.SENTRY_DSN,
         release=indico.__version__,
+        environment=config.SENTRY_ENVIRONMENT,
         send_default_pii=True,
         attach_stacktrace=True,
         propagate_traces=False,

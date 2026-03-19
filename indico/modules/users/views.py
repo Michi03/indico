@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -71,3 +71,8 @@ class WPUserDataExport(WPUser):
 class WPUsersAdmin(WPAdmin):
     template_prefix = 'users/'
     bundles = ('module_users.js',)
+
+
+class WPAffiliationsDashboard(WPAdmin):
+    template_prefix = 'users/'
+    bundles = ('module_users.affiliations_dashboard.js', 'module_users.affiliations_dashboard.css')

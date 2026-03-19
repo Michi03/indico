@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -47,7 +47,7 @@ function calculateDefaultEndDate(startDate, type, number, interval) {
     // 5 occurrences
     dt.add(4 * number, 'weeks');
   } else {
-    // 7 occurences
+    // 7 occurrences
     dt.add(6 * number, 'months');
   }
   return isMoment ? dt : serializeDate(dt);

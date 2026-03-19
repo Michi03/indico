@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -141,9 +141,12 @@ def _patch_version(add_version_suffix, file_name, search, replace):
     info('adding version suffix: ' + suffix, unimportant=True)
     with open(file_name, 'r+') as f:
         old_content = f.read()
+        new_content = re.sub(search, replace.format(suffix), old_content, flags=re.MULTILINE)
+        if old_content == new_content:
+            fail('adding suffix failed, new file content is unchanged')
         f.seek(0)
         f.truncate()
-        f.write(re.sub(search, replace.format(suffix), old_content, flags=re.MULTILINE))
+        f.write(new_content)
         f.flush()
         try:
             yield

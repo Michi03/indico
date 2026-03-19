@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -33,7 +33,7 @@ import Palette from 'indico/utils/palette';
     },
 
     _update() {
-      // Sort entries aphabetically and by type
+      // Sort entries alphabetically and by type
       this.data = _.chain(this.data)
         .sortBy(item => item[0].name || item[0].id)
         .sortBy(item => item[0]._type)

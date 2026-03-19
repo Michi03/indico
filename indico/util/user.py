@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -212,7 +212,7 @@ def validate_search_token(token, user):
     try:
         sig_uid = secure_serializer.loads(token, max_age=86400, salt='user-search-token')
         if user.id != sig_uid:
-            raise BadSignature
+            raise BadSignature('Invalid search token')
     except BadSignature:
         raise Forbidden('Invalid search token')
 

@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -84,6 +84,20 @@ import {$T} from 'indico/utils/i18n';
     if (options.useMarkdownEditor) {
       const $field = $(`#${options.fieldId}`);
       $field.pagedown();
+
+      // The editor doesn't trigger any input/change events when applying changes via keyboard
+      // shortcuts or the button bar, so we need to manually take care of this to enable submit
+      // buttons etc.
+      const $container = $field.closest('[data-field-id]');
+      const textarea = $container.find('textarea.wmd-input')[0];
+      $container.find('.wmd-button-bar').on('click', () => {
+        textarea.dispatchEvent(new Event('change', {bubbles: true}));
+      });
+      textarea.addEventListener('keydown', evt => {
+        if (evt.ctrlKey) {
+          textarea.dispatchEvent(new Event('change', {bubbles: true}));
+        }
+      });
 
       if (options.maxLength || options.maxWords) {
         updateLimits($field, options);

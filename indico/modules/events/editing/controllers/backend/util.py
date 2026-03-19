@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -16,9 +16,10 @@ from indico.modules.events.editing.settings import editing_settings
 from indico.util.i18n import _
 
 
-def review_and_publish_editable(revision, action, comment, tags=frozenset(), files=None):
+def review_and_publish_editable(revision, action, comment, tags=frozenset(), files=None, *, management=False):
     service_url = editing_settings.get(revision.editable.event, 'service_url')
-    new_revision = review_editable_revision(revision, session.user, action, comment, tags, files)
+    new_revision = review_editable_revision(revision, session.user, action, comment, tags,
+                                            files=files, management=management)
     publish = True
     if service_url:
         try:

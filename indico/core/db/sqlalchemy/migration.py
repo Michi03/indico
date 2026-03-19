@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -80,7 +80,7 @@ def _require_encoding(encoding):
 
 def prepare_db(empty=False, root_path=None, verbose=True, force=False):
     """Initialize an empty database (create tables, set alembic rev to HEAD)."""
-    if not _require_pg_version(13, force=force):
+    if not _require_pg_version(14, force=force):
         return False
     if not _require_encoding('UTF8'):
         return False
@@ -97,7 +97,7 @@ def prepare_db(empty=False, root_path=None, verbose=True, force=False):
         plugin_msg = cformat('%{cyan}Setting the alembic version of the %{cyan!}{}%{reset}%{cyan} '
                              'plugin to HEAD%{reset}')
         for plugin in plugin_engine.get_active_plugins().values():
-            if not os.path.exists(plugin.alembic_versions_path):
+            if not plugin.alembic_versions_path.exists():
                 continue
             if verbose:
                 print(plugin_msg.format(plugin.name))

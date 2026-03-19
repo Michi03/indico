@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -162,7 +162,7 @@ class RHCloneEvent(RHManageEventBase):
         step = int(request.form.get('step', 1))
         tpl_args = {}
         form = self._form_for_step(step, set_defaults=True)
-        prev_form = self._form_for_step(step - 1)
+        prev_form = self._form_for_step(step - 1, set_defaults=False)
 
         if prev_form and not prev_form.validate():
             form = prev_form

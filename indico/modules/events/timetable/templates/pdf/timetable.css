@@ -1,5 +1,5 @@
 /* This file is part of Indico.
- * Copyright (C) 2002 - 2025 CERN
+ * Copyright (C) 2002 - 2026 CERN
  *
  * Indico is free software; you can redistribute it and/or
  * modify it under the terms of the MIT License; see the
@@ -43,14 +43,16 @@ body {
 }
 
 .cover > div.cover-wrapper {
-  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* height of the div must be: 197mm (A4 height) minus 25mm added by WeasyPrint by default */
+  height: 272mm;
+  width: 100%;
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   border: 5px solid var(--primary-color);
   border-radius: 5px;
 }
@@ -58,7 +60,8 @@ body {
 .cover > div.cover-wrapper > div {
   text-align: center;
   width: 100%;
-  margin: 20px;
+  box-sizing: border-box;
+  padding: 20px;
 }
 
 /* TOC */

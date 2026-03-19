@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -22,7 +22,6 @@ import {$T} from 'indico/utils/i18n';
   // data-href.
   // eslint-disable-next-line func-name-matching
   $.fn.ajaxDialog = function jqAjaxDialog(options) {
-    console.log(this);
     return this.on('click', function(e) {
       e.preventDefault();
       if ($(this).hasClass('disabled')) {
@@ -88,6 +87,7 @@ import {$T} from 'indico/utils/i18n';
     let oldOnBeforeUnload = null;
     let ignoreOnBeforeUnload = false;
     let savedFiles = {};
+    const triggerElement = document.activeElement;
 
     loadDialog();
 
@@ -100,6 +100,9 @@ import {$T} from 'indico/utils/i18n';
         type: options.method,
         url: options.url,
         data: $.isFunction(options.data) ? options.data() : options.data,
+        headers: {
+          'X-Indico-CSP-Nonce': window.IndicoCSPNonce,
+        },
         cache: false, // IE caches GET AJAX requests. WTF.
         complete: IndicoUI.Dialogs.Util.progress(),
         error(xhr) {
@@ -209,6 +212,9 @@ import {$T} from 'indico/utils/i18n';
         _onOpen();
         _.defer(() => {
           popup.canvas.focusFirstField();
+          if (!popup.contentContainer[0].contains(document.activeElement)) {
+            popup.contentContainer.attr('tabindex', '-1').trigger('focus');
+          }
         });
 
         return true;
@@ -264,6 +270,9 @@ import {$T} from 'indico/utils/i18n';
         window.onbeforeunload = oldOnBeforeUnload;
       }
       popup = null;
+      if (triggerElement && document.contains(triggerElement)) {
+        triggerElement.focus();
+      }
     }
 
     function _onOpen() {
@@ -351,6 +360,9 @@ import {$T} from 'indico/utils/i18n';
           url: action,
           dataType: 'json',
           data: options.getExtraData.call(this, options.trigger),
+          headers: {
+            'X-Indico-CSP-Nonce': window.IndicoCSPNonce,
+          },
           beforeSubmit() {
             const evt = $.Event('ajaxForm:validateBeforeSubmit');
             $this.trigger(evt);

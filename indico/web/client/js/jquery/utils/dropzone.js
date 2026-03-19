@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -164,7 +164,7 @@ import 'dropzone/dist/dropzone.css';
     };
 
     // include the csrf token in case the dropzone is submitting data to a
-    // seperate endpoint than the form's action
+    // separate endpoint than the form's action
     if (options.url) {
       options.params = {
         csrf_token: $form.find('#csrf_token').val(),

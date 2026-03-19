@@ -1,9 +1,11 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
+
+@use 'base/palette' as *;
 
 .dropzone-area {
   :global(.ui.segment) {
@@ -39,4 +41,8 @@
     margin-top: 10px;
     max-width: none !important;
   }
+}
+
+:global(.field.error) .dropzone-area :global(.ui.segment) {
+  border-color: $red !important;
 }

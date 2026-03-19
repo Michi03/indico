@@ -1,10 +1,11 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
 # LICENSE file for more details.
 
+import statistics
 from collections import Counter, defaultdict
 from itertools import chain
 from operator import attrgetter
@@ -408,6 +409,8 @@ class Abstract(ProposalMixin, ProposalRevisionMixin, DescriptionMixin, CustomFie
     def edit_track_mode(self):
         if not inspect(self).persistent:
             return EditTrackMode.both
+        elif self.state == AbstractState.invited:
+            return EditTrackMode.both
         elif self.state not in {AbstractState.submitted, AbstractState.withdrawn}:
             return EditTrackMode.none
         elif (self.public_state in (AbstractPublicState.awaiting, AbstractPublicState.withdrawn) and
@@ -453,6 +456,13 @@ class Abstract(ProposalMixin, ProposalRevisionMixin, DescriptionMixin, CustomFie
         if not scores:
             return None
         return sum(scores) / len(scores)
+
+    @property
+    def score_std(self) -> float | None:
+        scores = [x.score for x in self.reviews if x.score is not None]
+        if not scores:
+            return None
+        return statistics.pstdev(scores)
 
     @property
     def track_question_scores(self):

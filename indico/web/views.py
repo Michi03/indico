@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -113,7 +113,7 @@ class WPJinjaMixin:
     def render_template(cls, template_name_or_list=None, *wp_args, **context):
         """Render a jinja template inside the WP.
 
-        :param template_name_or_list: the name of the template - if unsed, the
+        :param template_name_or_list: the name of the template - if unset, the
                                       `_template` attribute of the class is used.
                                       can also be a list containing multiple
                                       templates (the first existing one is used)

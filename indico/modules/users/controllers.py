@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -20,7 +20,7 @@ from PIL import Image
 from sqlalchemy.orm import joinedload, load_only, subqueryload
 from sqlalchemy.orm.exc import StaleDataError
 from webargs import validate
-from werkzeug.exceptions import BadRequest, Forbidden, NotFound
+from werkzeug.exceptions import BadRequest, Forbidden, NotFound, ServiceUnavailable
 
 from indico.core import signals
 from indico.core.auth import multipass
@@ -41,7 +41,8 @@ from indico.modules.events import Event
 from indico.modules.events.contributions.models.contributions import Contribution
 from indico.modules.events.sessions.models.sessions import Session
 from indico.modules.events.util import serialize_event_for_ical
-from indico.modules.logs.models.entries import LogKind, UserLogRealm
+from indico.modules.logs.models.entries import AppLogRealm, LogKind, UserLogRealm
+from indico.modules.logs.util import make_diff_log
 from indico.modules.users import User, logger, user_management_settings
 from indico.modules.users.export_schemas import DataExportRequestSchema
 from indico.modules.users.forms import (AdminAccountRegistrationForm, AdminsForm, AdminUserSettingsForm, MergeForm,
@@ -50,16 +51,18 @@ from indico.modules.users.models.affiliations import Affiliation
 from indico.modules.users.models.emails import UserEmail
 from indico.modules.users.models.export import DataExportOptions, DataExportRequestState
 from indico.modules.users.models.users import ProfilePictureSource, UserTitle
-from indico.modules.users.operations import create_user, delete_or_anonymize_user, grant_admin, revoke_admin
-from indico.modules.users.schemas import (AffiliationSchema, BasicCategorySchema, FavoriteEventSchema,
+from indico.modules.users.operations import (add_secondary_email, create_user, delete_or_anonymize_user, grant_admin,
+                                             revoke_admin)
+from indico.modules.users.schemas import (AffiliationArgs, AffiliationSchema, BasicCategorySchema, FavoriteEventSchema,
                                           UserPersonalDataSchema)
-from indico.modules.users.util import (get_avatar_url_from_name, get_gravatar_for_user, get_linked_events,
-                                       get_mastodon_server_name, get_related_categories, get_suggested_categories,
-                                       get_unlisted_events, get_user_by_email, get_user_titles, log_user_update,
-                                       merge_users, search_affiliations, search_users, send_avatar, serialize_user,
-                                       set_user_avatar)
-from indico.modules.users.views import (WPUser, WPUserDashboard, WPUserDataExport, WPUserFavorites, WPUserPersonalData,
-                                        WPUserProfilePic, WPUsersAdmin)
+from indico.modules.users.util import (GravatarError, get_avatar_url_from_name, get_gravatar_for_user,
+                                       get_linked_events, get_mastodon_server_name, get_related_categories,
+                                       get_suggested_categories, get_unlisted_events, get_user_by_email,
+                                       get_user_titles, log_user_update, merge_users, search_affiliations, search_users,
+                                       send_avatar, serialize_user, set_user_avatar)
+from indico.modules.users.views import (WPAffiliationsDashboard, WPUser, WPUserDashboard, WPUserDataExport,
+                                        WPUserFavorites, WPUserPersonalData, WPUserProfilePic, WPUsersAdmin)
+from indico.util.countries import get_countries
 from indico.util.date_time import now_utc
 from indico.util.i18n import _, force_locale
 from indico.util.images import square
@@ -324,7 +327,82 @@ class RHSearchAffiliations(RH):
     @use_kwargs({'q': fields.String(load_default='')}, location='query')
     def _process(self, q):
         res = search_affiliations(q)
-        return AffiliationSchema(many=True).jsonify(res)
+        basic_fields = ('id', 'name', 'street', 'postcode', 'city', 'country_code', 'meta')
+        return AffiliationSchema(many=True, only=basic_fields).jsonify(res)
+
+
+class RHAffiliationsAPI(RHAdminBase):
+    """List/create affiliations via the admin API."""
+
+    def _process_GET(self):
+        affiliations = (Affiliation.query
+                        .filter(~Affiliation.is_deleted)
+                        .order_by(db.func.indico.indico_unaccent(db.func.lower(Affiliation.name)))
+                        .all())
+        return AffiliationSchema(many=True).jsonify(affiliations)
+
+    @use_args(AffiliationArgs)
+    def _process_POST(self, data):
+        affiliation = Affiliation()
+        affiliation.populate_from_dict(data)
+        db.session.add(affiliation)
+        db.session.flush()
+        signals.affiliations.affiliation_created.send(affiliation)
+        affiliation.log(AppLogRealm.admin, LogKind.positive, 'Affiliation',
+                         f'Affiliation "{affiliation.name}" created', session.user)
+        search_affiliations.bump_version()
+        return AffiliationSchema().jsonify(affiliation), 201
+
+
+class RHAffiliationAPI(RHAdminBase):
+    """CRUD operations on a single affiliation."""
+
+    @use_kwargs({
+        'affiliation': ModelField(Affiliation, filter_deleted=True, required=True, data_key='affiliation_id')
+    }, location='view_args')
+    def _process_args(self, affiliation):
+        RHAdminBase._process_args(self)
+        self.affiliation = affiliation
+
+    def _process_GET(self):
+        return AffiliationSchema().jsonify(self.affiliation)
+
+    @use_args(AffiliationArgs, partial=True)
+    def _process_PATCH(self, data):
+        signals.affiliations.affiliation_updated.send(self.affiliation, payload=data)
+        if not data:
+            return '', 204
+        changes = self.affiliation.populate_from_dict(data)
+        db.session.flush()
+        log_fields = {
+            'name': 'Name',
+            'alt_names': 'Alternative names',
+            'street': 'Street',
+            'postcode': 'Postcode',
+            'city': 'City',
+            'country_code': 'Country',
+            'meta': 'Metadata',
+        }
+        self.affiliation.log(AppLogRealm.admin, LogKind.change, 'Affiliation',
+                                f'Affiliation "{self.affiliation.name}" modified', session.user,
+                                data={'Changes': make_diff_log(changes, log_fields)})
+        search_affiliations.bump_version()
+        return '', 204
+
+    def _process_DELETE(self):
+        self.affiliation.is_deleted = True
+        db.session.flush()
+        self.affiliation.log(AppLogRealm.admin, LogKind.negative, 'Affiliation',
+                             f'Affiliation "{self.affiliation.name}" deleted', session.user)
+        search_affiliations.bump_version()
+        return '', 204
+
+
+class RHCountries(RHAdminBase):
+    """Return the available countries for affiliation forms."""
+
+    def _process(self):
+        return jsonify(list(get_countries().items()))
 
 
 class RHProfilePicturePage(RHUserBase):
@@ -332,7 +410,8 @@ class RHProfilePicturePage(RHUserBase):
 
     def _process(self):
         return WPUserProfilePic.render_template('profile_picture.html', 'profile_picture',
-                                                user=self.user, source=self.user.picture_source.name)
+                                                user=self.user, source=self.user.picture_source.name,
+                                                gravatar_enabled=not config.DISABLE_GRAVATAR)
 
 
 class RHProfilePicturePreview(RHUserBase):
@@ -354,9 +433,14 @@ class RHProfilePicturePreview(RHUserBase):
             metadata = self.user.picture_metadata
             return send_file('avatar.png', BytesIO(self.user.picture), mimetype=metadata['content_type'],
                              no_cache=True, inline=True)
-        else:
-            gravatar = get_gravatar_for_user(self.user, source == ProfilePictureSource.identicon, size=80)[0]
+        elif not config.DISABLE_GRAVATAR:
+            try:
+                gravatar = get_gravatar_for_user(self.user, source == ProfilePictureSource.identicon, size=80)[0]
+            except GravatarError as exc:
+                raise ServiceUnavailable(str(exc))
             return send_file('avatar.png', BytesIO(gravatar), mimetype='image/png')
+        else:
+            raise NotFound
 
 
 class RHProfilePictureDisplay(RH):
@@ -383,6 +467,8 @@ class RHSaveProfilePicture(RHUserBase):
         'source': fields.Enum(ProfilePictureSource, required=True)
     })
     def _process(self, source):
+        if source.is_gravatar and config.DISABLE_GRAVATAR:
+            raise UserValueError('Gravatar has been disabled by the system administrators.')
         self.user.picture_source = source
 
         if source == ProfilePictureSource.standard:
@@ -410,7 +496,10 @@ class RHSaveProfilePicture(RHUserBase):
             image_bytes.seek(0)
             set_user_avatar(self.user, image_bytes.read(), f.filename)
         else:
-            content, lastmod = get_gravatar_for_user(self.user, source == ProfilePictureSource.identicon, 256)
+            try:
+                content, lastmod = get_gravatar_for_user(self.user, source == ProfilePictureSource.identicon, 256)
+            except GravatarError as exc:
+                raise ServiceUnavailable(str(exc))
             set_user_avatar(self.user, content, source.name, lastmod)
 
         logger.info('Profile picture of user %s updated by %s', self.user, session.user)
@@ -591,14 +680,25 @@ class RHUserEmails(RHUserBase):
             send_email(email_to_send)
 
     def _process(self):
-        form = UserEmailsForm()
+        form = UserEmailsForm(allow_skip_validation=(session.user.is_admin and session.user != self.user))
         if form.validate_on_submit():
-            self._send_confirmation(form.email.data)
+            email = form.email.data
+            # Admin flow: skip validation, since the only time an admin needs to add an email to an existing user
+            # is when they cannot login, so they also cannot use the verification link that's usually sent since
+            # it requires being logged in to the account
+            if 'skip_validation' in form and form.skip_validation.data:
+                add_secondary_email(self.user, email, validation_skipped=True)
+                flash(_('The email address {email} has been added to the account.').format(email=email), 'success')
+                return redirect(url_for('.user_emails'))
+
+            # Normal flow: send confirmation email to the new address
+            self._send_confirmation(email)
             self.user.log(UserLogRealm.user, LogKind.other, 'Profile', 'Validating new secondary email',
-                          session.user, data={'Email': form.email.data})
+                          session.user, data={'Email': email})
             flash(_('We have sent an email to {email}. Please click the link in that email within 24 hours to '
-                    'confirm your new email address.').format(email=form.email.data), 'success')
+                    'confirm your new email address.').format(email=email), 'success')
             return redirect(url_for('.user_emails'))
+
         return WPUser.render_template('emails.html', 'emails', user=self.user, form=form)
 
 
@@ -609,43 +709,26 @@ class RHUserEmailsVerify(RHUserBase):
     def _validate(self, data):
         if not data:
             flash(_('The verification token is invalid or expired.'), 'error')
-            return False, None
+            return False
         user = User.get(data['user_id'])
         if not user or user != self.user:
             flash(_('This token is for a different Indico user. Please login with the correct account'), 'error')
-            return False, None
+            return False
         existing = UserEmail.query.filter_by(is_user_deleted=False, email=data['email']).first()
         if existing and not existing.user.is_pending:
             if existing.user == self.user:
                 flash(_('This email address is already attached to your account.'))
             else:
                 flash(_('This email address is already in use by another account.'), 'error')
-            return False, existing.user
-        return True, existing.user if existing else None
+            return False
+        return True
 
     def _process(self):
         token = request.view_args['token']
         data = self.token_storage.get(token)
-        valid, existing = self._validate(data)
-        if valid:
+        if self._validate(data):
             self.token_storage.delete(token)
-
-            if existing and existing.is_pending:
-                logger.info('Found pending user %s to be merged into %s', existing, self.user)
-
-                # If the pending user has missing names, copy them from the active one
-                # to allow it to be marked as not pending and deleted during the merge.
-                existing.first_name = existing.first_name or self.user.first_name
-                existing.last_name = existing.last_name or self.user.last_name
-
-                merge_users(existing, self.user)
-                flash(_("Merged data from existing '{}' identity").format(existing.email))
-                existing.is_pending = False
-
-            self.user.secondary_emails.add(data['email'])
-            self.user.log(UserLogRealm.user, LogKind.positive, 'Profile', 'Secondary email added', session.user,
-                          data={'Email': data['email']})
-            signals.users.email_added.send(self.user, email=data['email'], silent=False)
+            add_secondary_email(self.user, data['email'])
             flash(_('The email address {email} has been added to your account.').format(email=data['email']), 'success')
         return redirect(url_for('.user_emails'))
 
@@ -671,7 +754,7 @@ class RHUserEmailsSetPrimary(RHUserBase):
             self.user.log(UserLogRealm.user, LogKind.change, 'Profile', 'Primary email updated',
                           session.user, data={'Old': old, 'New': email})
             db.session.commit()
-            if self.user.picture_source in (ProfilePictureSource.gravatar, ProfilePictureSource.identicon):
+            if not config.DISABLE_GRAVATAR and self.user.picture_source.is_gravatar:
                 update_gravatars.delay(self.user)
             flash(_('Your primary email was updated successfully.'), 'success')
             if 'email' in self.user.synced_fields:
@@ -754,6 +837,13 @@ class RHUsersAdmin(RHAdminBase):
                                             has_moderation=multipass.has_moderated_providers)
 
 
+class RHAffiliationsDashboard(RHAdminBase):
+    """Entry point for the Affiliations admin dashboard."""
+
+    def _process(self):
+        return WPAffiliationsDashboard.render_template('affiliations_dashboard.html', 'affiliations')
+
+
 class RHUsersAdminSettings(RHAdminBase):
     """Manage global user-related settings."""
 
@@ -762,7 +852,7 @@ class RHUsersAdminSettings(RHAdminBase):
         if form.validate_on_submit():
             user_management_settings.set_multi(form.data)
             return jsonify_data(flash=False)
-        return jsonify_form(form)
+        return jsonify_form(form, fieldsets=form._fieldsets)
 
 
 class RHUsersAdminCreate(RHAdminBase):

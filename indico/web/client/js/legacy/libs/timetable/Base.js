@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -917,7 +917,7 @@ type(
 
       if (msg == 'OWNER_END_DATE_EXTENDED') {
         // Make sure that something changed, otherwise the
-        // warning will be supressed
+        // warning will be suppressed
         if (endTime != finalTime) {
           // slice(1) to ignore first value
           return concat(entry.slice(1), [endTime, title]);

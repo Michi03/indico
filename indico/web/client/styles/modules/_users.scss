@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -184,4 +184,14 @@
 
 .unlisted-events-action {
   font-size: 1.05em;
+}
+
+.user-deletion-warnings {
+  padding-top: 15px;
+  padding-bottom: 15px;
+
+  > ul > li::before {
+    /* hide fake list bullet from SUI */
+    display: none;
+  }
 }

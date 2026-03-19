@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -49,7 +49,7 @@ class ReceiptAreaMixin:
 
     @property
     def object_type(self):
-        """Figure out whether we're targetting an event or category, based on URL info."""
+        """Figure out whether we're targeting an event or category, based on URL info."""
         return request.view_args['object_type']
 
     @property

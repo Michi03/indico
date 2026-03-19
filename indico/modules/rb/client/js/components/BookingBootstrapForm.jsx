@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -373,6 +373,7 @@ class BookingBootstrapForm extends React.Component {
         {['every', 'daily'].includes(type) && (
           <Form.Group inline>
             <DateRangePicker
+              required
               min={getBookingRangeMinDate(isAdminOverrideEnabled, bookingGracePeriod)}
               value={{startDate: serializeDate(startDate), endDate: serializeDate(endDate)}}
               onChange={({startDate: sd, endDate: ed}) =>
@@ -384,6 +385,7 @@ class BookingBootstrapForm extends React.Component {
         {type === 'single' && (
           <Form.Group inline>
             <DatePicker
+              required
               min={getBookingRangeMinDate(isAdminOverrideEnabled, bookingGracePeriod)}
               value={serializeDate(startDate)}
               invalidValue={null}

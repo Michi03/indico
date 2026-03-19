@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -60,14 +60,14 @@ class RHExportSubmissionsCSV(RHExportSubmissionsBase):
     """Export submissions as CSV."""
 
     def _export(self, filename, headers, rows):
-        return send_csv(filename + '.csv', headers, rows)
+        return send_csv(f'{filename}.csv', headers, rows)
 
 
 class RHExportSubmissionsExcel(RHExportSubmissionsBase):
     """Export submissions as XLSX."""
 
     def _export(self, filename, headers, rows):
-        return send_xlsx(filename + '.xlsx', headers, rows, tz=self.event.tzinfo)
+        return send_xlsx(f'{filename}.xlsx', headers, rows, tz=self.event.tzinfo)
 
 
 class RHSurveySubmissionBase(RHManageSurveysBase):

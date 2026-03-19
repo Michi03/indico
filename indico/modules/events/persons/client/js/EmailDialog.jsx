@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -20,7 +20,7 @@ import {
 import {FinalCheckbox, FinalDropdown, FinalInput} from 'indico/react/forms';
 import {FinalModalForm} from 'indico/react/forms/final-form';
 import {Translate, PluralTranslate, Singular, Plural, Param} from 'indico/react/i18n';
-import {indicoAxios} from 'indico/utils/axios';
+import {handleAxiosError, indicoAxios} from 'indico/utils/axios';
 
 function RecipientsField({recipients}) {
   return (
@@ -76,40 +76,63 @@ export function EmailSentMessage({count}) {
   );
 }
 
-EmailSentMessage.propTypes = {count: PropTypes.number.isRequired};
+EmailSentMessage.propTypes = {
+  count: PropTypes.number.isRequired,
+};
 
 export function EmailDialog({
   onClose,
   onSubmit,
   senders,
   sentEmailsCount,
+  sentEmailsWarning,
   previewURL,
   previewContext,
   placeholders,
   recipients,
   recipientsField,
+  recipientsFirst,
   initialFormValues,
   validate,
+  title,
+  getPreviewPayload,
+  imageUploadURL,
 }) {
   const [preview, setPreview] = useState(null);
 
-  const togglePreview = async ({body, subject}) => {
+  const togglePreview = async (values, contextOverride = null) => {
+    const {body, subject} = values;
     if (preview) {
       setPreview(undefined);
       return;
     }
-    const {data} = await indicoAxios.post(previewURL, {body, subject, ...previewContext});
-    setPreview(data);
+    const payload = {body, subject, ...previewContext, ...(contextOverride || {})};
+    let resp;
+    try {
+      resp = await indicoAxios.post(previewURL, payload);
+    } catch (error) {
+      handleAxiosError(error);
+      return;
+    }
+    setPreview(resp.data);
   };
 
   const extraActions = (
     <Form.Field style={{marginRight: 'auto'}}>
       <FormSpy subscription={{values: true}}>
-        {({values}) => (
-          <Button type="button" active={!!preview} onClick={() => togglePreview(values)}>
-            {!preview ? <Translate>Preview</Translate> : <Translate>Edit</Translate>}
-          </Button>
-        )}
+        {({values}) => {
+          const previewData = getPreviewPayload ? getPreviewPayload(values) : null;
+          return (
+            <Button
+              type="button"
+              active={!!preview}
+              disabled={!preview && previewData?.disabled}
+              onClick={() => togglePreview(values, previewData?.context)}
+            >
+              {!preview ? <Translate>Preview</Translate> : <Translate>Edit</Translate>}
+            </Button>
+          );
+        }}
       </FormSpy>
     </Form.Field>
   );
@@ -146,6 +169,7 @@ export function EmailDialog({
     <>
       {preview && renderPreview()}
       <Form.Field style={{display: preview ? 'none' : 'block'}}>
+        {recipientsFirst && (recipientsField || <RecipientsField recipients={recipients} />)}
         <FinalDropdown
           name="sender_address"
           label={Translate.string('Sender')}
@@ -159,14 +183,14 @@ export function EmailDialog({
           name="body"
           label={Translate.string('Email body')}
           required
-          config={{images: false, forceAbsoluteURLs: true}}
+          config={{images: !!imageUploadURL, forceAbsoluteURLs: true, imageUploadURL}}
         />
         {placeholders.length > 0 && (
           <Form.Field>
             <PlaceholderInfo placeholders={placeholders} defaultOpen />
           </Form.Field>
         )}
-        {recipientsField || <RecipientsField recipients={recipients} />}
+        {!recipientsFirst && (recipientsField || <RecipientsField recipients={recipients} />)}
         <FinalEmailList
           name="bcc_addresses"
           label={Translate.string('BCC addresses')}
@@ -185,7 +209,7 @@ export function EmailDialog({
     <FinalModalForm
       id="send-email"
       size="standard"
-      header={Translate.string('Send email')}
+      header={title || Translate.string('Send email')}
       initialValues={{
         sender_address: senders[0][0],
         subject: '',
@@ -196,7 +220,13 @@ export function EmailDialog({
       }}
       initialValuesEqual={_.isEqual}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={async (...args) => {
+        const resp = await onSubmit(...args);
+        if (resp) {
+          setPreview(null);
+        }
+        return resp;
+      }}
       submitLabel={Translate.string('Send')}
       extraActions={({submitSucceeded}) => !submitSucceeded && extraActions}
       disabledUntilChange={false}
@@ -206,7 +236,20 @@ export function EmailDialog({
       validate={validate}
     >
       {({submitSucceeded}) =>
-        submitSucceeded ? <EmailSentMessage count={sentEmailsCount} /> : form
+        submitSucceeded ? (
+          <>
+            <EmailSentMessage count={sentEmailsCount} />
+            <Message
+              icon="warning sign"
+              content={sentEmailsWarning}
+              hidden={!sentEmailsWarning}
+              warning
+              visible
+            />
+          </>
+        ) : (
+          form
+        )
       }
     </FinalModalForm>
   );
@@ -224,15 +267,25 @@ EmailDialog.propTypes = {
   recipients: PropTypes.arrayOf(PropTypes.string),
   /** React node to render instead of the default <RecipientsField /> component. */
   recipientsField: PropTypes.node,
+  recipientsFirst: PropTypes.bool,
   initialFormValues: PropTypes.object,
   validate: PropTypes.func,
+  title: PropTypes.string,
+  getPreviewPayload: PropTypes.func,
+  sentEmailsWarning: PropTypes.node,
+  imageUploadURL: PropTypes.string,
 };
 
 EmailDialog.defaultProps = {
   previewContext: {},
   initialFormValues: {},
   sentEmailsCount: 0,
+  sentEmailsWarning: null,
   recipients: [],
   recipientsField: null,
+  recipientsFirst: false,
   validate: undefined,
+  title: null,
+  getPreviewPayload: null,
+  imageUploadURL: null,
 };

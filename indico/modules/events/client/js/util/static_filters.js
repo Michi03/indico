@@ -1,11 +1,9 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
-
-import _ from 'lodash';
 
 import {$T} from 'indico/utils/i18n';
 
@@ -17,11 +15,10 @@ import {$T} from 'indico/utils/i18n';
   }
 
   function setState(state, visible, total) {
-    state.html($('<span>').append(formatState(visible, total)));
-    state.attr(
-      'title',
-      $T.gettext('{0} out of {1} displayed').format(visible.length, total.length)
-    );
+    state
+      .find('[data-tip-content]')
+      .text($T.gettext('{0} out of {1} displayed').format(visible.length, total.length));
+    state.find('[aria-hidden]').html(formatState(visible, total));
     if (!totalDurationDisplay) {
       totalDurationDisplay = $('#total-duration').detach();
     }
@@ -44,9 +41,10 @@ import {$T} from 'indico/utils/i18n';
       $state.removeClass('active');
       setState($state, $items, $items);
       if (totalDurationDisplay) {
-        $state.after(totalDurationDisplay);
+        $state.closest('ind-with-tooltip').after(totalDurationDisplay);
         totalDurationDisplay = null;
       }
+      $filterPlaceholder.hide();
       return;
     }
 
@@ -84,7 +82,7 @@ import {$T} from 'indico/utils/i18n';
   }
 
   global.setupSearchBox = function setupSearchBox(config) {
-    const applySearchFilters = _.partial(_applySearchFilters, config);
+    const applySearchFilters = _applySearchFilters.bind(null, config);
     const $term = $(config.term);
 
     if ($term.length) {

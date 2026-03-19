@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -32,7 +32,7 @@ class PyIntEnum(TypeDecorator, SchemaType):
     By default all enum members are allowed, but `exclude_values`
     can be used to exclude some.
 
-    :param enum: the Enum repesented by this type's values
+    :param enum: the Enum represented by this type's values
     :param exclude_values: a set of Enum values which are not allowed
     :raise ValueError: when using/loading a value not in the Enum.
     """

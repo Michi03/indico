@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -131,9 +131,10 @@ class DateRange:
 
     field_flags = {'date_range': True}
 
-    def __init__(self, earliest='today', latest=None):
+    def __init__(self, *, earliest='today', latest=None, always_validate=False):
         self.earliest = earliest
         self.latest = latest
+        self.always_validate = always_validate
         # set to true in get_earliest/get_latest if applicable
         self.earliest_today = False
         self.latest_today = False
@@ -144,7 +145,7 @@ class DateRange:
         field_date = field.data
         earliest_date = self.get_earliest(form, field)
         latest_date = self.get_latest(form, field)
-        if field_date != field.object_data:
+        if self.always_validate or field_date != field.object_data:
             if earliest_date and field_date < earliest_date:
                 if self.earliest_today:
                     msg = _("'{}' can't be in the past").format(field.label)
@@ -364,7 +365,7 @@ class WordCount:
 class IndicoRegexp(Regexp):
     """
     Like the WTForms `Regexp` validator, but supports populating the
-    HTML5 `patttern` attribute (the regex may not use any non-standard
+    HTML5 `pattern` attribute (the regex may not use any non-standard
     Python extensions such as named groups in this case).
     """
 

@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -9,6 +9,7 @@ from celery.schedules import crontab
 from sqlalchemy.orm.attributes import flag_modified
 
 from indico.core.celery import celery
+from indico.core.config import config
 from indico.core.db import db
 from indico.modules.users import logger
 from indico.modules.users.export import export_user_data as _export_user_data
@@ -22,9 +23,12 @@ from indico.util.string import crc32
 
 @celery.periodic_task(name='update_gravatars', run_every=crontab(minute='0', hour='0'))
 def update_gravatars(user=None):
+    if config.DISABLE_GRAVATAR:
+        logger.debug('Skipping Gravatar updates; the integration is disabled')
+        return
     if user is not None:
         # explicitly scheduled update (after an email change)
-        if user.picture_source not in (ProfilePictureSource.gravatar, ProfilePictureSource.identicon):
+        if not user.picture_source.is_gravatar:
             return
         users = [user]
     else:

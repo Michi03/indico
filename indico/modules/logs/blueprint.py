@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -33,7 +33,7 @@ with _bp.add_prefixed_rules('/user/<int:user_id>', '/user'):
 
 # Actions
 _bp.add_url_rule('/event/<int:event_id>/manage/logs/api/resend-email/<int:log_entry_id>', 'resend_email',
-                 RHResendEmail, methods=('POST',))
+                 RHResendEmail, methods=('GET', 'POST'))
 
 
 @_bp.url_defaults

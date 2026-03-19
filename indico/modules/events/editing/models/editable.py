@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -159,6 +159,10 @@ class Editable(db.Model):
     @property
     def last_update_dt(self):
         return self.latest_revision.last_update_dt if self.latest_revision else None
+
+    @property
+    def has_publishable_files(self):
+        return self.latest_revision_with_files.has_publishable_files
 
     def _has_general_editor_permissions(self, user):
         """Whether the user has general editor permissions on the Editable.

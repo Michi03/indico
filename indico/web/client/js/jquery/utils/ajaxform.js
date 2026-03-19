@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -103,6 +103,9 @@ import {$T} from 'indico/utils/i18n';
         url: options.load.url,
         method: options.load.method,
         data: options.load.data,
+        headers: {
+          'X-Indico-CSP-Nonce': window.IndicoCSPNonce,
+        },
         cache: false,
         dataType: 'json',
         complete: IndicoUI.Dialogs.Util.progress(),
@@ -232,6 +235,9 @@ import {$T} from 'indico/utils/i18n';
       return {
         url: $form.attr('action') || formUrl,
         dataType: 'json',
+        headers: {
+          'X-Indico-CSP-Nonce': window.IndicoCSPNonce,
+        },
         beforeSubmit() {
           if ($form.data('dropzoneField') && $form.get(0).dropzone.files.length !== 0) {
             // Dropzone takes care of the form submission

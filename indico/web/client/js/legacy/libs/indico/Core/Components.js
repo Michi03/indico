@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -51,7 +51,7 @@ var IndicoUI = {
     element.setStyle('zIndex', this.__globalLayerLevel + 3000);
   },
   /**
-   * Marks a layer level as unused, call this funtion
+   * Marks a layer level as unused, call this function
    * when closing an element
    */
   unAssignLayerLevel: function(element) {

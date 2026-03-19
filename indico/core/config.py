@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -42,8 +42,13 @@ DEFAULTS = {
     'CELERY_BROKER': None,
     'CELERY_CONFIG': {},
     'CELERY_RESULT_BACKEND': None,
+    'CHECK_ACTION_PERMISSIONS': False,
     'CHECKIN_APP_URL': 'https://checkin.getindico.io',
     'COMMUNITY_HUB_URL': 'https://hub.getindico.io',
+    'CSP_ENABLED': False,
+    'CSP_REPORT_URI': None,
+    'CSP_SCRIPT_SOURCES': set(),
+    'CSP_DIRECTIVES': set(),
     'CUSTOMIZATION_DEBUG': False,
     'CUSTOMIZATION_DIR': None,
     'CUSTOM_COUNTRIES': {},
@@ -53,7 +58,9 @@ DEFAULTS = {
     'DEFAULT_LOCALE': 'en_GB',
     'DEFAULT_TIMEZONE': 'UTC',
     'DISABLE_CELERY_CHECK': None,
+    'DISABLE_GRAVATAR': False,
     'EMAIL_BACKEND': 'indico.vendor.django_mail.backends.smtp.EmailBackend',
+    'EMAIL_LOG_STORAGE': None,
     'ENABLE_APPLE_WALLET': False,
     'ENABLE_GOOGLE_WALLET': False,
     'ENABLE_ROOMBOOKING': False,
@@ -88,6 +95,7 @@ DEFAULTS = {
     'SCHEDULED_TASK_OVERRIDE': {},
     'SECRET_KEY': None,
     'SENTRY_DSN': None,
+    'SENTRY_ENVIRONMENT': 'production',
     'SENTRY_LOGGING_LEVEL': 'WARNING',
     'SESSION_LIFETIME': 86400 * 31,
     'SESSION_MAX_LIFETIME': None,
@@ -102,6 +110,7 @@ DEFAULTS = {
     'SMTP_SERVER': ('localhost', 25),
     'SMTP_TIMEOUT': 30,
     'SMTP_USE_CELERY': True,
+    'SMTP_USE_SSL': False,
     'SMTP_USE_TLS': False,
     'SQLALCHEMY_DATABASE_URI': None,
     'SQLALCHEMY_MAX_OVERFLOW': 3,
@@ -313,8 +322,12 @@ class IndicoConfig:
             raise ValueError(f'Invalid default timezone: {self.DEFAULT_TIMEZONE}')
         if self.SMTP_ALLOWED_SENDERS and not self.SMTP_SENDER_FALLBACK:
             raise ValueError('Cannot restrict SMTP senders without a fallback')
+        if self.SMTP_USE_TLS and self.SMTP_USE_SSL:
+            raise ValueError('SMTP_USE_TLS and SMTP_USE_SSL are mutually exclusive')
         if not self.DEBUG and self.LOCAL_PASSWORD_MIN_LENGTH < 8:
             raise ValueError('Minimum password length cannot be less than 8 characters long')
+        if self.CSP_ENABLED not in {True, False, 'report-only'}:
+            raise ValueError(f'Invalid value for CSP_ENABLED: {self.CSP_ENABLED!r}')
 
     def __getattr__(self, name):
         try:

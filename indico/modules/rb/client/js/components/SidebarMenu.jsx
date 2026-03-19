@@ -1,5 +1,5 @@
 // This file is part of Indico.
-// Copyright (C) 2002 - 2025 CERN
+// Copyright (C) 2002 - 2026 CERN
 //
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
@@ -205,6 +205,7 @@ export default connect(
           {
             myBookings: true,
             hideUnused: true,
+            hideUsed: false,
           },
           false
         )
@@ -219,6 +220,7 @@ export default connect(
           {
             onlyMine: true,
             hideUnused: true,
+            hideUsed: false,
           },
           false
         )

@@ -1,5 +1,5 @@
 # This file is part of Indico.
-# Copyright (C) 2002 - 2025 CERN
+# Copyright (C) 2002 - 2026 CERN
 #
 # Indico is free software; you can redistribute it and/or
 # modify it under the terms of the MIT License; see the
@@ -20,7 +20,7 @@ def send_new_agreements(event, name, people, email_body, cc_addresses, sender_ad
     """Create and send agreements for a list of people on a given event.
 
     :param event: The `Event` associated with the agreement
-    :param name: The agreement type matcing a :class:`AgreementDefinition` name
+    :param name: The agreement type matching a :class:`AgreementDefinition` name
     :param people: The list of people for whom agreements will be created
     :param email_body: The body of the email
     :param cc_addresses: Email addresses to send CCs to
