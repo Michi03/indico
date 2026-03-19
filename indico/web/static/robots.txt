@@ -7,4 +7,5 @@ Disallow: /category/*/upcoming
 Disallow: /search/*
 Disallow: /api/*
 Disallow: /admin/*
+Disallow: /event/*/registrations/participants
 Crawl-delay: 10
