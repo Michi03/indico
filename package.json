@@ -37,7 +37,7 @@
     "jquery-form": "^4.3.0",
     "jquery-migrate": "^3.4.0",
     "jquery-typeahead": "^2.11.1",
-    "jquery-ui": "^1.13.2",
+    "jquery-ui": "~1.12.1",
     "jquery.typewatch": "^3.0.2",
     "leaflet": "^1.8.0",
     "leaflet-draw": "^1.0.4",
