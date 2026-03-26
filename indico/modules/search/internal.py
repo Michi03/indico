@@ -72,6 +72,13 @@ def _apply_contrib_access_strategy(rel):
     return rel
 
 
+def get_category_ids(category):
+    category_ids = [category.id]
+    for subcategory in category.children:
+        category_ids += get_category_ids(subcategory)
+    return category_ids
+
+
 class InternalSearch(IndicoSearchProvider):
     def search(self, query, user=None, page=None, object_types=(), *, admin_override_enabled=False, **params):
         params = _InternalSearchArgs().load(params)
@@ -247,10 +254,9 @@ class InternalSearch(IndicoSearchProvider):
                 if str(person.full_name).lower() == query_string:
                     persons.append(person)
         for person in persons:
-            links = EventPersonLink.query.filter(EventPersonLink.person_id == person.id)
-            for link in links:
+            for link in EventPersonLink.query.filter(EventPersonLink.person_id == person.id):
                 event = Event.query.get(link.event_id)
-                if not event.is_deleted and not event.is_unlisted and event.category_id == category_id:
+                if not event.is_deleted and not event.is_unlisted and event.category_id in get_category_ids(category_id):
                     objs.append(event)
 
         query = (
