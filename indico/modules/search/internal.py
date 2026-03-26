@@ -256,7 +256,7 @@ class InternalSearch(IndicoSearchProvider):
         for person in persons:
             for link in EventPersonLink.query.filter(EventPersonLink.person_id == person.id):
                 event = Event.query.get(link.event_id)
-                if not event.is_deleted and not event.is_unlisted and event.category_id in get_category_ids(category_id):
+                if not event.is_deleted and not event.is_unlisted and event.category_id in get_category_ids(Category.get(category_id or 0)):
                     objs.append(event)
 
         query = (
