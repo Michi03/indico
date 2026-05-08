@@ -27,8 +27,8 @@ def notify_invitation(invitation, subject, body, sender_address, *, bcc_addresse
     bcc = set(bcc_addresses or [])
     if copy_for_sender and user:
         bcc.add(user.email)
-    email = make_email(invitation.email, sender_address=sender_address, template=template, html=True,
-                       bcc_list=bcc)
+    email = make_email(invitation.email, sender_address=config.NO_REPLY_EMAIL, template=template, html=True,
+                       bcc_list=bcc, reply_address=sender_address)
     send_email(email, invitation.registration_form.event, 'Registration', user)
 
 
