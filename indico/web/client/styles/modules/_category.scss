@@ -118,7 +118,8 @@
 .category-content-wrapper {
   grid-area: ct;
   overflow-x: hidden;
-  padding: 2em var(--horizontal-padding);
+  /* padding: 2em var(--horizontal-padding); */
+  padding: 2em 1em;
 }
 
 .category-stats-container {
@@ -409,7 +410,7 @@ ul.category-resource-qtip {
     font-weight: normal;
     font-size: 18px;
     margin-top: 20px;
-    margin-left: 40px;
+    /* margin-left: 40px; */
     padding: 0;
     border-bottom: 1px solid #ebebeb;
 
@@ -434,7 +435,8 @@ ul.category-resource-qtip {
   }
 
   li {
-    margin: 0 0 10px 60px;
+    /* margin: 0 0 10px 60px; */
+    margin: 0 0 10px 0;
     padding: 0;
     display: flex;
     align-items: baseline;
@@ -453,12 +455,13 @@ ul.category-resource-qtip {
     }
 
     .event-icons {
-      padding: 0 15px;
+      /* padding: 0 15px; */
+      padding: 0 15px 0 0;
       font-size: 1.2em;
       white-space: nowrap;
       color: var(--text-secondary-color);
       max-width: 56px;
-      min-width: 56px;
+      /* min-width: 56px; */
 
       a,
       a:hover {
