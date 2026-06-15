@@ -17,16 +17,14 @@ from operator import attrgetter
 from flask import flash, jsonify, redirect, render_template, request, session
 from pypdf import PdfWriter
 from sqlalchemy.orm import joinedload, subqueryload
-from webargs import fields
+from webargs import fields, validate
 from werkzeug.exceptions import BadRequest, Forbidden, NotFound
 
 from indico.core import signals
 from indico.core.cache import make_scoped_cache
-from indico.core.config import config
 from indico.core.db import db
 from indico.core.errors import IndicoError, NoReportError
 from indico.core.notifications import make_email, send_email
-from indico.legacy.pdfinterface.conference import RegistrantsListToBookPDF, RegistrantsListToPDF
 from indico.modules.categories.models.categories import Category
 from indico.modules.designer import PageLayout, TemplateType
 from indico.modules.designer.models.templates import DesignerTemplate
@@ -37,6 +35,7 @@ from indico.modules.events.registration import logger
 from indico.modules.events.registration.badges import (RegistrantsListToBadgesPDF,
                                                        RegistrantsListToBadgesPDFDoubleSided,
                                                        RegistrantsListToBadgesPDFFoldable)
+from indico.modules.events.registration.constants import PROFILE_PICTURE_SENTINEL
 from indico.modules.events.registration.controllers import (CheckEmailMixin, RegistrationEditMixin,
                                                             UploadRegistrationFileMixin, UploadRegistrationPictureMixin)
 from indico.modules.events.registration.controllers.management import (RHManageRegFormBase, RHManageRegFormsBase,
@@ -54,6 +53,7 @@ from indico.modules.events.registration.notifications import (notify_registratio
 from indico.modules.events.registration.placeholders.registrations import PicturePlaceholder
 from indico.modules.events.registration.settings import event_badge_settings
 from indico.modules.events.registration.util import (ActionMenuEntry, create_registration,
+                                                     generate_pdf_data_from_registrations,
                                                      generate_spreadsheet_from_registrations,
                                                      get_flat_section_submission_data, get_initial_form_values,
                                                      get_registration_spreadsheet_column_formats,
@@ -61,11 +61,13 @@ from indico.modules.events.registration.util import (ActionMenuEntry, create_reg
                                                      import_registrations_from_csv, load_registration_schema,
                                                      make_registration_schema)
 from indico.modules.events.registration.views import WPManageRegistration
+from indico.modules.events.timetable.util import create_pdf
 from indico.modules.events.util import ZipGeneratorMixin
 from indico.modules.logs import LogKind
 from indico.modules.logs.util import make_diff_log
 from indico.modules.receipts.models.files import ReceiptFile
-from indico.util.date_time import format_currency, now_utc, relativedelta
+from indico.modules.users.models.users import ProfilePictureSource
+from indico.util.date_time import format_currency, format_date, now_utc, relativedelta
 from indico.util.fs import secure_filename
 from indico.util.i18n import _, ngettext
 from indico.util.marshmallow import Principal
@@ -99,7 +101,7 @@ def _render_registration_details(registration):
 class RHRegistrationsListManage(RHManageRegFormBase):
     """List all registrations of a specific registration form of an event."""
 
-    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin')
+    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin', 'registration_edit')
 
     def _process(self):
         if self.list_generator.static_link_used:
@@ -189,7 +191,7 @@ class RHRegistrationsListManage(RHManageRegFormBase):
 class RHRegistrationsListCustomize(RHManageRegFormBase):
     """Filter options and columns to display for a registrations list of an event."""
 
-    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin')
+    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin', 'registration_edit')
     ALLOW_LOCKED = True
 
     def _process_GET(self):
@@ -210,7 +212,7 @@ class RHRegistrationsListCustomize(RHManageRegFormBase):
 class RHRegistrationListStaticURL(RHManageRegFormBase):
     """Generate a static URL for the configuration of the registrations list."""
 
-    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin')
+    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin', 'registration_edit')
     ALLOW_LOCKED = True
 
     def _process(self):
@@ -220,7 +222,7 @@ class RHRegistrationListStaticURL(RHManageRegFormBase):
 class RHRegistrationDetails(RHManageRegistrationBase):
     """Display information about a registration."""
 
-    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin')
+    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin', 'registration_edit')
 
     def _process(self):
         registration_details_html = _render_registration_details(self.registration)
@@ -232,7 +234,7 @@ class RHRegistrationDetails(RHManageRegistrationBase):
 class RHRegistrationDownloadAttachment(RHManageRegFormsBase):
     """Download a file attached to a registration."""
 
-    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin')
+    PERMISSION = ('registration', 'registration_moderation', 'registration_checkin', 'registration_edit')
 
     normalize_url_spec = {
         'locators': {
@@ -256,6 +258,7 @@ class RHRegistrationDownloadAttachment(RHManageRegFormsBase):
 class RHRegistrationEdit(RegistrationEditMixin, RHManageRegistrationBase):
     """Edit the submitted information of a registration."""
 
+    PERMISSION = ('registration', 'registration_edit')
     view_class = WPManageRegistration
     template_file = 'management/registration_modify.html'
     management = True
@@ -380,6 +383,8 @@ class RHRegistrationEmailRegistrants(RHRegistrationsActionBase):
 class RHRegistrationDelete(RHRegistrationsActionBase):
     """Delete selected registrations."""
 
+    PERMISSION = ('registration', 'registration_edit')
+
     def _process(self):
         for registration in self.registrations:
             registration.is_deleted = True
@@ -397,11 +402,7 @@ class RHRegistrationDelete(RHRegistrationsActionBase):
 class RHRegistrationCreate(RHManageRegFormBase):
     """Create new registration (management area)."""
 
-    @use_kwargs({
-        'user': Principal(allow_external_users=True, load_default=None),
-    }, location='query')
-    def _get_user_data(self, user):
-        return get_user_data(self.regform, user)
+    PERMISSION = ('registration', 'registration_edit')
 
     def _process_POST(self):
         if self.regform.is_purged:
@@ -414,14 +415,27 @@ class RHRegistrationCreate(RHManageRegFormBase):
         flash(_('The registration was created.'), 'success')
         return jsonify({'redirect': url_for('event_registration.manage_reglist', self.regform)})
 
-    def _process_GET(self):
-        user_data = self._get_user_data()
+    @use_kwargs({
+        'user': Principal(allow_external_users=True, load_default=None),
+    }, location='query')
+    def _process_GET(self, user):
+        user_data = get_user_data(self.regform, user)
         initial_values = get_initial_form_values(self.regform, management=True) | user_data
         form_data = get_flat_section_submission_data(self.regform, management=True)
+        file_data = {}
+        if user and user_data.get('picture'):
+            metadata = user.picture_metadata or {}
+            file_data['picture'] = {
+                'filename': metadata.get('filename', 'profile_picture.jpg'),
+                'size': metadata.get('size', 0),
+                'uuid': PROFILE_PICTURE_SENTINEL,
+                'previewUrl': user.avatar_url,
+            }
         return WPManageRegistration.render_template('display/regform_display.html', self.event,
                                                     regform=self.regform,
                                                     form_data=form_data,
                                                     initial_values=initial_values,
+                                                    file_data=file_data,
                                                     invitation=None,
                                                     registration=None,
                                                     management=True,
@@ -433,9 +447,15 @@ class RHRegistrationCreate(RHManageRegFormBase):
 class RHRegistrationCreateMultiple(RHManageRegFormBase):
     """Create multiple registrations for Indico users (management area)."""
 
+    PERMISSION = ('registration', 'registration_edit')
+
     def _register_user(self, user, notify):
         # Fill only the personal data fields, custom fields are left empty.
-        data = {pdt.name: getattr(user, pdt.name, None) for pdt in PersonalDataType}
+        # Picture is excluded from getattr loop: user.picture is raw bytes, not a file UUID.
+        data = {pdt.name: getattr(user, pdt.name, None) for pdt in PersonalDataType
+                if pdt != PersonalDataType.picture}
+        if user.picture_source == ProfilePictureSource.custom and user.has_picture:
+            data['picture'] = PROFILE_PICTURE_SENTINEL
         data['title'] = get_title_uuid(self.regform, data['title'])
         with db.session.no_autoflush:
             create_registration(self.regform, data, management=True, notify_user=notify)
@@ -458,6 +478,8 @@ class RHRegistrationCreateMultiple(RHManageRegFormBase):
 class RHRegistrationCheckEmail(CheckEmailMixin, RHManageRegFormBase):
     """Check how an email will affect the registration."""
 
+    PERMISSION = ('registration', 'registration_edit')
+
     def _process_args(self):
         RHManageRegFormBase._process_args(self)
         CheckEmailMixin._process_args(self)
@@ -475,31 +497,55 @@ class RHRegistrationsExportBase(RHRegistrationsActionBase):
     def _process_args(self):
         RHRegistrationsActionBase._process_args(self)
         self.export_config = self.list_generator.get_list_export_config()
+        for col in self.export_config['extra_columns']:
+            col.data = col.load_data(self.registrations)
 
 
-class RHRegistrationsExportPDFTable(RHRegistrationsExportBase):
-    """Export registration list to a PDF in table style."""
+class RHRegistrationsExportPDF(RHRegistrationsExportBase):
+    """Export registration list to a PDF in table or book style."""
 
-    def _process(self):
-        pdf = RegistrantsListToPDF(self.event, reglist=self.registrations, display=self.export_config['regform_items'],
-                                   static_items=self.export_config['static_item_ids'])
-        try:
-            data = pdf.getPDFBin()
-        except Exception:
-            if config.DEBUG:
-                raise
-            raise NoReportError(_('Text too large to generate a PDF with table style. '
-                                  'Please try again generating with book style.'))
-        return send_file('RegistrantsList.pdf', BytesIO(data), 'application/pdf')
+    normalize_url_spec = {
+        'locators': {
+            lambda self: self.regform
+        },
+        'preserved_args': {'export_type'}
+    }
 
+    @use_kwargs({
+        'export_type': fields.String(
+            required=True,
+            validate=validate.OneOf(['table', 'book'])
+        )
+    }, location='view_args')
+    def _process(self, export_type):
+        headers, rows = generate_pdf_data_from_registrations(
+            self.event,
+            self.registrations,
+            self.export_config['regform_items'],
+            self.export_config['static_item_ids'],
+            self.export_config['extra_columns'],
+            '-' if export_type == 'table' else '',
+        )
 
-class RHRegistrationsExportPDFBook(RHRegistrationsExportBase):
-    """Export registration list to a PDF in book style."""
+        if export_type == 'table':
+            css_filename = 'participants_table.css'
+            template_filename = 'participants_table.html'
+            filename = 'registrants-list.pdf'
+        else:  # book
+            css_filename = 'participants_book.css'
+            template_filename = 'participants_book.html'
+            filename = 'registrants-book.pdf'
 
-    def _process(self):
-        static_item_ids, item_ids, _extra_item_ids = self.list_generator.get_item_ids()
-        pdf = RegistrantsListToBookPDF(self.event, self.regform, self.registrations, item_ids, static_item_ids)
-        return send_file('RegistrantsBook.pdf', BytesIO(pdf.getPDFBin()), 'application/pdf')
+        css = render_template(f'events/registration/pdf/{css_filename}')
+        html = render_template(
+            f'events/registration/pdf/{template_filename}',
+            event=self.event,
+            headers=headers,
+            rows=rows,
+            generation_date=format_date(now_utc(), format='full', timezone=self.event.tzinfo),
+        )
+        pdf = create_pdf(html, css, self.event)
+        return send_file(filename, pdf, 'application/pdf')
 
 
 class RHRegistrationsExportCSV(RHRegistrationsExportBase):
@@ -507,7 +553,8 @@ class RHRegistrationsExportCSV(RHRegistrationsExportBase):
 
     def _process(self):
         headers, rows = generate_spreadsheet_from_registrations(self.registrations, self.export_config['regform_items'],
-                                                                self.export_config['static_item_ids'])
+                                                                self.export_config['static_item_ids'],
+                                                                extra_columns=self.export_config['extra_columns'])
         return send_csv('registrations.csv', headers, rows)
 
 
@@ -516,7 +563,8 @@ class RHRegistrationsExportExcel(RHRegistrationsExportBase):
 
     def _process(self):
         headers, rows = generate_spreadsheet_from_registrations(self.registrations, self.export_config['regform_items'],
-                                                                self.export_config['static_item_ids'])
+                                                                self.export_config['static_item_ids'],
+                                                                extra_columns=self.export_config['extra_columns'])
         column_formats = get_registration_spreadsheet_column_formats(self.export_config['regform_items'])
         return send_xlsx('registrations.xlsx', headers, rows, tz=self.event.tzinfo, column_formats=column_formats)
 
@@ -688,6 +736,8 @@ class RHRegistrationTogglePayment(RHManageRegistrationBase):
 
 class RHRegistrationUploadFile(UploadRegistrationFileMixin, RHManageRegistrationFieldActionBase):
     """Upload a file from a registration form."""
+
+    PERMISSION = ('registration', 'registration_edit')
 
 
 class RHRegistrationUploadPicture(UploadRegistrationPictureMixin, RHRegistrationUploadFile):
@@ -933,7 +983,7 @@ class RHRegistrationsBasePrice(RHRegistrationsActionBase):
                 prev_state = reg.state
                 if form.apply_complete.data and reg.state == RegistrationState.complete and not reg.base_price:
                     reg.state = RegistrationState.unpaid
-                elif reg.state != RegistrationState.unpaid:
+                elif reg.state not in {RegistrationState.unpaid, RegistrationState.pending}:
                     num_skipped += 1
                     continue
                 new_price = {
@@ -947,7 +997,7 @@ class RHRegistrationsBasePrice(RHRegistrationsActionBase):
                                              format_currency(new_price, self.regform.currency, locale='en_GB'))
                     reg.base_price = new_price
                     reg.currency = self.regform.currency
-                if not reg.price:
+                if not reg.price and reg.state == RegistrationState.unpaid:
                     reg.state = RegistrationState.complete
                 if prev_state != reg.state:
                     changes['state'] = (prev_state, reg.state)

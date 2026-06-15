@@ -38,7 +38,10 @@ class RegistrationListGenerator(ListGeneratorBase):
         registration_tag_choices = self._get_registration_tag_choices()
         self.static_items = {
             'reg_date': {
-                'title': _('Registration Date'),
+                'title': _('Registration date'),
+            },
+            'mod_date': {
+                'title': _('Modification date'),
             },
             'price': {
                 'title': _('Price'),
@@ -274,10 +277,11 @@ class RegistrationListGenerator(ListGeneratorBase):
         }
 
     def get_list_export_config(self):
-        static_item_ids, item_ids, _extra_item_ids = self.get_item_ids()
+        static_item_ids, item_ids, extra_item_ids = self.get_item_ids()
         return {
             'static_item_ids': static_item_ids,
-            'regform_items': self._get_sorted_regform_items(item_ids)
+            'regform_items': self._get_sorted_regform_items(item_ids),
+            'extra_columns': self._get_extra_columns(extra_item_ids),
         }
 
     def get_item_ids(self):

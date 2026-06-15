@@ -43,10 +43,13 @@ def _get_placeholders(sender, person, event, contribution=None, abstract=None, r
     if object_context == 'abstracts':
         yield person_placeholders.AbstractIDPlaceholder
         yield person_placeholders.AbstractTitlePlaceholder
+        yield person_placeholders.AbstractContributionLinkPlaceholder
     elif object_context == 'contributions':
         yield person_placeholders.ContributionIDPlaceholder
         yield person_placeholders.ContributionTitlePlaceholder
         yield person_placeholders.ContributionCodePlaceholder
+        yield person_placeholders.ContributionBoardNumberPlaceholder
+        yield person_placeholders.ContributionLinkPlaceholder
         yield person_placeholders.ContributionDurationPlaceholder
         yield person_placeholders.ContributionSchedulePlaceholder
     else:
