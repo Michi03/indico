@@ -10,8 +10,14 @@ from io import BytesIO
 
 import pytest
 
+from indico.core.db.sqlalchemy.principals import EmailPrincipal
 from indico.core.errors import UserValueError
-from indico.modules.events.contributions.util import import_contributions_from_csv
+from indico.modules.events.contributions.models.persons import ContributionPersonLink
+from indico.modules.events.contributions.util import (get_contributions_for_user,
+                                                      get_contributions_with_user_as_submitter,
+                                                      has_contributions_with_user_as_submitter,
+                                                      import_contributions_from_csv, user_has_contributions)
+from indico.modules.events.models.persons import EventPerson
 from indico.util.date_time import as_utc
 
 
@@ -60,7 +66,8 @@ def test_import_contributions(dummy_event, dummy_user):
     assert not changes
 
 
-def test_import_contributions_changes(db, dummy_event, dummy_user):
+@pytest.mark.usefixtures('db', 'dummy_user')
+def test_import_contributions_changes(dummy_event):
     original_start_dt = as_utc(datetime(2017, 11, 27, 8, 0, 0))
     original_end_dt = as_utc(datetime(2017, 11, 27, 12, 0, 0))
     dummy_event.start_dt = original_start_dt
@@ -96,7 +103,8 @@ def test_import_contributions_changes(db, dummy_event, dummy_user):
     assert len(changes) == 3
 
 
-def test_import_contributions_errors(db, dummy_event):
+@pytest.mark.usefixtures('db')
+def test_import_contributions_errors(dummy_event):
     original_start_dt = as_utc(datetime(2017, 11, 27, 8, 0, 0))
     original_end_dt = as_utc(datetime(2017, 11, 27, 12, 0, 0))
     dummy_event.start_dt = original_start_dt
@@ -117,3 +125,27 @@ def test_import_contributions_errors(db, dummy_event):
 
     e = _check_importer_exception(dummy_event, b'2010-02-23T00:00:00,15,Test,Test,Test,Test,foobar')
     assert 'invalid email' in str(e)
+
+
+def test_user_contrib_queries(dummy_user, dummy_event, create_contribution):
+    # just a contribution w/o any ACL or persons
+    create_contribution(dummy_event, 'C1')
+    # non-user ACL entry
+    c2 = create_contribution(dummy_event, 'C2')
+    c2.update_principal(EmailPrincipal('foo@example.com'), add_permissions={'submit'})
+    # person link with no user
+    create_contribution(
+        dummy_event,
+        'C3',
+        person_links=[ContributionPersonLink(person=EventPerson(event=dummy_event, last_name='Foo'), is_speaker=True)],
+    )
+    # no user - should never match anything
+    assert not get_contributions_with_user_as_submitter(dummy_event, None)
+    assert not has_contributions_with_user_as_submitter(dummy_event, None)
+    assert not get_contributions_for_user(dummy_event, None)
+    assert not user_has_contributions(dummy_event, None)
+    # unrelated user - likewise
+    assert not get_contributions_with_user_as_submitter(dummy_event, dummy_user)
+    assert not has_contributions_with_user_as_submitter(dummy_event, dummy_user)
+    assert not get_contributions_for_user(dummy_event, dummy_user)
+    assert not user_has_contributions(dummy_event, dummy_user)

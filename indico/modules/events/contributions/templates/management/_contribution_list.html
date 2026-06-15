@@ -135,7 +135,7 @@
                                                    title="{{ tooltip }}" data-qtip-position="bottom"></i>
                                                 {{ speaker.display_full_name }}
                                                 {% if speaker.affiliation %}
-                                                    <span class="text-superfluous">({{ render_affiliation(speaker) }})</span>
+                                                    <span class="text-superfluous">({{ render_affiliation(speaker, compact=true) }})</span>
                                                 {% endif %}
                                             </div>
                                         {%- endfor %}
@@ -190,6 +190,12 @@
                                             {% else %}
                                                 {%- trans %}No session{% endtrans -%}
                                             {% endif %}
+                                        </td>
+                                    {% elif item.id == 'favorites' %}
+                                        <td class="i-table favorites-column" data-text="{{ contrib.favorite_count }}">
+                                            <span class="vertical-aligner">
+                                                {{ contrib.favorite_count }}
+                                            </span>
                                         </td>
                                     {% elif item.id == 'track' %}
                                         <td class="i-table">

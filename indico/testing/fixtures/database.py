@@ -25,7 +25,7 @@ from indico.web.flask.app import configure_db
 
 
 @contextmanager
-def local_postgresql():
+def local_postgresql(extensions):
     db_name = 'test'
 
     # Ensure we have initdb and a recent enough postgres version
@@ -46,29 +46,32 @@ def local_postgresql():
         silent_check_call(['createdb', '-h', temp_dir, db_name])
         silent_check_call(['psql', '-h', temp_dir, db_name, '-c', 'CREATE EXTENSION unaccent;'])
         silent_check_call(['psql', '-h', temp_dir, db_name, '-c', 'CREATE EXTENSION pg_trgm;'])
+        for ext in extensions:
+            silent_check_call(['psql', '-h', temp_dir, db_name, '-c', f'CREATE EXTENSION {ext};'])
     except Exception as e:
         shutil.rmtree(temp_dir)
         pytest.skip(f'Could not init/start PostgreSQL: {e}')
 
-    yield f'postgresql:///{db_name}?host={temp_dir}'
-
     try:
-        silent_check_call(['pg_ctl', '-D', temp_dir, '-m', 'immediate', 'stop'])
-    except Exception as e:
-        # If it failed for any reason, try killing it
-        try:
-            with open(os.path.join(temp_dir, 'postmaster.pid')) as f:
-                pid = int(f.readline().strip())
-                os.kill(pid, signal.SIGKILL)
-            pytest.skip(f'Could not stop postgresql; killed it instead: {e}')
-        except Exception as e:
-            pytest.skip(f'Could not stop/kill postgresql: {e}')
+        yield f'postgresql:///{db_name}?host={temp_dir}'
     finally:
-        shutil.rmtree(temp_dir)
+        try:
+            silent_check_call(['pg_ctl', '-D', temp_dir, '-m', 'immediate', 'stop'])
+        except Exception as e:
+            # If it failed for any reason, try killing it
+            try:
+                with open(os.path.join(temp_dir, 'postmaster.pid')) as f:
+                    pid = int(f.readline().strip())
+                    os.kill(pid, signal.SIGKILL)
+                pytest.skip(f'Could not stop postgresql; killed it instead: {e}')
+            except Exception as e:
+                pytest.skip(f'Could not stop/kill postgresql: {e}')
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 @pytest.fixture(scope='session')
-def postgresql():
+def postgresql(pytestconfig):
     """Provide a clean temporary PostgreSQL server/database.
 
     If the environment variable `INDICO_TEST_DATABASE_URI` is set, this fixture
@@ -92,12 +95,12 @@ def postgresql():
     else:
         postgres_impl = local_postgresql
 
-    with postgres_impl() as dsn:
+    with postgres_impl(pytestconfig.indico_pg_extensions) as dsn:
         yield dsn
 
 
 @pytest.fixture(scope='session')
-def database(app, postgresql):
+def database(app, postgresql, pytestconfig):
     """Create a test database which is destroyed afterwards.
 
     Used only internally, if you need to access the database use `db` instead to ensure
@@ -109,6 +112,9 @@ def database(app, postgresql):
         yield db_
         return
     with app.app_context():
+        pg_extensions = {x.extname for x in db_.engine.execute('SELECT extname FROM pg_extension').fetchall()}
+        if missing := sorted(set(pytestconfig.indico_pg_extensions) - pg_extensions):
+            pytest.fail(f'Missing Postgres extensions in existing DB: {', '.join(missing)}')
         create_all_tables(db_)
     yield db_
     with app.app_context():
@@ -131,8 +137,10 @@ def db(database, monkeypatch):
     def _tmp_session():
         _old_commit = database.session.commit
         database.session.commit = lambda: None
-        yield database.session
-        database.session.commit = _old_commit
+        try:
+            yield database.session
+        finally:
+            database.session.commit = _old_commit
 
     monkeypatch.setattr(database, 'tmp_session', _tmp_session, lambda: None)
     yield database

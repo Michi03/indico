@@ -10,22 +10,76 @@ Version 3.3.13
 Improvements
 ^^^^^^^^^^^^
 
-- Nothing so far :(
+- Include keywords in contribution CSV/Excel exports (:pr:`7421`)
+- Add new permission that grants only participant management (create, edit and
+  delete registrations) without access to the registration form configuration
+  (:pr:`7419`, thanks :user:`moliholy, unconventionaldotdev`)
+- Add internal name for registration form fields (:pr:`7276`, :pr:`7485`, thanks
+  :user:`tomako`)
+- Add a "Code" (short name) to predefined affiliations (:pr:`7400`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Track the last modified timestamp of registrations (:pr:`7478`, thanks :user:`jbtwist`)
+- Pre-fill the registration form picture field with the user's custom profile
+  picture when available (:pr:`7447`, thanks :user:`moliholy, unconventionaldotdev`)
+- Allow users to mark contributions as favorites (:issue:`3524`, :pr:`7256`)
+- Allow choosing whether to clone registration tags (:pr:`7506`)
+- Add placeholders for contribution link and board number for emailing contributions
+  (:pr:`7525`, thanks :user:`duartegalvao`)
+- Add a weekday option to the contribution schedule email placeholder (:pr:`7526`)
+- Allow managers to override accommodation date range validation when editing
+  registrations (:issue:`7415`, :pr:`7433`, thanks :user:`moliholy, unconventionaldotdev`)
+- Automatically paste obvious email addresses into the email field when pasting in
+  the user search dialog (:pr:`7538`)
+- Allow changing/removing the registration fee of pending registrations (:pr:`7572`)
+- Add QR code generator to event share widget (:issue:`6796`, :pr:`7504`)
+- Add contribution link placeholder for emailing abstract roles (:issue:`3602`, :pr:`7569`)
+- Allow cloning survey sections (:issue:`7395`, :pr:`7536`)
 
 Bugfixes
 ^^^^^^^^
 
-- Nothing so far :)
+- Correctly restrict user access to their logs (:pr:`7404`)
+- Correctly restrict access to draft contribution list (:pr:`7408`)
+- Use new MS Outlook URL in the share widget (:pr:`7424`, thanks :user:`hirishh`)
+- Fix editing contribution time from timetable bubbles when the CSP is enabled
+  (:pr:`7432`)
+- Fix error when copying a paper file with an unguessable MIME type to the editing
+  module (:pr:`7475`)
+- Fix date picker showing January instead of the selected month when the user
+  language is not English (:issue:`7471`, :pr:`7476`, thanks :user:`foxbunny`)
+- Do not show "Clone Abstract" icon outside management area (:pr:`7493`)
+- Allow rejecting editables w/ missing required files (:pr:`7524`)
+- Fix select and combobox dropdowns appearing detached from their input on
+  mobile when the page is pinch-zoomed, when the input is near a viewport
+  edge, or when the virtual keyboard is open (:pr:`7529`, thanks
+  :user:`foxbunny`)
+- Fix database error when importing protection settings in an unlisted event
+  (:issue:`7550`, :pr:`7551`)
 
 Accessibility
 ^^^^^^^^^^^^^
 
-- Nothing so far
+- Screen reader users can now navigate to the event page header as a banner
+  landmark (:pr:`7418`, thanks :user:`foxbunny`)
+- Icon-only buttons on the abstract detail page now have proper accessible names
+  and tooltips instead of relying on the ``title`` attribute (:pr:`7474`, thanks
+  :user:`foxbunny`)
+- Screen reader users can now navigate to the footer link list as a named
+  navigation landmark (:pr:`7559`, thanks :user:`foxbunny`)
+- Screen reader users can now navigate the dashboard sections as second-level
+  headings instead of a flat run of same-level headings (:pr:`7581`, thanks
+  :user:`foxbunny`)
+- Screen readers now correctly recognise modal dialogs as modal, keeping
+  navigation within the open dialog (:pr:`7570`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
 
-- Nothing so far
+- Modernize the PDF registrant list generation using weasyprint (:pr:`7077`, thanks
+  :user:`abhinavohri`)
+- Relax the videoconference name length limit to 255 characters, delegating
+  service-specific limits to each plugin (:pr:`7560`, thanks
+  :user:`moliholy, unconventionaldotdev`)
 
 
 Version 3.3.12

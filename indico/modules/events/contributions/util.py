@@ -16,6 +16,7 @@ from sqlalchemy.orm import contains_eager, joinedload, load_only, noload
 
 from indico.core.config import config
 from indico.core.db import db
+from indico.core.db.sqlalchemy.principals import PrincipalType
 from indico.core.errors import UserValueError
 from indico.modules.attachments.util import get_attached_items
 from indico.modules.events.abstracts.settings import BOASortField
@@ -30,6 +31,7 @@ from indico.modules.events.models.persons import EventPerson
 from indico.modules.events.persons.util import get_event_person
 from indico.modules.events.timetable.models.entries import TimetableEntry
 from indico.modules.events.util import track_time_changes
+from indico.modules.users.models.users import User
 from indico.util.date_time import format_human_timedelta
 from indico.util.i18n import _
 from indico.util.spreadsheets import csv_text_io_wrapper
@@ -131,6 +133,7 @@ def generate_spreadsheet_from_contributions(contributions):
     """
     has_board_number = any(c.board_number for c in contributions)
     has_authors = any(pl.author_type != AuthorType.none for c in contributions for pl in c.person_links)
+    has_keywords = any(c.keywords for c in contributions)
     headers = ['Id', 'Title', 'Description', 'Date', 'Duration', 'Type', 'Session', 'Track', 'Presenters',
                'Presenters (affiliation)', 'Presenters (email)', 'Materials', 'Program Code']
     if has_authors:
@@ -138,6 +141,8 @@ def generate_spreadsheet_from_contributions(contributions):
                     'Co-Authors', 'Co-Authors (affiliation)', 'Co-Authors (email)']
     if has_board_number:
         headers.append('Board number')
+    if has_keywords:
+        headers.append('Keywords')
     rows = []
     for c in sort_contribs(contributions, sort_by='friendly_id'):
         contrib_data = {'Id': c.friendly_id, 'Title': c.title, 'Description': c.description,
@@ -162,6 +167,8 @@ def generate_spreadsheet_from_contributions(contributions):
             })
         if has_board_number:
             contrib_data['Board number'] = c.board_number
+        if has_keywords:
+            contrib_data['Keywords'] = ', '.join(c.keywords)
 
         attached_items = get_attached_items(c, preload_event=(len(contributions) > 10))
         attachments = [att.absolute_download_url for att in attached_items.get('files', [])]
@@ -210,11 +217,14 @@ def contribution_type_row(contrib_type):
 def _query_contributions_with_user_as_submitter(event, user):
     return (Contribution.query.with_parent(event)
             .filter(Contribution.acl_entries.any(db.and_(ContributionPrincipal.has_management_permission('submit'),
+                                                         ContributionPrincipal.type == PrincipalType.user,
                                                          ContributionPrincipal.user == user))))
 
 
 def get_contributions_with_user_as_submitter(event, user):
     """Get a list of contributions in which the `user` has submission rights."""
+    if user is None:
+        return []
     return (_query_contributions_with_user_as_submitter(event, user)
             .options(joinedload('acl_entries'))
             .order_by(db.func.lower(Contribution.title))
@@ -222,7 +232,7 @@ def get_contributions_with_user_as_submitter(event, user):
 
 
 def has_contributions_with_user_as_submitter(event, user):
-    return _query_contributions_with_user_as_submitter(event, user).has_rows()
+    return user is not None and _query_contributions_with_user_as_submitter(event, user).has_rows()
 
 
 def get_contributions_for_person(event, person, only_speakers=False):
@@ -252,6 +262,7 @@ def _query_contributions_for_user(event, user):
     """
     condition = db.or_(EventPerson.user == user,
                        Contribution.acl_entries.any(db.and_(ContributionPrincipal.has_management_permission('submit'),
+                                                            ContributionPrincipal.type == PrincipalType.user,
                                                             ContributionPrincipal.user == user)))
     return (Contribution.query.with_parent(event)
             .outerjoin(ContributionPersonLink)  # outer join in case there is a contribution with
@@ -261,12 +272,19 @@ def _query_contributions_for_user(event, user):
 
 def user_has_contributions(event, user):
     """Return True if a user has any contributions in the given event."""
-    return _query_contributions_for_user(event, user).has_rows()
+    return user is not None and _query_contributions_for_user(event, user).has_rows()
 
 
 def get_contributions_for_user(event, user):
     """Get all contributions for a user in the given event."""
+    if user is None:
+        return []
     return _query_contributions_for_user(event, user).all()
+
+
+def user_has_favorite_contributions(event, user):
+    """Return True if a user has added any contributions to their timetable in the given event."""
+    return Contribution.query.with_parent(event).join(Contribution.favorite_of).filter(User.id == user.id).has_rows()
 
 
 def serialize_contribution_for_ical(contrib):
