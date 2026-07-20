@@ -22,6 +22,7 @@ from werkzeug.exceptions import BadRequest, Forbidden, NotFound
 
 from indico.core import signals
 from indico.core.cache import make_scoped_cache
+from indico.core.config import config
 from indico.core.db import db
 from indico.core.errors import IndicoError, NoReportError
 from indico.core.notifications import make_email, send_email
@@ -340,8 +341,8 @@ class RHRegistrationEmailRegistrants(RHRegistrationsActionBase):
                 if PicturePlaceholder.is_in(form.body.data):
                     attachments += registration.get_picture_attachments(personal_data_only=True)
                 email = make_email(to_list=registration.email, cc_list=form.cc_addresses.data, bcc_list=bcc,
-                                   sender_address=sender_address, template=template, html=True,
-                                   attachments=attachments)
+                                   sender_address=config.NO_REPLY_EMAIL, template=template, html=True,
+                                   attachments=attachments, reply_address=sender_address)
             signals.core.before_notification_send.send('registration-custom-email', email=email,
                                                        registration=registration, form=form)
             send_email(email, self.event, 'Registration', session.user,

@@ -369,10 +369,11 @@ class EventReminder(RenderModeMixin, db.Model):
     def _make_email(self, sender, recipient, template, attachments, html, alternatives):
         email_params = {
             'to_list': recipient,
-            'sender_address': sender,
+            'sender_address': config.NO_REPLY_EMAIL,
             'template': template,
             'attachments': attachments,
             'html': html,
+            'reply_address': sender,
             'alternatives': alternatives
         }
         extra_params = signals.event.reminder.before_reminder_make_email.send(self, **email_params)
