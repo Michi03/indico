@@ -30,9 +30,7 @@
     </p>
 {% endblock %}
 
-{% block registration_body %}
-    {%- set diff = diff if diff is not none else {} -%}
-    {%- set old_price = old_price if old_price is not none else registration.price -%}
+{% block registration_data %}
     {% for section, fields in registration.get_summary_data(hide_empty=true).items() %}
         <div style="padding-bottom: 20px; border-bottom: 1px solid #EBEBEB;">
             <h2>{{ section.title }}</h2>
@@ -49,23 +47,6 @@
             <div style="clear: both;"></div>
         </div>
     {% endfor %}
-    {% if old_price != registration.price or registration.price %}
-        <div style="padding-bottom: 20px; border-bottom: 1px solid #EBEBEB;">
-            <p style="text-align: right; margin-bottom: 0; font-size: 0.9em;">
-                <strong>{% trans %}Total:{% endtrans %}</strong>
-                <span style="font-style: italic">
-                    {% if old_price != registration.price %}
-                        <s>{{- registration._render_price(old_price) -}}</s>
-                        <span style="background-color: yellow; margin-left: 5px;">
-                            {{- registration.render_price() -}}
-                        </span>
-                    {% else %}
-                        {{- registration.render_price() -}}
-                    {% endif %}
-                </span>
-            </p>
-        </div>
-    {% endif %}
 {% endblock %}
 
 {% macro render_rejection_reason() %}
