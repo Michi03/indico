@@ -149,14 +149,12 @@ import setupRegformSubmission from './form_submission';
     class extends HTMLElement {
       connectedCallback() {
         domReady.then(() => {
+          const staticData = this.getAttribute('static-data');
           ReactDOM.render(
             <ParticipantList
-              tables={JSON.parse(this.getAttribute('tables'))}
-              totalParticipantCount={Number(this.getAttribute('total-participant-count'))}
-              preview={this.getAttribute('preview')}
-              published={this.getAttribute('published') !== null}
-              merged={this.getAttribute('merged') !== null}
               eventId={Number(this.getAttribute('event-id'))}
+              preview={this.hasAttribute('preview')}
+              staticData={staticData ? JSON.parse(staticData) : null}
             />,
             this
           );

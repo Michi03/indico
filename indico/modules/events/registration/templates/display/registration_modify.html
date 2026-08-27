@@ -16,6 +16,13 @@
 {% endblock %}
 
 {% block content %}
+    {% if registration.modification_resets_approval %}
+        {% call message_box('warning') %}
+            {%- trans -%}
+                If you modify this registration, it needs to be approved again by the event organizer.
+            {%- endtrans -%}
+        {% endcall %}
+    {% endif %}
     <div id="registration-form-submission-container"
          data-event-id="{{ event.id }}"
          data-regform-id="{{ regform.id }}"
@@ -25,6 +32,7 @@
          data-registration-data="{{ registration_data | tojson | forceescape }}"
          data-registration-uuid="{{ registration.uuid }}"
          data-file-data="{{ file_data | tojson | forceescape }}"
+         data-has-predefined-affiliations="{{ has_predefined_affiliations | tojson | forceescape }}"
          data-management="{{ management | tojson | forceescape }}"
          data-paid="{{ paid | tojson | forceescape }}"
          data-publish-to-participants="{{ regform.publish_registrations_participants.name }}"

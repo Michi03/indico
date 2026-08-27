@@ -7,7 +7,7 @@
 
 from uuid import UUID
 
-from flask import flash, jsonify, redirect, request, session
+from flask import flash, g, jsonify, redirect, request, session
 from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, subqueryload
 from werkzeug.exceptions import BadRequest, Forbidden, NotFound
 
@@ -38,7 +38,7 @@ from indico.modules.events.registration.views import (WPDisplayRegistrationFormC
                                                       WPDisplayRegistrationFormSimpleEvent,
                                                       WPDisplayRegistrationParticipantList)
 from indico.modules.receipts.models.files import ReceiptFile
-from indico.modules.users.util import send_avatar, send_default_avatar
+from indico.modules.users.util import SearchAffiliationsMixin, send_avatar, send_default_avatar
 from indico.util.fs import secure_filename
 from indico.util.i18n import _
 from indico.util.marshmallow import UUIDString
@@ -158,8 +158,7 @@ class RHRegistrationFormList(RHRegistrationFormDisplayBase):
                                                description=multi_forms_announcement)
 
 
-class ParticipantListMixin:
-    view_class = None
+class ParticipantListRESTMixin:
     preview = None
 
     def is_participant(self, user):
@@ -201,6 +200,7 @@ class ParticipantListMixin:
                  .options(subqueryload('data').joinedload('field_data'),
                           contains_eager('registration_form'))
                  .signal_query('merged-participant-list-publishable-registrations', event=self.event))
+        num_participants = query.count()
         registrations = sorted(_deduplicate_reg_data(_process_registration(reg, column_names)
                                                      for reg in query if reg.is_publishable(is_participant)),
                                key=lambda reg: tuple(x['text'].lower() for x in reg['columns']
@@ -208,7 +208,8 @@ class ParticipantListMixin:
         return {'headers': headers,
                 'rows': registrations,
                 'show_checkin': any(registration['checked_in'] for registration in registrations),
-                'num_participants': query.count()}
+                'num_participants': num_participants,
+                'num_anonymous_participants': num_participants - len(registrations)}
 
     def _participant_list_table(self, regform, *, is_participant):
         def _process_registration(reg, column_ids, active_fields, picture_ids):
@@ -253,6 +254,7 @@ class ParticipantListMixin:
                            db.func.lower(Registration.last_name),
                            Registration.friendly_id)
                  .signal_query('participant-list-publishable-registrations', regform=regform))
+        num_participants = query.count()
         registrations = [_process_registration(reg, column_ids, active_fields, picture_ids) for reg in query
                          if reg.is_publishable(is_participant)]
 
@@ -261,10 +263,10 @@ class ParticipantListMixin:
                 'rows': registrations,
                 'title': regform.title,
                 'show_checkin': any(registration['checked_in'] for registration in registrations),
-                'num_participants': query.count()}
+                'num_participants': num_participants,
+                'num_anonymous_participants': num_participants - len(registrations)}
 
-    def _process(self):
-        is_participant = self.is_participant(session.user)
+    def _get_participant_list_tables(self, is_participant):
         regforms = (RegistrationForm.query.with_parent(self.event)
                     .filter(RegistrationForm.is_participant_list_visible(is_participant),
                             ~RegistrationForm.participant_list_disabled)
@@ -288,27 +290,38 @@ class ParticipantListMixin:
             tables.extend(self._participant_list_table(regform, is_participant=is_participant)
                           for regform in regforms_dict.values())
 
+        return tables, merged, regforms
+
+    def _get_participant_list(self, is_participant):
+        tables, merged, regforms = self._get_participant_list_tables(is_participant)
         num_participants = sum(table['num_participants'] for table in tables)
 
-        return self.view_class.render_template(
-            'display/participant_list.html',
-            self.event,
-            preview=self.preview,
-            tables=tables,
-            merged=merged,
-            published=bool(regforms),
-            num_participants=num_participants
-        )
+        return {
+            'published': bool(regforms),
+            'merged': merged,
+            'num_participants': num_participants,
+            'tables': tables,
+        }
+
+    def _process(self):
+        return jsonify(self._get_participant_list(self.is_participant(session.user)))
 
 
-class RHParticipantList(ParticipantListMixin, RHRegistrationFormDisplayBase):
-    """List of all public registrations."""
-
-    view_class = WPDisplayRegistrationParticipantList
-    preview = False
+class RHParticipantListREST(ParticipantListRESTMixin, RHRegistrationFormDisplayBase):
+    """REST API for the participant list."""
 
     def is_participant(self, user):
         return self.event.is_user_registered(user)
+
+
+class RHParticipantList(ParticipantListRESTMixin, RHRegistrationFormDisplayBase):
+    """List of all public registrations."""
+
+    view_class = WPDisplayRegistrationParticipantList  # needed for offline archive generation
+
+    def _process(self):
+        static_data = self._get_participant_list(False) if g.get('static_site') else None
+        return self.view_class.render_template('display/participant_list.html', self.event, static_data=static_data)
 
 
 class InvitationMixin:
@@ -432,6 +445,7 @@ class RHRegistrationForm(InvitationMixin, RHRegistrationFormRegistrationBase):
                                                form_data=get_flat_section_submission_data(self.regform),
                                                initial_values=initial_values,
                                                file_data=file_data,
+                                               has_predefined_affiliations=self.regform_uses_predefined_affiliations,
                                                payment_conditions=payment_event_settings.get(self.event, 'conditions'),
                                                payment_enabled=self.event.has_feature('payment'),
                                                invitation=self.invitation,
@@ -470,6 +484,18 @@ class RHUploadRegistrationFile(UploadRegistrationFileMixin, InvitationMixin, RHR
 
 class RHUploadRegistrationPicture(UploadRegistrationPictureMixin, RHUploadRegistrationFile):
     """Upload a picture from a registration form."""
+
+
+class RHSearchRegistrationAffiliation(SearchAffiliationsMixin, RHRegistrationFormFieldActionBase):
+    """Search for an affiliation from a registration form."""
+
+    @property
+    def context(self):
+        return {
+            'event': self.event,
+            'registration_form': self.regform,
+            'field': self.field,
+        }
 
 
 class RHRegistrationDisplayEdit(RegistrationEditMixin, RHRegistrationFormRegistrationBase):

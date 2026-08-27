@@ -2,10 +2,76 @@ Changelog
 =========
 
 
-Version 3.3.13
+Version 3.3.14
 --------------
 
 *Unreleased*
+
+Improvements
+^^^^^^^^^^^^
+
+- Nothing so far :(
+
+Bugfixes
+^^^^^^^^
+
+- Nothing so far :)
+
+Accessibility
+^^^^^^^^^^^^^
+
+- Nothing so far
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Nothing so far
+
+
+Version 3.3.13
+--------------
+
+*Released on August 25, 2026*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Fix an XSS vulnerability when resolving conflicts between concurrent edits to minutes
+  (`GHSA-cw24-x4mj-fw3q <https://github.com/indico/indico/security/advisories/GHSA-cw24-x4mj-fw3q>`__)
+- Fix an XSS vulnerability in various places that allow entering custom links
+  (`GHSA-c4wc-ggrj-jg9v <https://github.com/indico/indico/security/advisories/GHSA-c4wc-ggrj-jg9v>`__)
+
+.. note::
+
+    The risk of these vulnerabilities is relatively low, because for the minute editor both the
+    attacker and the victim would need to collaborate on the same minutes (ie have privileges
+    to edit them), and the others require at least submitter or management access in an event
+    and additionally an interaction (clicking the link) by the victim.
+
+- Fix a missing access check in the legacy session export API
+  (`GHSA-6p4f-j8j6-463q <https://github.com/indico/indico/security/advisories/GHSA-6p4f-j8j6-463q>`__)
+
+.. note::
+
+    This only affected sessions that were more protected than the surrounding event, and in this
+    case the API could have been misused to retrieve metadata (such as title, description and conveners)
+    of such a session.
+
+- Fix an incomplete SSRF check
+  (`GHSA-2v95-h47v-g4x9 <https://github.com/indico/indico/security/advisories/GHSA-2v95-h47v-g4x9>`__)
+
+.. note::
+
+    Just like for the previous SSRF fix, there was only one place where this would have allowed
+    returning data retrieved from such a URL to the client, and this was only accessible to
+    authenticated users with event management privileges. Also, this vulnerability is only
+    problematic if sensitive information is accessible via an unauthenticated HTTP GET request
+    (e.g. in AWS cloud environments).
+
+Internationalization
+^^^^^^^^^^^^^^^^^^^^
+
+- New translation: Korean
 
 Improvements
 ^^^^^^^^^^^^
@@ -34,6 +100,23 @@ Improvements
 - Add QR code generator to event share widget (:issue:`6796`, :pr:`7504`)
 - Add contribution link placeholder for emailing abstract roles (:issue:`3602`, :pr:`7569`)
 - Allow cloning survey sections (:issue:`7395`, :pr:`7536`)
+- Add "Affiliation" field type to regforms (:pr:`7352`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Log registration tag changes in the event log (:pr:`7446`,
+  thanks :user:`moliholy, unconventionaldotdev`)
+- Display embedded images in email log entries (:pr:`7338`, thanks
+  :user:`duartegalvao, unconventionaldotdev`)
+- Record who created a registration on behalf of someone else (:pr:`7629`, thanks
+  :user:`moliholy, unconventionaldotdev`)
+- Support attaching files when emailing event persons (:pr:`7369`, thanks :user:`jbtwist`)
+- Let registration managers view logs for specific registrations (:pr:`7600`, thanks
+  :user:`vtran99`)
+- Add pagination to public participant list and use tabs instead of an accordion in case
+  of multiple registration forms (:issue:`6424`, :pr:`7472`)
+- Add new registration form setting to require approval again after a user modifies their
+  registration (:pr:`7434`, thanks :user:`moliholy`)
+- Add support for anonymous accompanying persons (numeric count only) in registration form
+  (:issue:`7383`, :pr:`7427`, thanks :user:`mkreuzmayr, andi1479`)
 
 Bugfixes
 ^^^^^^^^
@@ -55,6 +138,25 @@ Bugfixes
   :user:`foxbunny`)
 - Fix database error when importing protection settings in an unlisted event
   (:issue:`7550`, :pr:`7551`)
+- Use consistent sorting and hide deleted+unused single-choice options in
+  registration list filters (:pr:`7439`, thanks :user:`duartegalvao`)
+- Honor room booking details restrictions in spreadsheet export (:pr:`7612`)
+- Show favorite events in the dashboard based on their end date instead of their
+  start date (:pr:`7653`, thanks :user:`SegiNyn`)
+- Reduce max filename length in ZIP downloads to avoid issues on Windows (:pr:`7479`,
+  :user:`moliholy`)
+- Correctly format dates containing literal strings, such as "30 de junho" (:issue:`7590`,
+  :pr:`7668`)
+- Avoid serving incomplete webpack manifests during concurrent requests (:issue:`7530`,
+  :pr:`7675`, thanks :user:`shuv-amp`)
+- Fix missing fonts in Offline Copy archives (:pr:`7697`)
+- Reject invalid email addresses when entering person details (:issue:`7644`, :pr:`7698`)
+- Allow saving minutes after using the "Mark" formatting button in the editor (:pr:`7700`)
+- Fix room booking sprite image creation failing when there are many rooms (:pr:`7704`)
+- Use correct timezone information in log viewer (:pr:`7712`, thanks :user:`SegiNyn`)
+- Fix a small gap that could appear between a tooltip and its arrow when the
+  tooltip is attached to a control with a smaller font size (:pr:`7718`,
+  thanks :user:`foxbunny`)
 
 Accessibility
 ^^^^^^^^^^^^^
@@ -71,6 +173,34 @@ Accessibility
   :user:`foxbunny`)
 - Screen readers now correctly recognise modal dialogs as modal, keeping
   navigation within the open dialog (:pr:`7570`, thanks :user:`foxbunny`)
+- Screen reader users can now access the full date range and timezone for events
+  in the dashboard lists, which was previously shown only as a mouse-hover
+  tooltip (:pr:`7608`, thanks :user:`foxbunny`)
+- Screen reader users are now given a plain-text summary of the call for
+  abstracts / call for papers submission period instead of hearing the
+  decorative opening-day / deadline timeline graphic (:pr:`7487`, thanks
+  :user:`foxbunny`)
+- Screen reader users can now navigate to the main page heading on the dashboard,
+  user profile, preferences and category pages, which previously showed the page
+  title as plain text with no heading (:pr:`7617`, thanks :user:`foxbunny`)
+- The abstract submission ID is now easier to read for users with low vision
+  (:pr:`7463`, thanks :user:`foxbunny`)
+- Screen reader users can now reliably hear their relationship to each event in
+  the dashboard's "Your events at hand" list (management, reviewing, attendance
+  and favourite status), which was previously exposed only through role-icon
+  tooltips that assistive technology did not announce dependably (:pr:`7589`,
+  thanks :user:`foxbunny`)
+- Screen reader users now hear the affiliation, email and phone on their profile
+  dashboard announced as labelled fields instead of bare values (:pr:`7593`,
+  thanks :user:`foxbunny`)
+- The calendar export buttons on category, session and contribution pages now
+  show a tooltip on hover and keyboard focus and have a reliable accessible name,
+  instead of relying on the ``title`` attribute (:pr:`7718`, thanks
+  :user:`foxbunny`)
+- Icon-only controls in the event header toolbar (home, event navigation, export,
+  download, theme, favourite and management) now have reliable accessible names
+  and tooltips that also appear on keyboard focus, instead of relying on the
+  ``title`` attribute (:issue:`7623`, :pr:`7689`, thanks :user:`foxbunny`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
@@ -80,6 +210,10 @@ Internal Changes
 - Relax the videoconference name length limit to 255 characters, delegating
   service-specific limits to each plugin (:pr:`7560`, thanks
   :user:`moliholy, unconventionaldotdev`)
+- Modernize the scientific program + session list PDF generation using weasyprint
+  (:pr:`7694`)
+- Use the latest TeXLive container image (``TL2026-2026-08-09-full``) for LaTeX-based
+  PDF builds (:pr:`7699`)
 
 
 Version 3.3.12

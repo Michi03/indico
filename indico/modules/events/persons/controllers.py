@@ -41,12 +41,13 @@ from indico.modules.events.registration.models.forms import RegistrationForm
 from indico.modules.events.registration.models.registrations import Registration
 from indico.modules.events.sessions.models.principals import SessionPrincipal
 from indico.modules.events.sessions.models.sessions import Session
+from indico.modules.files.controllers import UploadFileMixin
 from indico.modules.logs import LogKind
 from indico.modules.users import user_management_settings
 from indico.modules.users.models.affiliations import Affiliation
 from indico.util.date_time import now_utc
 from indico.util.i18n import _, ngettext
-from indico.util.marshmallow import LowercaseString, no_relative_urls, not_empty, validate_with_message
+from indico.util.marshmallow import FilesField, LowercaseString, no_relative_urls, not_empty, validate_with_message
 from indico.util.placeholders import get_sorted_placeholders, replace_placeholders
 from indico.util.user import principal_from_identifier, validate_search_token
 from indico.web.args import use_args, use_kwargs
@@ -259,12 +260,22 @@ class RHPersonsList(RHPersonsBase):
         for person_data in persons.values():
             if not person_data['registrations']:
                 person_data['roles']['no_registration'] = True
+        has_predefined_affiliations = Affiliation.query.filter_by(is_deleted=False).has_rows()
         allow_custom_affiliations = not user_management_settings.get('only_predefined_affiliations')
         return WPManagePersons.render_template('management/person_list.html', self.event, persons=person_list,
                                                num_no_account=num_no_account, builtin_roles=BUILTIN_ROLES,
                                                custom_roles=custom_roles, person_schema=EventPersonSchema(),
-                                               has_predefined_affiliations=Affiliation.query.has_rows(),
+                                               has_predefined_affiliations=has_predefined_affiliations,
                                                allow_custom_affiliations=allow_custom_affiliations)
+
+
+class RHAPIEmailEventPersonsUpload(UploadFileMixin, RHManageEventBase):
+    """Upload an attachment for an email to EventPersons."""
+
+    PERMISSION = 'contributions'
+
+    def get_file_context(self):
+        return 'event', self.event.id, 'email-attachments'
 
 
 class RHEmailEventPersonsBase(RHManageEventBase):
@@ -343,10 +354,12 @@ class RHAPIEmailEventPersonsSend(RHEmailEventPersonsBase):
         'subject': fields.String(required=True, validate=[not_empty, validate.Length(max=200)]),
         'bcc_addresses': fields.List(LowercaseString(validate=validate.Email())),
         'copy_for_sender': fields.Bool(load_default=False),
+        'attachments': FilesField(load_default=lambda: []),
     })
-    def _process(self, sender_address, body, subject, bcc_addresses, copy_for_sender):
+    def _process(self, sender_address, body, subject, bcc_addresses, copy_for_sender, attachments):
         if not (sender_address := self.event.get_verbose_email_sender(sender_address)):
             abort(422, messages={'sender_address': ['Invalid sender address']})
+        email_attachments = [f.as_attachment() for f in attachments]
         for recipient in self.recipients:
             if self.no_account and isinstance(recipient, EventPerson):
                 recipient.invited_dt = now_utc()
@@ -358,8 +371,11 @@ class RHAPIEmailEventPersonsSend(RHEmailEventPersonsBase):
             bcc.update(bcc_addresses)
             with self.event.force_event_locale():
                 tpl = get_template_module('emails/custom.html', subject=email_subject, body=email_body)
-                email = make_email(to_list=recipient.email, bcc_list=bcc, sender_address=sender_address,
-                                   template=tpl, html=True)
+                try:
+                    email = make_email(to_list=recipient.email, bcc_list=bcc, sender_address=sender_address,
+                                       template=tpl, html=True, attachments=email_attachments)
+                except ValueError as e:
+                    abort(422, messages={'attachments': [str(e)]})
             send_email(email, self.event, 'Event Persons')
         return jsonify(count=len(self.recipients))
 

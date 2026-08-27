@@ -29,6 +29,8 @@ _bp.add_url_rule('/manage/registration/managers', 'manage_registration_managers'
                  methods=('GET', 'POST'))
 _bp.add_url_rule('/manage/registration/participant-list-preview', 'manage_participant_list_preview',
                  regforms.RHParticipantListPreview)
+_bp.add_url_rule('/manage/registration/api/participant-list-preview', 'manage_participant_list_preview_api',
+                 regforms.RHParticipantListPreviewREST)
 _bp.add_url_rule('/manage/registration/description', 'manage_registration_multi_forms_announcement',
                  regforms.RHManageRegistrationMultiFormsAnnouncement, methods=('GET', 'POST'))
 
@@ -121,12 +123,12 @@ _bp.add_url_rule('/manage/registration/<int:reg_form_id>/registrations/import', 
                  reglists.RHRegistrationsImport, methods=('GET', 'POST'))
 _bp.add_url_rule(
     '/manage/registration/<int:reg_form_id>/registrations/<any(table, book):export_type>.pdf',
-    'registrations_pdf_export', reglists.RHRegistrationsExportPDF, methods=('POST',),
+    'registrations_pdf_export', reglists.RHRegistrationsExportPDF, methods=('GET', 'POST'),
 )
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/registrations/registrations.csv', 'registrations_csv_export',
-                 reglists.RHRegistrationsExportCSV, methods=('POST',))
+                 reglists.RHRegistrationsExportCSV, methods=('GET', 'POST'))
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/registrations/registrations.xlsx',
-                 'registrations_excel_export', reglists.RHRegistrationsExportExcel, methods=('POST',))
+                 'registrations_excel_export', reglists.RHRegistrationsExportExcel, methods=('GET', 'POST'))
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/registrations/approve', 'registrations_approve',
                  reglists.RHRegistrationsApprove, methods=('POST',))
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/registrations/reject', 'registrations_reject',
@@ -236,6 +238,8 @@ _bp.add_url_rule('/registrations/<int:reg_form_id>/upload/<int:field_id>',
                  'upload_registration_file', display.RHUploadRegistrationFile, methods=('POST',))
 _bp.add_url_rule('/registrations/<int:reg_form_id>/upload-picture/<int:field_id>',
                  'upload_registration_picture', display.RHUploadRegistrationPicture, methods=('POST',))
+_bp.add_url_rule('/registration/<int:reg_form_id>/affiliations/<int:field_id>', 'search_registration_affiliation',
+                 display.RHSearchRegistrationAffiliation)
 _bp.add_url_rule('/registrations/<int:reg_form_id>/edit', 'edit_registration_display',
                  display.RHRegistrationDisplayEdit, methods=('GET', 'POST'))
 _bp.add_url_rule('/registrations/<int:reg_form_id>/withdraw', 'withdraw_registration',
@@ -265,6 +269,7 @@ _bp.add_url_rule('/api/registration/<int:reg_form_id>/tags/assign', 'api_registr
                  tags.RHAPIRegistrationTagsAssign, methods=('POST',))
 _bp.add_url_rule('/api/registration/<int:reg_form_id>/privacy/consent', 'api_registration_change_consent',
                  privacy.RHAPIRegistrationChangeConsent, methods=('POST',))
+_bp.add_url_rule('/api/registrations/participants', 'api_participant_list', display.RHParticipantListREST)
 
 
 # Check-in app API

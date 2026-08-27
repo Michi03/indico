@@ -71,6 +71,8 @@
                                         </td>
                                     {% elif item.id == 'state' %}
                                         <td class="i-table">{{ registration.state.title }}</td>
+                                    {% elif item.id == 'created_by' %}
+                                        <td class="i-table">{{ registration.created_by.full_name if registration.created_by else '' }}</td>
                                     {% elif item.id == 'price' %}
                                         <td class="i-table" data-text="{{ registration.price }}">{{ registration.render_price() }}</td>
                                     {% elif item.id == 'checked_in' %}
@@ -126,11 +128,18 @@
                                         </td>
                                     {% else %}
                                         {% set search_value = data[item.id].search_data if item.id in data else '' %}
-                                        <td class="i-table" data-text="{{ search_value }}">
-                                            {%- if item.id in data and data[item.id].friendly_data %}
-                                                {{- data[item.id].friendly_data }}
-                                            {%- endif %}
-                                        </td>
+                                        {% if item.id in data and data[item.id].field_data.field.input_type == 'affiliation' %}
+                                            {% set spec = data[item.id].field_data.field.field_impl.render_reglist_column(data[item.id]) %}
+                                            <td class="i-table" data-text="{{ spec.text_value }}" {{ spec.td_attrs | html_params }}>
+                                                {{ spec.content }}
+                                            </td>
+                                        {% else %}
+                                            <td class="i-table" data-text="{{ search_value }}">
+                                                {%- if item.id in data and data[item.id].friendly_data %}
+                                                    {{- data[item.id].friendly_data }}
+                                                {%- endif %}
+                                            </td>
+                                        {% endif %}
                                     {% endif %}
                                 {% endfor %}
                                 {% for item in extra_columns if not item.filter_only %}
