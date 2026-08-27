@@ -3,7 +3,22 @@
 {% block registration_body %}
     {%- set diff = diff if diff is not none else {} -%}
     {%- set old_price = old_price if old_price is not none else registration.price -%}
-    {% block registration_data %}{% endblock %}
+    {% for section, fields in registration.get_summary_data(hide_empty=true).items() if not section.is_manager_only %}
+        <div style="padding-bottom: 20px; border-bottom: 1px solid #EBEBEB;">
+            <h2>{{ section.title }}</h2>
+            <dl>
+                {% for field, regdata in fields.items() if regdata.friendly_data or field.html_field_name in diff %}
+                    {{ render_field(field) }}
+                    {% if field.html_field_name in diff %}
+                        {{ render_modified_regdata(regdata, diff[field.html_field_name]) }}
+                    {% else %}
+                        {{ render_regdata(regdata) }}
+                    {% endif %}
+                {% endfor %}
+            </dl>
+            <div style="clear: both;"></div>
+        </div>
+    {% endfor %}
     {% if old_price != registration.price or registration.price %}
         <div style="padding-bottom: 20px; border-bottom: 1px solid #EBEBEB;">
             <p style="text-align: right; margin-bottom: 0; font-size: 0.9em;">
