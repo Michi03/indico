@@ -69,19 +69,27 @@
                                 </div>
                             {% endif %}
                         </div>
-                        {% if user.affiliation %}
-                            <div>
-                                <i class="icon-users"></i><span>{{ user.affiliation }}</span>
-                            </div>
-                        {% endif %}
-                        <div>
-                            <i class="icon-mail"></i><span>{{ user.email }}</span>
-                        </div>
-                        {% if user.phone %}
-                            <div>
-                                <i class="icon-phone"></i><span>{{ user.phone }}</span>
-                            </div>
-                        {% endif %}
+                        <dl class="contact-details">
+                            {% if user.affiliation %}
+                                <dt>
+                                    <i class="icon-users" aria-hidden="true"></i>
+                                    <span class="contact-details-label">{% trans %}Affiliation{% endtrans %}</span>
+                                </dt>
+                                <dd>{{ user.affiliation }}</dd>
+                            {% endif %}
+                            <dt>
+                                <i class="icon-mail" aria-hidden="true"></i>
+                                <span class="contact-details-label">{% trans %}Email{% endtrans %}</span>
+                            </dt>
+                            <dd>{{ user.email }}</dd>
+                            {% if user.phone %}
+                                <dt>
+                                    <i class="icon-phone" aria-hidden="true"></i>
+                                    <span class="contact-details-label">{% trans %}Phone{% endtrans %}</span>
+                                </dt>
+                                <dd>{{ user.phone }}</dd>
+                            {% endif %}
+                        </dl>
                     </div>
                     <div class="actions">
                         <a class="ui icon button" href="{{ url_for('users.user_profile') }}">
@@ -96,10 +104,12 @@
                         <ul>
                             {% for event in unlisted_events %}
                                 <li class="flexrow">
-                                    <span class="event-date f-self-no-shrink"
-                                          title="{{ _format_event_times(event) }}">
-                                        {{ _format_event_time(event) }}
-                                    </span>
+                                    <time class="event-date f-self-no-shrink" datetime="{{ event.start_dt.isoformat() }}">
+                                        <ind-with-tooltip>
+                                            {{ _format_event_time(event) }}
+                                            <span data-tip-content>{{ _format_event_times(event) }}</span>
+                                        </ind-with-tooltip>
+                                    </time>
                                     <span class="event-title ellipsis f-self-stretch">
                                         <a href="{{ event.url }}">
                                             {{ event.get_verbose_title(show_series_pos=true) }}
@@ -121,26 +131,32 @@
                     <ul>
                         {% for event, roles in linked_events %}
                             <li id="event-{{ event.id }}" class="flexrow">
-                                <span class="event-date" title="{{ _format_event_times(event) }}">
-                                    {{ _format_event_time(event) }}
-                                </span>
+                                <time class="event-date" datetime="{{ event.start_dt.isoformat() }}">
+                                    <ind-with-tooltip>
+                                        {{ _format_event_time(event) }}
+                                        <span data-tip-content>{{ _format_event_times(event) }}</span>
+                                    </ind-with-tooltip>
+                                </time>
                                 <span class="event-title ellipsis f-self-stretch">
                                     <a href="{{ event.url }}">
                                         {{ event.get_verbose_title(show_series_pos=true) }}
                                     </a>
                                     {{ event.get_label_markup('mini') }}
                                 </span>
-                                {% set role_titles = {
-                                    'management': _('You have management rights') if roles.management else _('You do not have management rights'),
-                                    'reviewing': _('You are a reviewer') if roles.reviewing else _('You are not a reviewer'),
-                                    'attendance': _('You are an attendee') if roles.attendance else _('You are not an attendee'),
-                                    'favorited': _('You have favorited this event') if roles.favorited else _('You have not favorited this event')
-                                } %}
+                                {% set role_legend = [
+                                    ('management', 'icon-medal', _('You have management rights'), _('You do not have management rights')),
+                                    ('reviewing', 'icon-user-reading', _('You are a reviewer'), _('You are not a reviewer')),
+                                    ('attendance', 'icon-ticket', _('You are an attendee'), _('You are not an attendee')),
+                                    ('favorited', 'icon-star', _('You have favorited this event'), _('You have not favorited this event'))
+                                ] %}
                                 <span class="item-legend">
-                                    <span title="{{ role_titles.management }}" class="icon-medal {{ 'active' if roles.management }}"></span>
-                                    <span title="{{ role_titles.reviewing }}" class="icon-user-reading {{ 'active' if roles.reviewing }}"></span>
-                                    <span title="{{ role_titles.attendance }}" class="icon-ticket {{ 'active' if roles.attendance }}"></span>
-                                    <span title="{{ role_titles.favorited }}" class="icon-star {{ 'active' if roles.favorited }}"></span>
+                                    {% for key, icon, active_label, inactive_label in role_legend %}
+                                        <ind-with-tooltip>
+                                            <span class="{{ icon }} {{ 'active' if roles[key] }}">
+                                                <span data-tip-content>{{ active_label if roles[key] else inactive_label }}</span>
+                                            </span>
+                                        </ind-with-tooltip>
+                                    {% endfor %}
                                 </span>
                             </li>
                         {% else %}
@@ -198,10 +214,12 @@
                         {% else %}
                             {% for event in categories_events %}
                                 <li class="flexrow">
-                                    <span class="event-date f-self-no-shrink"
-                                          title="{{ _format_event_times(event) }}">
-                                        {{ _format_event_time(event) }}
-                                    </span>
+                                    <time class="event-date f-self-no-shrink" datetime="{{ event.start_dt.isoformat() }}">
+                                        <ind-with-tooltip>
+                                            {{ _format_event_time(event) }}
+                                            <span data-tip-content>{{ _format_event_times(event) }}</span>
+                                        </ind-with-tooltip>
+                                    </time>
                                     <div class="flexcol ellipsis">
                                         <span class="event-title ellipsis">
                                             <a href="{{ event.url }}">

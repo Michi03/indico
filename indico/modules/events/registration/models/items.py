@@ -68,6 +68,7 @@ class PersonalDataType(IndicoIntEnum):
     @strict_classproperty
     @classmethod
     def FIELD_DATA(cls):  # noqa: N802
+        from indico.modules.events.registration.fields.affiliation import AffiliationMode
         title_item = {'price': 0,
                       'places_limit': 0,
                       'is_enabled': True}
@@ -89,8 +90,11 @@ class PersonalDataType(IndicoIntEnum):
             }),
             (cls.affiliation, {
                 'title': cls.affiliation.get_title(),
-                'input_type': 'text',
-                'position': 4
+                'input_type': 'affiliation',
+                'position': 4,
+                'data': {
+                    'affiliation_mode': AffiliationMode.both,
+                },
             }),
             # Fields disabled by default start in position 1000 to avoid problems reordering
             (cls.address, {
@@ -199,6 +203,9 @@ class RegistrationFormItem(db.Model):
         db.CheckConstraint("internal_name != ''", name='internal_name_not_empty'),
         db.CheckConstraint('(internal_name IS NOT NULL) OR (personal_data_type IS NULL)',
                            name='pd_internal_name_required'),
+        db.CheckConstraint('(type != {t.text}) OR (internal_name IS NULL)'  # noqa: UP032
+                           .format(t=RegistrationFormItemType),
+                           name='text_no_internal_name'),
         db.Index('ix_uq_form_items_pd_section', 'registration_form_id', unique=True,
                  postgresql_where=db.text(f'type = {RegistrationFormItemType.section_pd}')),
         db.Index('ix_uq_form_items_pd_field', 'registration_form_id', 'personal_data_type', unique=True,
@@ -382,7 +389,7 @@ class RegistrationFormItem(db.Model):
 
     @property
     def view_data(self):
-        """Return object with data that the frontend can understand."""
+        """A dict with data that the frontend can understand."""
         return {'id': self.id, 'description': self.description, 'position': self.position}
 
     @property

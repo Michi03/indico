@@ -19,6 +19,10 @@ import AccompanyingPersonsInput, {
   AccompanyingPersonsSettings,
   accompanyingPersonsSettingsInitialData,
 } from './AccompanyingPersonsInput';
+import AffiliationInput, {
+  AffiliationSettings,
+  affiliationSettingsInitialData,
+} from './AffiliationInput';
 import BooleanInput, {
   BooleanSettings,
   booleanShowIfOptions,
@@ -83,6 +87,7 @@ Available keys:
 - alwaysRequired: optional; always display the field as required
 - hasPrice: optional; show price field if the whole field can have a price attached
 - noRetentionPeriod: optional; hide the retention period setting
+- noInternalName: optional; hide the internal name advanced setting
 - renderAsFieldset: optional; whether the field should be rendered in a fieldset; applies
   to fields that use multiple controls, like radios, checkboxes, multi-button controls;
   can either be a Boolean or a function that takes field options and returns a Boolean
@@ -91,6 +96,8 @@ Available keys:
 - getDataForCondition: optional; a function that takes the current value of the field and
   returns a list that can be compared with the stored condition of another field. its logic
   must match the corresponding ``get_data_for_condition`` method in the backend field class
+- hideFromItemDropdown: optional; a function receiving staticData and returning whether the
+  field should be hidden in the "Add field" dropdown
 */
 
 const fieldRegistry = {
@@ -99,9 +106,11 @@ const fieldRegistry = {
     inputComponent: LabelInput,
     noRequired: true,
     noRetentionPeriod: true,
+    noInternalName: true,
     noLabel: true,
     icon: 'tag',
     customFormItem: true,
+    hideFromItemDropdown: () => true,
   },
   text: {
     title: Translate.string('Text field'),
@@ -165,6 +174,14 @@ const fieldRegistry = {
     inputComponent: CountryInput,
     settingsComponent: CountrySettings,
     icon: 'earth',
+  },
+  affiliation: {
+    title: Translate.string('Affiliation'),
+    inputComponent: AffiliationInput,
+    settingsComponent: AffiliationSettings,
+    settingsFormInitialData: affiliationSettingsInitialData,
+    icon: 'id-badge',
+    hideFromItemDropdown: ({hasPredefinedAffiliations}) => !hasPredefinedAffiliations,
   },
   file: {
     title: Translate.string('File'),

@@ -55,14 +55,13 @@ from indico.modules.users.operations import (add_secondary_email, create_user, d
                                              revoke_admin)
 from indico.modules.users.schemas import (AffiliationArgs, AffiliationSchema, BasicCategorySchema, FavoriteEventSchema,
                                           UserPersonalDataSchema)
-from indico.modules.users.util import (GravatarError, get_avatar_url_from_name, get_gravatar_for_user,
-                                       get_linked_events, get_mastodon_server_name, get_related_categories,
-                                       get_suggested_categories, get_unlisted_events, get_user_by_email,
-                                       get_user_titles, log_user_update, merge_users, search_affiliations, search_users,
-                                       send_avatar, serialize_user, set_user_avatar)
+from indico.modules.users.util import (GravatarError, SearchAffiliationsMixin, get_avatar_url_from_name,
+                                       get_gravatar_for_user, get_linked_events, get_mastodon_server_name,
+                                       get_related_categories, get_suggested_categories, get_unlisted_events,
+                                       get_user_by_email, get_user_titles, log_user_update, merge_users,
+                                       search_affiliations, search_users, send_avatar, serialize_user, set_user_avatar)
 from indico.modules.users.views import (WPAffiliationsDashboard, WPUser, WPUserDashboard, WPUserDataExport,
                                         WPUserFavorites, WPUserPersonalData, WPUserProfilePic, WPUsersAdmin)
-from indico.util.countries import get_countries
 from indico.util.date_time import now_utc
 from indico.util.i18n import _, force_locale
 from indico.util.images import square
@@ -323,12 +322,10 @@ class RHPersonalDataUpdate(RHUserBase):
         return '', 204
 
 
-class RHSearchAffiliations(RH):
-    @use_kwargs({'q': fields.String(load_default='')}, location='query')
-    def _process(self, q):
-        res = search_affiliations(q)
-        basic_fields = ('id', 'name', 'code', 'street', 'postcode', 'city', 'country_code', 'meta')
-        return AffiliationSchema(many=True, only=basic_fields).jsonify(res)
+class RHSearchAffiliations(SearchAffiliationsMixin, RH):
+    @property
+    def context(self):
+        return {}
 
 
 class RHAffiliationsAPI(RHAdminBase):
@@ -396,13 +393,6 @@ class RHAffiliationAPI(RHAdminBase):
                              f'Affiliation "{self.affiliation.name}" deleted', session.user)
         search_affiliations.bump_version()
         return '', 204
-
-
-class RHCountries(RHAdminBase):
-    """Return the available countries for affiliation forms."""
-
-    def _process(self):
-        return jsonify(list(get_countries().items()))
 
 
 class RHProfilePicturePage(RHUserBase):

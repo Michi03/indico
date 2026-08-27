@@ -173,6 +173,12 @@ class RegistrationForm(db.Model):
         nullable=False,
         default=False
     )
+    #: Whether modifying a registration resets its approval status (requires moderation)
+    reset_approval_on_modification = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
     #: Whether the registration form is only for selected users
     private = db.Column(
         db.Boolean,
@@ -493,6 +499,12 @@ class RegistrationForm(db.Model):
         return [x for x in self.sections if not x.is_visible and not x.is_deleted]
 
     @property
+    def has_anonymous_accompanying_persons_fields(self):
+        return any(item.input_type == 'accompanying_persons' and not item.is_deleted and
+                   (item.data or {}).get('is_anonymous')
+                   for item in self.form_items)
+
+    @property
     def limit_reached(self):
         return self.registration_limit and self.active_registration_count >= self.registration_limit
 
@@ -606,12 +618,25 @@ class RegistrationForm(db.Model):
     def render_base_price(self):
         return format_currency(self.base_price, self.currency)
 
+    def get_personal_data_field(self, personal_data_type, *, force=False):
+        """Return the personal data field with the given type."""
+        fields = self.active_fields if not force else [x for x in self.form_items if x.is_field]
+        return next(
+            (
+                field
+                for field in fields
+                if (
+                    isinstance(field, RegistrationFormPersonalDataField)
+                    and field.personal_data_type == personal_data_type
+                )
+            ),
+            None,
+        )
+
     def get_personal_data_field_id(self, personal_data_type):
         """Return the field id corresponding to the personal data field with the given name."""
-        for field in self.active_fields:
-            if (isinstance(field, RegistrationFormPersonalDataField) and
-                    field.personal_data_type == personal_data_type):
-                return field.id
+        if field := self.get_personal_data_field(personal_data_type):
+            return field.id
 
     def log(self, *args, **kwargs):
         """Log with prefilled metadata for the regform."""

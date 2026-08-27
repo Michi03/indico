@@ -114,6 +114,7 @@ class RHDeleteSessions(RHManageSessionsActionsBase):
 
 class RHManageSessionsExportBase(RHManageSessionsActionsBase):
     ALLOW_LOCKED = True
+    _allow_get_all = True
 
 
 class RHExportSessionsCSV(RHManageSessionsExportBase):
@@ -136,7 +137,7 @@ class RHExportSessionsPDF(RHManageSessionsExportBase):
     """Export list of sessions to a PDF."""
 
     def _process(self):
-        pdf_file = generate_pdf_from_sessions(self.sessions)
+        pdf_file = generate_pdf_from_sessions(self.event, self.sessions)
         return send_file('sessions.pdf', pdf_file, 'application/pdf')
 
 

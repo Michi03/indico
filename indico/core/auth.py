@@ -50,7 +50,6 @@ class IndicoMultipass(Multipass):
         """The keys to be synchronized.
 
         This is the set of keys to be synced to user data.
-        The ``email`` can never be synchronized.
         """
         provider = self.sync_provider
         if provider is None:
@@ -114,7 +113,7 @@ class IndicoMultipass(Multipass):
         else:
             exc_str = str(exc)
             fn = logger.error
-            if exc_str.startswith('mismatching_state:'):
+            if exc_str.startswith(('mismatching_state:', 'invalid_grant:')):
                 fn = logger.debug
             fn('Authentication via %s failed: %s (%r)', exc.provider.name if exc.provider else None, exc_str,
                exc.details)

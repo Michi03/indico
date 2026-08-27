@@ -63,4 +63,6 @@ export {default as WTFSearchDropdown, SearchDropdown} from './WTFSearchDropdown'
 export {default as ICSCalendarLink} from './ICSCalendarLink';
 export {default as Favorite} from './Favorite';
 export {default as PersonDetailsModal} from './PersonDetailsModal';
+export {default as FinalAffiliationField, AffiliationField} from './AffiliationField';
 export {default as Captcha} from './Captcha';
+export {default as CountryDropdown, FinalCountryDropdown} from './CountryDropdown';
