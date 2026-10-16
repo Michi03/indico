@@ -183,7 +183,7 @@ lxml==6.1.1
     # via
     #   -r requirements.in
     #   feedgen
-mako==1.4.1
+mako==1.4.3
     # via alembic
 markdown==3.10.3
     # via -r requirements.in
@@ -264,7 +264,7 @@ pygments==2.20.0
     #   ipython-pygments-lexers
 pynpm==0.3.1
     # via pywebpack
-pypdf==6.15.0
+pypdf==6.19.0
     # via -r requirements.in
 pyphen==0.17.2
     # via weasyprint
@@ -361,7 +361,7 @@ ua-parser==1.0.2
     # via -r requirements.in
 ua-parser-builtins==202606
     # via ua-parser
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   requests
     #   sentry-sdk
@@ -374,7 +374,7 @@ wallet-py3k==0.0.4
     # via -r requirements.in
 wcwidth==0.8.2
     # via prompt-toolkit
-weasyprint==69.0
+weasyprint==70.0
     # via -r requirements.in
 webargs==8.7.1
     # via -r requirements.in
@@ -385,7 +385,7 @@ webencodings==0.5.1
     #   html5lib
     #   tinycss2
     #   tinyhtml5
-werkzeug==3.1.8
+werkzeug==3.1.9
     # via
     #   -r requirements.in
     #   flask

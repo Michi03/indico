@@ -39,6 +39,14 @@ const esModules = [
   'markdown-table',
   'trim-lines',
   'axios',
+  'flat',
+  'sanitize-html',
+  'htmlparser2',
+  'entities',
+  'domelementtype',
+  'domhandler',
+  'domutils',
+  'dom-serializer',
 ].join('|');
 
 module.exports = {
