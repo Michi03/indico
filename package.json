@@ -1,5 +1,6 @@
 {
   "name": "indico",
+  "private": true,
   "version": "2.0.0",
   "description": "Indico",
   "main": "indico/web/client/js/index.js",
@@ -26,6 +27,7 @@
     "final-form-arrays": "^3.0.2",
     "final-form-calculate": "^1.3.2",
     "flask-urls": "^0.2.0",
+    "flat": "^6.0.1",
     "fullcalendar": "^6.1.8",
     "geodesy": "^2.4.0",
     "glob-to-regexp": "^0.4.1",
@@ -76,7 +78,7 @@
     "react-markdown": "^8.0.7",
     "react-markdown-editor-lite": "^1.3.3",
     "react-modal": "^3.15.1",
-    "react-overridable": "^0.0.4",
+    "react-overridable": "^1.1.0",
     "react-pdf": "^9.0.0",
     "react-popper": "^2.3.0",
     "react-redux": "^8.0.2",
@@ -156,6 +158,7 @@
     "postcss-loader": "^8.1.1",
     "postcss-scss": "^4.0.4",
     "postcss-url": "^10.1.3",
+    "prettier": "^3.9.6",
     "preval.macro": "^5.0.0",
     "progress-bar-webpack-plugin": "^2.1.0",
     "redux-mock-store": "^1.5.4",
@@ -165,7 +168,9 @@
     "script-loader": "^0.7.2",
     "semver": "^7.3.7",
     "stylelint": "^15.11.0",
+    "stylelint-config-prettier": "^9.0.5",
     "stylelint-config-recommended-scss": "^13.1.0",
+    "stylelint-prettier": "^5.0.3",
     "stylelint-scss": "^5.0.1",
     "stylelint-stylistic": "^0.4.5",
     "terser-webpack-plugin": "^5.3.3",
@@ -209,5 +214,9 @@
   },
   "scarfSettings": {
     "enabled": false
+  },
+  "allowScripts": {
+    "core-js": false,
+    "husky@4.3.8": true
   }
 }

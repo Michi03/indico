@@ -1,6 +1,6 @@
 # Indico ![CI Status](https://github.com/indico/indico/workflows/CI/badge.svg) [![License](https://img.shields.io/github/license/indico/indico.svg)](https://github.com/indico/indico/blob/master/LICENSE) [![Available on PyPI](https://img.shields.io/pypi/v/indico.svg)](https://pypi.python.org/pypi/indico/) [![Made at CERN!](https://img.shields.io/badge/CERN-Open%20Source-%232980b9.svg)](https://home.cern)
 
-<img src="https://github.com/indico/indico/raw/master/indico/web/static/images/logo_indico.png"
+<img src="https://github.com/indico/indico/raw/master/indico/web/static/images/logo_indico.svg"
      align="right"
      width="300"
      style="width: 300px; float: right; margin-right: 50px;">
@@ -10,7 +10,7 @@
  * 🌍 fully **web-based**;
  * 🧩 **feature-rich** but also **extensible** through the use of [plugins](https://docs.getindico.io/en/stable/plugins/);
  * ⚖️ **Open-Source** Software under the MIT License;
- * <img src="https://raw.githubusercontent.com/indico/assets/master/cern_badge.png" width="20"> **made at CERN**, [the place where the web was born](https://home.cern/science/computing/birth-web)!
+ * <img src="https://raw.githubusercontent.com/indico/assets/master/cern_badge.png" width="20"> **made at CERN**, [the place where the web was born](https://home.cern/science/computing/the-birth-of-the-web/)!
 
 ![A sneak peek of Indico](https://raw.githubusercontent.com/indico/indico/master/sneakpeek.gif)
 
@@ -76,7 +76,7 @@ We follow [CERN's Values](https://hr.web.cern.ch/cerns-values) and the principle
 
 ## History
 
-This software project was initially funded by the European Union's FP5 programme🇪🇺, in what was called the [**In**tegrated **Di**gital **Co**nferencing Project](https://cordis.europa.eu/project/rcn/61849/factsheet/en), or just **InDiCo**. CERN was responsible for the development of the "Make-a-Confererence" workpackage (inspired by an already existing system called **CDS Agenda**, also developed at the Organization) which would then become what we nowadays know as **Indico**.
+This software project was initially funded by the European Union's FP5 programme🇪🇺, in what was called the [**In**tegrated **Di**gital **Co**nferencing Project](https://cordis.europa.eu/project/rcn/61849/factsheet/en), or just **InDiCo**. CERN was responsible for the development of the "Make-a-Conference" workpackage (inspired by an already existing system called **CDS Agenda**, also developed at the Organization) which would then become what we nowadays know as **Indico**.
 
 We have since stopped using the ~~*InDiCo*~~ acronym, as it no longer reflects accurately the nature of the project. The word *Indico* now has no particular meaning other than the product's name.
 

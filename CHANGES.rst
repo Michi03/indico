@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-Version 3.3.14
+Version 3.3.15
 --------------
 
 *Unreleased*
@@ -28,6 +28,61 @@ Internal Changes
 - Nothing so far
 
 
+Version 3.3.14
+--------------
+
+*Released on October 13, 2026*
+
+Security fixes
+^^^^^^^^^^^^^^
+
+- Fix an incorrect access check in the legacy contribution export API that could leak
+  extra contribution metadata through cache poisoning (:cve:`2026-108388`)
+- Fix a path traversal vulnerability in the offline-copy feature that could lead to the **disclosure
+  of local file contents** (:cve:`2026-107398`)
+
+.. note::
+
+    Updating as soon as possible is strongly recommended, and it is generally advisable to
+    limit event creation (and management) to trusted individuals.
+
+Improvements
+^^^^^^^^^^^^
+
+- Support multi-choice abstract/contribution fields (:pr:`7725`)
+- Add option to limit the number of review rounds in Paper Reviewing (:issue:`6600`,
+  :pr:`7187`)
+- Add new regform setting to allow withdrawing a registration outside the modification
+  period (enabled by default for new forms) (:pr:`7769`)
+
+Bugfixes
+^^^^^^^^
+
+- Fix "No value" filter for text-based abstract/contribution fields (:pr:`7725`)
+- Fix error when loading favorite contribution state when viewing a contribution in
+  a restricted event the user cannot access (:pr:`7740`)
+- Fix "My contributions" page not working when "My timetable" menu entry is disabled
+  (:pr:`7759`)
+- Fix paper submission button not showing up for authorized late submitters (:pr:`7766`)
+- Fix shift-click bulk selection in data tables misbehaving after sorting (:pr:`7777`)
+- Prevent caching of ``/assets/js-vars/user.js`` by CDNs and proxies (:issue:`6891`, :pr:`7782`)
+- Hide edit/remove buttons on disabled accompanying persons field (:pr:`7785`)
+- Correctly show locked/purged field indicators on registration form fields (:pr:`7785`)
+- Fix error on dashboard iCal download when providing a ``from`` date (:pr:`7794`)
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Allow plugins to declare file-backed config keys via the
+  ``plugin_config_defaults`` class attribute. Keys are exposed in ``indico.conf``
+  under the reserved ``PLUGIN_<NAME>_`` namespace, with parity for defaults,
+  sanitization and ``INDICO_CONF_OVERRIDE``
+  (:pr:`7499`, thanks :user:`moliholy, unconventionaldotdev`)
+- Add new signals to allow restricting which registrations someone can manage
+  (:pr:`7611`, thanks :user:`moliholy, unconventionaldotdev`)
+- Fix building JS assets on Node 26 (:pr:`7793`)
+
+
 Version 3.3.13
 --------------
 
@@ -37,9 +92,9 @@ Security fixes
 ^^^^^^^^^^^^^^
 
 - Fix an XSS vulnerability when resolving conflicts between concurrent edits to minutes
-  (`GHSA-cw24-x4mj-fw3q <https://github.com/indico/indico/security/advisories/GHSA-cw24-x4mj-fw3q>`__)
+  (:cve:`2026-107397`)
 - Fix an XSS vulnerability in various places that allow entering custom links
-  (`GHSA-c4wc-ggrj-jg9v <https://github.com/indico/indico/security/advisories/GHSA-c4wc-ggrj-jg9v>`__)
+  (:cve:`2026-107396`)
 
 .. note::
 
@@ -48,8 +103,7 @@ Security fixes
     to edit them), and the others require at least submitter or management access in an event
     and additionally an interaction (clicking the link) by the victim.
 
-- Fix a missing access check in the legacy session export API
-  (`GHSA-6p4f-j8j6-463q <https://github.com/indico/indico/security/advisories/GHSA-6p4f-j8j6-463q>`__)
+- Fix a missing access check in the legacy session export API (:cve:`2026-107395`)
 
 .. note::
 
@@ -57,8 +111,7 @@ Security fixes
     case the API could have been misused to retrieve metadata (such as title, description and conveners)
     of such a session.
 
-- Fix an incomplete SSRF check
-  (`GHSA-2v95-h47v-g4x9 <https://github.com/indico/indico/security/advisories/GHSA-2v95-h47v-g4x9>`__)
+- Fix an incomplete SSRF check (:cve:`2026-107394`)
 
 .. note::
 
@@ -1460,12 +1513,6 @@ Bugfixes
 - Fix contribution list filters being obscured by the action dialog (:pr:`6055`)
 - Fix emailing Paper Peer Reviewing and Editing teams (:pr:`6145`)
 
-Internal Changes
-^^^^^^^^^^^^^^^^
-
-- None so far
-
-
 Version 3.2.8
 -------------
 
@@ -2445,17 +2492,6 @@ Internal Changes
 
 
 ----
-
-
-Version 2.3.6
--------------
-
-*Unreleased*
-
-Bugfixes
-^^^^^^^^
-
-- None so far :)
 
 
 Version 2.3.5

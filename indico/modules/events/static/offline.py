@@ -17,6 +17,7 @@ from zipfile import ZipFile
 
 from flask import g, request, session
 from flask.helpers import get_root_path
+from werkzeug.security import safe_join
 from werkzeug.utils import secure_filename
 
 from indico.core.config import config
@@ -29,6 +30,7 @@ from indico.modules.events.contributions.controllers.display import (RHAuthorLis
                                                                      RHSpeakerList, RHSubcontributionDisplay)
 from indico.modules.events.contributions.ical import contribution_to_ical
 from indico.modules.events.controllers.display import RHDisplayPrivacyPolicy
+from indico.modules.events.layout import layout_settings
 from indico.modules.events.layout.models.menu import MenuEntryType
 from indico.modules.events.layout.util import menu_entries_for_event
 from indico.modules.events.models.events import EventType
@@ -140,33 +142,51 @@ class StaticEventCreator:
         # assets
         css_files = {url for url in used_assets if re.match(r'static/dist/.*\.css$', url)}
         for file_path in css_files:
-            css_data = Path(self._web_dir, file_path).read_text()
+            srcpath = safe_join(self._web_dir, file_path)
+            dstpath = safe_join(self._content_dir, file_path)
+            if not srcpath or not dstpath:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            css_data = Path(srcpath).read_text()
             rewritten_css, used_urls, __ = rewrite_css_urls(self.event, css_data)
             used_assets |= used_urls
-            self._zip_file.writestr(os.path.join(self._content_dir, file_path), rewritten_css)
+            self._zip_file.writestr(dstpath, rewritten_css)
         for file_path in used_assets - css_files:
             if not re.match(r'^static/(images|fonts|dist)/(?!js/ckeditor/)', file_path):
                 continue
-            self._copy_file(os.path.join(self._content_dir, file_path),
-                            os.path.join(self._web_dir, file_path))
+            srcpath = safe_join(self._web_dir, file_path)
+            dstpath = safe_join(self._content_dir, file_path)
+            if not srcpath or not dstpath:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            self._copy_file(dstpath, srcpath)
 
     def _copy_plugin_files(self, used_assets):
         css_files = {url for url in used_assets if re.match(r'static/plugins/.*\.css$', url)}
         for file_path in css_files:
             plugin_name, path = re.match(r'static/plugins/([^/]+)/(.+.css)', file_path).groups()
             plugin = plugin_engine.get_plugin(plugin_name)
-            css_data = Path(plugin.root_path, 'static', path).read_text()
+            if plugin is None:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            srcpath = safe_join(os.path.join(plugin.root_path, 'static'), path)
+            dstpath = safe_join(self._content_dir, file_path)
+            if not srcpath or not dstpath:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            css_data = Path(srcpath).read_text()
             rewritten_css, used_urls, __ = rewrite_css_urls(self.event, css_data)
             used_assets |= used_urls
-            self._zip_file.writestr(os.path.join(self._content_dir, file_path), rewritten_css)
+            self._zip_file.writestr(dstpath, rewritten_css)
         for file_path in used_assets - css_files:
             match = re.match(r'static/plugins/([^/]+)/(.+)', file_path)
             if not match:
                 continue
             plugin_name, path = match.groups()
             plugin = plugin_engine.get_plugin(plugin_name)
-            self._copy_file(os.path.join(self._content_dir, file_path),
-                            os.path.join(plugin.root_path, 'static', path))
+            if plugin is None:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            srcpath = safe_join(os.path.join(plugin.root_path, 'static'), path)
+            dstpath = safe_join(self._content_dir, file_path)
+            if not srcpath or not dstpath:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            self._copy_file(dstpath, srcpath)
 
     def _strip_custom_prefix(self, url):
         # strip the 'static/custom/' prefix from the given url/path
@@ -175,15 +195,22 @@ class StaticEventCreator:
     def _copy_customization_files(self, used_assets):
         css_files = {url for url in used_assets if re.match(r'static/custom/.*\.css$', url)}
         for file_path in css_files:
-            css_data = Path(os.path.join(config.CUSTOMIZATION_DIR, self._strip_custom_prefix(file_path))).read_text()
+            srcpath = safe_join(config.CUSTOMIZATION_DIR, self._strip_custom_prefix(file_path))
+            dstpath = safe_join(self._content_dir, file_path)
+            if not srcpath or not dstpath:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            css_data = Path(srcpath).read_text()
             rewritten_css, used_urls, __ = rewrite_css_urls(self.event, css_data)
             used_assets |= used_urls
-            self._zip_file.writestr(os.path.join(self._content_dir, file_path), rewritten_css)
+            self._zip_file.writestr(dstpath, rewritten_css)
         for file_path in used_assets - css_files:
             if not file_path.startswith('static/custom/'):
                 continue
-            self._copy_file(os.path.join(self._content_dir, file_path),
-                            os.path.join(config.CUSTOMIZATION_DIR, self._strip_custom_prefix(file_path)))
+            srcpath = safe_join(config.CUSTOMIZATION_DIR, self._strip_custom_prefix(file_path))
+            dstpath = safe_join(self._content_dir, file_path)
+            if not srcpath or not dstpath:
+                raise ValueError(f'Invalid asset path: {file_path}')
+            self._copy_file(dstpath, srcpath)
 
     def _create_home(self):
         return WPStaticSimpleEventDisplay(self._rh, self.event, self.event.theme).display()
@@ -254,7 +281,7 @@ class StaticConferenceCreator(StaticEventCreator):
             self._menu_offline_items[wp.menu_entry_name] = rh
 
     def _create_home(self):
-        if self.event.has_stylesheet:
+        if self.event.has_stylesheet and layout_settings.get(self.event, 'use_custom_css'):
             css, used_urls, used_images = rewrite_css_urls(self.event, self.event.stylesheet)
             g.used_url_for_assets |= used_urls
             self._zip_file.writestr(os.path.join(self._content_dir, 'custom.css'), css)
